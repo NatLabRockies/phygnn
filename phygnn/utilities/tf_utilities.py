@@ -185,4 +185,5 @@ def idw_fill(x, low_mem=True):
     filled = tf.stack(filled, axis=0)
     filled = tf.reshape(filled, [B, H, W, D, C])
     filled = tf.squeeze(filled, axis=-2) if rank == 4 else filled
+    mask = tf.squeeze(mask, axis=-2) if rank == 4 else mask
     return tf.cast(filled, x.dtype), tf.cast(mask, x.dtype)
