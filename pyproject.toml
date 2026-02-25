@@ -284,6 +284,7 @@ default = { solve-group = "default" }
 dev = { features = ["dev", "doc", "test"], solve-group = "default" }
 doc = { features = ["doc"], solve-group = "default" }
 test = { features = ["test"], solve-group = "default" }
+viz = { features = ["viz"], solve-group = "default" }
 
 [tool.pixi.tasks]
 test = "pytest --pdb --durations=10 tests"
