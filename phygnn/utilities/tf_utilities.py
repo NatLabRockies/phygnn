@@ -132,7 +132,7 @@ def idw_fill(x, low_mem=True):
         Mask of the input tensor where 1 is not NaN and 0 is NaN.
     """
     rank = len(x.shape)
-    assert rank in [4, 5], 'Input tensor must be 4D or 5D'
+    assert rank in {4, 5}, 'Input tensor must be 4D or 5D'
     x = tf.expand_dims(x, axis=-2) if rank == 4 else x
     mask = tf.math.logical_not(tf.math.is_nan(x))
     B, H, W, D, C = x.shape
@@ -185,4 +185,5 @@ def idw_fill(x, low_mem=True):
     filled = tf.stack(filled, axis=0)
     filled = tf.reshape(filled, [B, H, W, D, C])
     filled = tf.squeeze(filled, axis=-2) if rank == 4 else filled
+    mask = tf.squeeze(mask, axis=-2) if rank == 4 else mask
     return tf.cast(filled, x.dtype), tf.cast(mask, x.dtype)

@@ -22,6 +22,7 @@ from phygnn.layers.custom_layers import (
     SkipConnection,
     SpatioTemporalExpansion,
     Sup3rConcatObs,
+    Sup3rObsModel,
     TileLayer,
     UnitConversion,
 )
@@ -854,6 +855,44 @@ def test_masked_squeeze_excite():
     layer = MaskedSqueezeAndExcitation()
     out = layer(x, y).numpy()
 
+    assert not tf.reduce_any(tf.math.is_nan(out))
+
+
+def test_sup3r_obs_model():
+    """Make sure ``Sup3rObsModel`` layer works properly"""
+    x = np.random.normal(0, 1, size=(1, 10, 10, 6, 3))
+    y = np.random.uniform(0, 1, size=(1, 10, 10, 6, 1))
+    mask = np.random.choice([False, True], (1, 10, 10), p=[0.1, 0.9])
+    y[mask] = np.nan
+
+    layer = Sup3rObsModel(
+        fill_method='idw',
+        features=['a'],
+        hidden_layers=[],
+        include_mask=True,
+    )
+    out = layer(x.astype(np.float32), y.astype(np.float32)).numpy()
+
+    assert tf.reduce_any(tf.math.is_nan(y))
+    assert not tf.reduce_any(tf.math.is_nan(out))
+
+
+def test_sup3r_obs_model_2d():
+    """Make sure ``Sup3rObsModel`` layer works properly"""
+    x = np.random.normal(0, 1, size=(1, 10, 10, 3))
+    y = np.random.uniform(0, 1, size=(1, 10, 10, 1))
+    mask = np.random.choice([False, True], (1, 10, 10), p=[0.1, 0.9])
+    y[mask] = np.nan
+
+    layer = Sup3rObsModel(
+        fill_method='idw',
+        features=['a'],
+        hidden_layers=[],
+        include_mask=True,
+    )
+    out = layer(x.astype(np.float32), y.astype(np.float32)).numpy()
+
+    assert tf.reduce_any(tf.math.is_nan(y))
     assert not tf.reduce_any(tf.math.is_nan(out))
 
 
