@@ -387,11 +387,11 @@ class Attention(tf.keras.layers.Layer):
         q_enc, v_enc = self.encode(x, hi_res_feature)
         return q + q_enc, v + v_enc
 
-    def _postflight(self, x, attn_out):
+    def _postflight(self, q, attn_out, x):
         """Project and add residuals after attention call."""
         out = self.out_proj(attn_out)
         out = self.dropout(out)
-        out = self.mlp_head(out + x)
+        out = self.mlp_head(out + q)
         return tf.reshape(out, x.shape)
 
     def call(self, x, hi_res_feature=None):
@@ -420,7 +420,7 @@ class Attention(tf.keras.layers.Layer):
 
         q, v = self._preflight(x, hi_res_feature)
         attn = self.attention(query=q, value=v, key=v)
-        return self._postflight(x, attn)
+        return self._postflight(q, attn, x)
 
 
 class ExpandDims(tf.keras.layers.Layer):
