@@ -579,15 +579,34 @@ def test_cbam_3d():
             tf.assert_equal(x_in, x)
 
 
-def test_s3a_layer():
-    """Test the S3A layer with 3D data (5D tensor input)"""
-    hidden_layers = [{'class': 'SparseAttention'}]
+def test_cross_attn_2d():
+    """Test the cross attention layer with 2D data (4D tensor input)"""
+    hidden_layers = [{'class': 'Attention'}]
     layers = HiddenLayers(hidden_layers)
     assert len(layers.layers) == 1
 
-    x = np.random.normal(0, 1, size=(1, 10, 10, 6, 3))
-    y = np.random.uniform(0, 1, size=(1, 10, 10, 6, 1))
-    mask = np.random.choice([False, True], (1, 10, 10), p=[0.1, 0.9])
+    x = np.random.normal(0, 1, size=(1, 4, 4, 3))
+    y = np.random.uniform(0, 1, size=(1, 4, 4, 1))
+    mask = np.random.choice([False, True], (1, 4, 4), p=[0.1, 0.9])
+    y[mask] = np.nan
+
+    for layer in layers:
+        x_in = x
+        x = layer(x.astype(np.float32), y.astype(np.float32))
+        assert x.shape == x_in.shape
+        with pytest.raises(tf.errors.InvalidArgumentError):
+            tf.assert_equal(x_in, x)
+
+
+def test_cross_attn_3d():
+    """Test the cross attention layer with 3D data (5D tensor input)"""
+    hidden_layers = [{'class': 'Attention'}]
+    layers = HiddenLayers(hidden_layers)
+    assert len(layers.layers) == 1
+
+    x = np.random.normal(0, 1, size=(1, 10, 10, 6, 3)).astype(np.float32)
+    y = np.random.uniform(0, 1, size=(1, 10, 10, 6, 1)).astype(np.float32)
+    mask = np.random.choice([False, True], (1, 10, 10, 6), p=[0.1, 0.9])
     y[mask] = np.nan
 
     for layer in layers:
