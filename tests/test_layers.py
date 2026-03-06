@@ -581,7 +581,7 @@ def test_cbam_3d():
 
 def test_cross_attn_2d():
     """Test the cross attention layer with 2D data (4D tensor input)"""
-    hidden_layers = [{'class': 'Attention'}]
+    hidden_layers = [{'class': 'Sup3rCrossAttention'}]
     layers = HiddenLayers(hidden_layers)
     assert len(layers.layers) == 1
 
@@ -600,7 +600,7 @@ def test_cross_attn_2d():
 
 def test_cross_attn_3d():
     """Test the cross attention layer with 3D data (5D tensor input)"""
-    hidden_layers = [{'class': 'Attention'}]
+    hidden_layers = [{'class': 'Sup3rCrossAttention'}]
     layers = HiddenLayers(hidden_layers)
     assert len(layers.layers) == 1
 
