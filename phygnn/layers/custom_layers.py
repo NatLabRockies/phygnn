@@ -131,51 +131,8 @@ class FlexiblePadding(tf.keras.layers.Layer):
         return config
 
 
-class Attention(tf.keras.layers.Layer):
-    """Custom layer to implement attention with tokenization and positional
-    encoding. This reduces to self-attention when the hi_res_feature is x
-    """
-
-    def __init__(
-        self,
-        embed_dim=64,
-        num_heads=1,
-        key_dim=64,
-        patch_size=1,
-        dropout=0,
-        name=None,
-        **kwargs,
-    ):
-        """
-        Parameters
-        ----------
-        embed_dim : int
-            Dimension of the tokenized inputs.
-        num_heads : int
-            Number of attention heads
-        key_dim : int
-            Size of each attention head
-        dropout : float
-            Dropout rate for attention weights. Default is 0 (no dropout).
-        patch_size : int
-            Height, width, and depth of patches. Default is 1 for pixel-wise
-            tokenization.
-        name : str | None
-            Name of layer.
-        """
-
-        super().__init__(name=name)
-        self.rank = None
-        self.mlp_head = None
-        self.out_proj = None
-        self.num_heads = num_heads
-        self.key_dim = key_dim
-        self.patch_size = patch_size
-        self.embed_dim = embed_dim
-        self.dropout = tf.keras.layers.Dropout(dropout)
-        self.attention = tf.keras.layers.MultiHeadAttention(
-            num_heads=self.num_heads, key_dim=self.key_dim, **kwargs
-        )
+class TokenizeEncodeBase(tf.keras.layers.Layer):
+    """Base layer with tokenization and positional encoding."""
 
     @classmethod
     def _generic_encoding(cls, k, i, d, omega=1e4):
@@ -297,6 +254,55 @@ class Attention(tf.keras.layers.Layer):
         )
         x_tok = tokenizer(x)
         return tf.reshape(x_tok, (x.shape[0], -1, embed_dim))
+
+
+class Sup3rCrossAttention(TokenizeEncodeBase):
+    """Custom layer to implement cross attention with tokenization and
+    positional encoding. This is typically used for sparse observation
+    data assimilation, but can also be used to attend to gapless data like
+    topography.
+    """
+
+    def __init__(
+        self,
+        embed_dim=64,
+        num_heads=1,
+        key_dim=64,
+        patch_size=1,
+        dropout=0,
+        name=None,
+        **kwargs,
+    ):
+        """
+        Parameters
+        ----------
+        embed_dim : int
+            Dimension of the tokenized inputs.
+        num_heads : int
+            Number of attention heads
+        key_dim : int
+            Size of each attention head
+        dropout : float
+            Dropout rate for attention weights. Default is 0 (no dropout).
+        patch_size : int
+            Height, width, and depth of patches. Default is 1 for pixel-wise
+            tokenization.
+        name : str | None
+            Name of layer.
+        """
+
+        super().__init__(name=name)
+        self.rank = None
+        self.mlp_head = None
+        self.out_proj = None
+        self.num_heads = num_heads
+        self.key_dim = key_dim
+        self.patch_size = patch_size
+        self.embed_dim = embed_dim
+        self.dropout = tf.keras.layers.Dropout(dropout)
+        self.attention = tf.keras.layers.MultiHeadAttention(
+            num_heads=self.num_heads, key_dim=self.key_dim, **kwargs
+        )
 
     def build(self, input_shape):
         """Build the CrossAttentionBlock layer based on an input shape
