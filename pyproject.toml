@@ -262,7 +262,7 @@ version_file = "phygnn/_version.py"
 version_scheme = "guess-next-dev"
 fallback_version = "0.0.34"
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge", "anaconda", "main"]
 platforms = ["osx-arm64", "linux-64"]
 
