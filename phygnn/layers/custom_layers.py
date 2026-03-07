@@ -221,17 +221,22 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
 
     def __init__(
         self,
+        name=None,
+        features=None,
         embed_dim=64,
         num_heads=1,
         key_dim=64,
         patch_size=1,
         dropout=0,
-        name=None,
         **kwargs,
     ):
         """
         Parameters
         ----------
+        name : str | None
+            Name of layer.
+        features : list[str] | None
+            List of hi-resolution feature names.
         embed_dim : int
             Dimension of the tokenized inputs.
         num_heads : int
@@ -243,14 +248,13 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         patch_size : int
             Height, width, and depth of patches. Default is 1 for pixel-wise
             tokenization.
-        name : str | None
-            Name of layer.
         """
 
         super().__init__(name=name)
         self.rank = None
         self.mlp_head = None
         self.out_proj = None
+        self.features = features or []
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.patch_size = patch_size

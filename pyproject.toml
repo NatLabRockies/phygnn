@@ -260,7 +260,7 @@ packages = ["phygnn"]
 [tool.setuptools_scm]
 version_file = "phygnn/_version.py"
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge", "anaconda", "main"]
 platforms = ["osx-arm64", "linux-64"]
 
