@@ -2,6 +2,7 @@
 """
 Custom Neural Network Infrastructure.
 """
+
 import logging
 import os
 import pickle
@@ -27,9 +28,18 @@ class CustomNetwork(ABC):
     Note that the phygnn model requires TensorFlow 2.x
     """
 
-    def __init__(self, n_features=None, n_labels=None, hidden_layers=None,
-                 input_layer=False, output_layer=False, layers_obj=None,
-                 feature_names=None, output_names=None, name=None):
+    def __init__(
+        self,
+        n_features=None,
+        n_labels=None,
+        hidden_layers=None,
+        input_layer=False,
+        output_layer=False,
+        layers_obj=None,
+        feature_names=None,
+        output_names=None,
+        name=None,
+    ):
         """
         Parameters
         ----------
@@ -89,26 +99,37 @@ class CustomNetwork(ABC):
         self.name = name if isinstance(name, str) else 'CustomNetwork'
 
         self._version_record = VERSION_RECORD
-        logger.info('Active python environment versions: \n{}'
-                    .format(pprint.pformat(self._version_record, indent=4)))
+        logger.info(
+            'Active python environment versions: \n{}'.format(
+                pprint.pformat(self._version_record, indent=4)
+            )
+        )
 
         # iterator counter
         self._i = 0
 
         self._layers = layers_obj
         if layers_obj is None:
-            self._layers = Layers(n_features, n_labels=n_labels,
-                                  hidden_layers=hidden_layers,
-                                  input_layer=input_layer,
-                                  output_layer=output_layer)
+            self._layers = Layers(
+                n_features,
+                n_labels=n_labels,
+                hidden_layers=hidden_layers,
+                input_layer=input_layer,
+                output_layer=output_layer,
+            )
         elif not isinstance(layers_obj, Layers):
-            msg = ('phygnn received layers_obj input of type "{}" but must be '
-                   'a phygnn Layers object'.format(type(layers_obj)))
+            msg = (
+                'phygnn received layers_obj input of type "{}" but must be '
+                'a phygnn Layers object'.format(type(layers_obj))
+            )
             logger.error(msg)
             raise TypeError(msg)
 
-        logger.info('Successfully initialized model with {} layers'
-                    .format(len(self.layers)))
+        logger.info(
+            'Successfully initialized model with {} layers'.format(
+                len(self.layers)
+            )
+        )
 
     def __iter__(self):
         """Iterate through the layers in this CustomNetwork object."""
@@ -128,9 +149,11 @@ class CustomNetwork(ABC):
     @staticmethod
     def _check_shapes(x, y):
         """Check the shape of two input arrays for usage in this NN."""
-        msg = ('Number of input observations dont match! Received arrays of '
-               'shapes {} and {} where the 0-axis should match and be the '
-               'number of observations'.format(x.shape, y.shape))
+        msg = (
+            'Number of input observations dont match! Received arrays of '
+            'shapes {} and {} where the 0-axis should match and be the '
+            'number of observations'.format(x.shape, y.shape)
+        )
         assert x.shape[0] == y.shape[0], msg
         return True
 
@@ -159,7 +182,7 @@ class CustomNetwork(ABC):
     @property
     def layers_obj(self):
         """
-        phygnn layers handler object
+        Phygnn layers handler object
 
         Returns
         -------
@@ -220,17 +243,18 @@ class CustomNetwork(ABC):
         dict
         """
 
-        model_params = {'hidden_layers': self._layers.hidden_layer_kwargs,
-                        'input_layer': self._layers.input_layer_kwargs,
-                        'output_layer': self._layers.output_layer_kwargs,
-                        'n_features': self._n_features,
-                        'n_labels': self._n_labels,
-                        'layers_obj': self.layers_obj,
-                        'feature_names': self.feature_names,
-                        'output_names': self.output_names,
-                        'name': self.name,
-                        'version_record': self.version_record,
-                        }
+        model_params = {
+            'hidden_layers': self._layers.hidden_layer_kwargs,
+            'input_layer': self._layers.input_layer_kwargs,
+            'output_layer': self._layers.output_layer_kwargs,
+            'n_features': self._n_features,
+            'n_labels': self._n_labels,
+            'layers_obj': self.layers_obj,
+            'feature_names': self.feature_names,
+            'output_names': self.output_names,
+            'name': self.name,
+            'version_record': self.version_record,
+        }
 
         return model_params
 
@@ -295,10 +319,12 @@ class CustomNetwork(ABC):
             cls._check_shapes(out[0][0], out_sub[0])
             cls._check_shapes(out[0][1], out_sub[1])
 
-        logger.debug('Validation feature data has shape {} and training '
-                     'feature data has shape {} (split of {})'
-                     .format(out[0][1].shape, out[0][0].shape,
-                             validation_split))
+        logger.debug(
+            'Validation feature data has shape {} and training '
+            'feature data has shape {} (split of {})'.format(
+                out[0][1].shape, out[0][0].shape, validation_split
+            )
+        )
 
         return out
 
@@ -339,8 +365,10 @@ class CustomNetwork(ABC):
             i = np.arange(L)
 
         for arg in args:
-            msg = ('Received arrays to be batched of multiple lengths: {} {}'
-                   .format(L, len(arg)))
+            msg = (
+                'Received arrays to be batched of multiple lengths: '
+                f'{L} {len(arg)}'
+            )
             assert len(arg) == L, msg
 
         if n_batch is None and isinstance(batch_size, int):
@@ -374,8 +402,9 @@ class CustomNetwork(ABC):
         if self._n_features is None:
             self._n_features = x.shape[-1]
 
-        x_msg = ('x data has {} features but expected {}'
-                 .format(x.shape[-1], self._n_features))
+        x_msg = 'x data has {} features but expected {}'.format(
+            x.shape[-1], self._n_features
+        )
         assert x.shape[-1] == self._n_features, x_msg
 
         if isinstance(x, pd.DataFrame):
@@ -383,16 +412,22 @@ class CustomNetwork(ABC):
             if self.feature_names is None:
                 self.feature_names = x_cols
             else:
-                msg = ('Cannot work with input x columns: {}, previously set '
-                       'feature names are: {}'
-                       .format(x_cols, self.feature_names))
+                msg = (
+                    'Cannot work with input x columns: {}, previously set '
+                    'feature names are: {}'.format(x_cols, self.feature_names)
+                )
                 assert self.feature_names == x_cols, msg
             x = x.values
 
         return x
 
-    def predict(self, x, to_numpy=True, training=False,
-                training_layers=(BatchNormalization, Dropout, LSTM)):
+    def predict(
+        self,
+        x,
+        to_numpy=True,
+        training=False,
+        training_layers=(BatchNormalization, Dropout, LSTM),
+    ):
         """Run a prediction on input features.
 
         Parameters
@@ -433,8 +468,10 @@ class CustomNetwork(ABC):
                 else:
                     y = layer(y)
             except Exception as e:
-                msg = ('Could not run layer #{} "{}" on tensor of shape {}'
-                       .format(i + 1, layer, y.shape))
+                msg = (
+                    f'Could not run layer #{i + 1} "{layer}" on tensor of '
+                    f'shape {y.shape}'
+                )
                 logger.error(msg)
                 raise RuntimeError(msg) from e
 
@@ -501,16 +538,21 @@ class CustomNetwork(ABC):
 
         if 'version_record' in model_params:
             version_record = model_params.pop('version_record')
-            logger.info('Loading model from disk that was created with the '
-                        'following package versions: \n{}'
-                        .format(pprint.pformat(version_record, indent=4)))
+            logger.info(
+                'Loading model from disk that was created with the '
+                'following package versions: \n{}'.format(
+                    pprint.pformat(version_record, indent=4)
+                )
+            )
 
         sig = signature(cls)
-        model_params = {k: v for k, v in model_params.items()
-                        if k in sig.parameters}
+        model_params = {
+            k: v for k, v in model_params.items() if k in sig.parameters
+        }
         model = cls(**model_params)
-        logger.info('Successfully initialized model from file: {}'
-                    .format(fpath))
+        logger.info(
+            'Successfully initialized model from file: {}'.format(fpath)
+        )
 
         return model
 
