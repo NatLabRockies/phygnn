@@ -135,18 +135,19 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
     """Base layer with tokenization and positional encoding."""
 
     @classmethod
-    def _generic_encoding(cls, k, i, d, omega=1e4):
+    def _generic_encoding(cls, k, d=64, omega=1e4):
         """Helper function to create a generic positional encoding for
         attention blocks. This is necessary to give the attention block
         information about the spatial and temporal structure of the data.
         """
-        k /= tf.pow(omega, (2 * i / d))
-        if i % 2 == 0:
-            return tf.math.sin(k)
-        return tf.math.cos(k)
+        enc = []
+        for i in range(d // 2):
+            theta = k / tf.pow(omega, (2 * i / d))
+            enc.extend([tf.math.sin(theta), tf.math.cos(theta)])
+        return tf.stack(enc, axis=-1)
 
     @classmethod
-    def _pos_encoding(cls, x, patch_size=1, dim_index=1):
+    def _pos_encoding(cls, x, patch_size=1, dim_index=1, embed_dim=64):
         """Helper function to create a row positional encoding for attention
         blocks.  This is necessary to give the attention block information
         about the spatial and temporal structure of the data. This encoding is
@@ -166,6 +167,9 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             positional encoding would be along the height dimension
             (dim_index=1) and the column positional encoding would be along the
             width dimension (dim_index=2).
+        embed_dim : int
+            Dimension of the positional encoding. This should match the
+            embed_dim of the attention block.
 
         Returns
         -------
@@ -178,17 +182,14 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             if dim != dim_index:
                 pos = tf.expand_dims(pos, axis=dim)
                 pos = tf.repeat(pos, x.shape[dim], axis=dim)
-        pos = tf.cast(pos, dtype=x.dtype)
 
-        d = x.shape[-1]
-        enc = tf.stack(
-            [cls._generic_encoding(pos, i, d) for i in range(d)], axis=-1
-        )
+        pos = tf.cast(pos, dtype=x.dtype)
+        enc = cls._generic_encoding(pos, d=embed_dim)
 
         mask = tf.math.is_nan(x)
         if tf.math.reduce_any(mask):
-            enc = enc[tf.math.logical_not(mask)]
-            return tf.reshape(enc, (x.shape[0], -1, x.shape[-1]))
+            enc = enc[tf.math.logical_not(mask)[..., 0]]
+            return tf.reshape(enc, (x.shape[0], -1, embed_dim))
 
         if len(x.shape) == 5:
             pool = tf.keras.layers.AveragePooling3D
@@ -198,8 +199,7 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         enc = pool(pool_size=patch_size, strides=patch_size, padding='same')(
             enc
         )
-        out = tf.reshape(enc, (x.shape[0], -1, x.shape[-1]))
-        return tf.reduce_sum(out, axis=-1, keepdims=True)
+        return tf.reshape(enc, (x.shape[0], -1, embed_dim))
 
     @classmethod
     def _tokenize(cls, x, patch_size=1, embed_dim=64):
@@ -328,7 +328,7 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         self.out_proj = tf.keras.layers.Dense(self.embed_dim)
         self.final_proj = tf.keras.layers.Dense(input_shape[-1])
 
-    def tokenize(self, x, hi_res_feature):
+    def tokenize(self, x, hi_res_feature, embed_dim=64):
         """Tokenize the input tensors for the attention block. This is a helper
         function that can be used to tokenize the inputs separately from the
         call function if needed.
@@ -342,20 +342,23 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
             4D or 5D high resolution feature tensor. This will be used as the
             value input. This can be sparse observation data, possibly with
             some NaN values, or high-resolution gapless data like topography.
+        embed_dim : int
+            Dimension of the tokenized inputs. This should match the embed_dim
+            of the attention block.
         """
         q = self._tokenize(
             x,
             patch_size=self.patch_size,
-            embed_dim=self.embed_dim,
+            embed_dim=embed_dim,
         )
         v = self._tokenize(
             hi_res_feature,
             patch_size=self.patch_size,
-            embed_dim=self.embed_dim,
+            embed_dim=embed_dim,
         )
         return q, v
 
-    def encode(self, x, hi_res_feature):
+    def encode(self, x, hi_res_feature, embed_dim=64):
         """Positional encoding for the input tensors for the attention block.
         This is a helper function that can be used to encode the inputs
         separately from the call function if needed.
@@ -369,28 +372,44 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
             4D or 5D high resolution feature tensor. This will be used as the
             value input. This can be sparse observation data, possibly with
             some NaN values, or high-resolution gapless data like topography.
+        embed_dim : int
+            Dimension of the positional encoding. This should match the
+            embed_dim of the attention block.
         """
-        q_enc = self._pos_encoding(x, patch_size=self.patch_size, dim_index=1)
-        q_enc += self._pos_encoding(x, patch_size=self.patch_size, dim_index=2)
+        q_enc = self._pos_encoding(
+            x, patch_size=self.patch_size, dim_index=1, embed_dim=embed_dim
+        )
+        q_enc += self._pos_encoding(
+            x, patch_size=self.patch_size, dim_index=2, embed_dim=embed_dim
+        )
         v_enc = self._pos_encoding(
-            hi_res_feature, patch_size=self.patch_size, dim_index=1
+            hi_res_feature,
+            patch_size=self.patch_size,
+            dim_index=1,
+            embed_dim=embed_dim,
         )
         v_enc += self._pos_encoding(
-            hi_res_feature, patch_size=self.patch_size, dim_index=2
+            hi_res_feature,
+            patch_size=self.patch_size,
+            dim_index=2,
+            embed_dim=embed_dim,
         )
         if self.rank == 5:
             q_enc += self._pos_encoding(
-                x, patch_size=self.patch_size, dim_index=3
+                x, patch_size=self.patch_size, dim_index=3, embed_dim=embed_dim
             )
             v_enc += self._pos_encoding(
-                hi_res_feature, patch_size=self.patch_size, dim_index=3
+                hi_res_feature,
+                patch_size=self.patch_size,
+                dim_index=3,
+                embed_dim=embed_dim,
             )
         return q_enc, v_enc
 
     def _preflight(self, x, hi_res_feature):
         """Tokenize and encode prior to attention call."""
-        q, v = self.tokenize(x, hi_res_feature)
-        q_enc, v_enc = self.encode(x, hi_res_feature)
+        q, v = self.tokenize(x, hi_res_feature, embed_dim=self.embed_dim)
+        q_enc, v_enc = self.encode(x, hi_res_feature, embed_dim=self.embed_dim)
         return q + q_enc, v + v_enc
 
     def _postflight(self, q, attn_out, x):
