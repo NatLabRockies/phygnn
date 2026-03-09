@@ -252,7 +252,7 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
 
         super().__init__(name=name)
         self.rank = None
-        self.mlp_head = None
+        self.final_proj = None
         self.out_proj = None
         self.features = features or []
         self.num_heads = num_heads
@@ -282,11 +282,9 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
             raise ValueError(msg)
 
         self.out_proj = tf.keras.layers.Dense(self.embed_dim)
-        self.mlp_head = tf.keras.layers.Dense(
-            input_shape[-1], activation='leaky_relu'
-        )
+        self.final_proj = tf.keras.layers.Dense(input_shape[-1])
 
-    def tokenize(self, x, hi_res_feature=None):
+    def tokenize(self, x, hi_res_feature):
         """Tokenize the input tensors for the attention block. This is a helper
         function that can be used to tokenize the inputs separately from the
         call function if needed.
@@ -296,11 +294,10 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         x : tf.Tensor
             4D or 5D input tensor. Typically this is the latent space tensor
             being updated by the attention block.
-        hi_res_feature : tf.Tensor | None
-            4D or 5D high resolution feature tensor. If provided, it will be
-            used as the value input. This can be sparse observation data,
-            possibly with some NaN values, or high-resolution gapless data
-            like topography.
+        hi_res_feature : tf.Tensor
+            4D or 5D high resolution feature tensor. This will be used as the
+            value input. This can be sparse observation data, possibly with
+            some NaN values, or high-resolution gapless data like topography.
         """
         q = self._tokenize(
             x,
@@ -314,7 +311,7 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         )
         return q, v
 
-    def encode(self, x, hi_res_feature=None):
+    def encode(self, x, hi_res_feature):
         """Positional encoding for the input tensors for the attention block.
         This is a helper function that can be used to encode the inputs
         separately from the call function if needed.
@@ -324,11 +321,10 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         x : tf.Tensor
             4D or 5D input tensor. Typically this is the latent space tensor
             being updated by the attention block.
-        hi_res_feature : tf.Tensor | None
-            4D or 5D high resolution feature tensor. If provided, it will be
-            used as the value input. This can be sparse observation data,
-            possibly with some NaN values, or high-resolution gapless data
-            like topography.
+        hi_res_feature : tf.Tensor
+            4D or 5D high resolution feature tensor. This will be used as the
+            value input. This can be sparse observation data, possibly with
+            some NaN values, or high-resolution gapless data like topography.
         """
         q_enc = self._pos_encoding(x, patch_size=self.patch_size, dim_index=1)
         q_enc += self._pos_encoding(x, patch_size=self.patch_size, dim_index=2)
@@ -357,10 +353,10 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         """Project and add residuals after attention call."""
         out = self.out_proj(attn_out)
         out = self.dropout(out)
-        out = self.mlp_head(out + q)
+        out = self.final_proj(out + q)
         return tf.reshape(out, x.shape)
 
-    def call(self, x, hi_res_feature=None):
+    def call(self, x, hi_res_feature):
         """Call attention layer
 
         Parameters
@@ -368,22 +364,16 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         x : tf.Tensor
             4D or 5D input tensor. Typically this is the latent space tensor
             being updated by the attention block.
-        hi_res_feature : tf.Tensor | None
-            4D or 5D high resolution feature tensor. If provided, it will be
-            used as the value input. This can be sparse observation data,
-            possibly with some NaN values, or high-resolution gapless data
-            like topography.
+        hi_res_feature : tf.Tensor
+            4D or 5D high resolution feature tensor. This will be used as the
+            value input. This can be sparse observation data, possibly with
+            some NaN values, or high-resolution gapless data like topography.
 
         Returns
         -------
         x : tf.Tensor
             Output tensor of the attention block.
         """
-        if hi_res_feature is None:
-            return x
-        if tf.math.reduce_all(tf.math.is_nan(hi_res_feature)):
-            return x
-
         q, v = self._preflight(x, hi_res_feature)
         attn = self.attention(query=q, value=v, key=v)
         return self._postflight(q, attn, x)
@@ -2023,9 +2013,9 @@ class LogTransform(tf.keras.layers.Layer):
         out = []
         for idf in range(x.shape[-1]):
             if idf in self.idf:
-                out.append(self._logt(x[..., idf: idf + 1]))
+                out.append(self._logt(x[..., idf : idf + 1]))
             else:
-                out.append(x[..., idf: idf + 1])
+                out.append(x[..., idf : idf + 1])
 
         out = tf.concat(out, -1, name='concat')
         return out
@@ -2115,7 +2105,7 @@ class UnitConversion(tf.keras.layers.Layer):
 
         out = []
         for idf, (adder, scalar) in enumerate(zip(self.adder, self.scalar)):
-            out.append(x[..., idf: idf + 1] * scalar + adder)
+            out.append(x[..., idf : idf + 1] * scalar + adder)
 
         out = tf.concat(out, -1, name='concat')
 
