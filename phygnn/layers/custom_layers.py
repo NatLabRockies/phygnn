@@ -95,13 +95,65 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         """Helper function to create a generic positional encoding for
         attention blocks. This is necessary to give the attention block
         information about the spatial and temporal structure of the data.
+
+        Parameters
+        ----------
+        k : tf.Tensor
+            Tensor of positions to encode. This can be the row, column, or
+            depth index. Must have 4D or 5D shape (..., 1).
+        d : int
+            Dimension of the positional encoding. This should match the
+            embed_dim of the attention block.
+        omega : float
+            Base frequency for the positional encoding. This is typically set
+            to a large number like 1e4 to ensure that the positional encoding
+            has a wide range of frequencies
+
         """
-        enc = np.zeros(k.shape + (d,), dtype=np.float32)
+        enc = np.zeros(k.shape[:-1] + (d,), dtype=np.float32)
         i = tf.range(d // 2, dtype=tf.float32)
-        theta = tf.expand_dims(k, axis=-1) / tf.pow(omega, (2 * i / d))
+        theta = k / tf.pow(omega, (2 * i / d))
         enc[..., ::2] = tf.math.sin(theta)
         enc[..., 1::2] = tf.math.cos(theta)
         return enc
+
+    @classmethod
+    def _get_positions(cls, x, patch_size=1, dim_index=1):
+        """Helper function to get the positions for positional encoding. This is
+        necessary to give the attention block information about the spatial and
+        temporal structure of the data. This function will return the row,
+        column, or depth index based on the dim_index argument.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D input tensor. This can be sparse with some NaN values,
+            or gapless.
+        patch_size : int
+            Height, width, and depth of patches. This is used to pool the
+            positional encoding into the same patch shape as tokens.
+        dim_index : int
+            Dimension index for the positional encoding. For example, for a 4D
+            tensor with shape (batch_size, height, width, features), the row
+            positional encoding would be along the height dimension
+            (dim_index=1) and the column positional encoding would be along the
+            width dimension (dim_index=2).
+        """
+        if len(x.shape) == 5:
+            pool = tf.keras.layers.AveragePooling3D
+        else:
+            pool = tf.keras.layers.AveragePooling2D
+
+        pos = tf.range(x.shape[dim_index]) / x.shape[dim_index]
+        for dim in range(0, len(x.shape) - 1):
+            if dim != dim_index:
+                pos = tf.expand_dims(pos, axis=dim)
+                pos = tf.repeat(pos, x.shape[dim], axis=dim)
+
+        pos = tf.expand_dims(tf.cast(pos, dtype=x.dtype), axis=-1)
+        return pool(pool_size=patch_size, strides=patch_size, padding='same')(
+            pos
+        )
 
     @classmethod
     def _pos_encoding(cls, x, patch_size=1, dim_index=1, embed_dim=64):
@@ -134,13 +186,7 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             Positional encoding tensor with shape (batch_size, n_tokens,
             n_features)
         """
-        pos = tf.range(x.shape[dim_index]) / x.shape[dim_index]
-        for dim in range(0, len(x.shape) - 1):
-            if dim != dim_index:
-                pos = tf.expand_dims(pos, axis=dim)
-                pos = tf.repeat(pos, x.shape[dim], axis=dim)
-
-        pos = tf.cast(pos, dtype=x.dtype)
+        pos = cls._get_positions(x, patch_size=patch_size, dim_index=dim_index)
         enc = cls._generic_encoding(pos, d=embed_dim)
 
         mask = tf.math.is_nan(x)
@@ -148,14 +194,6 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             enc = enc[tf.math.logical_not(mask)[..., 0]]
             return tf.reshape(enc, (x.shape[0], -1, embed_dim))
 
-        if len(x.shape) == 5:
-            pool = tf.keras.layers.AveragePooling3D
-        else:
-            pool = tf.keras.layers.AveragePooling2D
-
-        enc = pool(pool_size=patch_size, strides=patch_size, padding='same')(
-            enc
-        )
         return tf.reshape(enc, (x.shape[0], -1, embed_dim))
 
     @classmethod
