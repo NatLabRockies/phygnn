@@ -140,11 +140,12 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         attention blocks. This is necessary to give the attention block
         information about the spatial and temporal structure of the data.
         """
-        enc = []
-        for i in range(d // 2):
-            theta = k / tf.pow(omega, (2 * i / d))
-            enc.extend([tf.math.sin(theta), tf.math.cos(theta)])
-        return tf.stack(enc, axis=-1)
+        enc = np.zeros(k.shape + (d,), dtype=np.float32)
+        i = tf.range(d // 2, dtype=tf.float32)
+        theta = tf.expand_dims(k, axis=-1) / tf.pow(omega, (2 * i / d))
+        enc[..., ::2] = tf.math.sin(theta)
+        enc[..., 1::2] = tf.math.cos(theta)
+        return enc
 
     @classmethod
     def _pos_encoding(cls, x, patch_size=1, dim_index=1, embed_dim=64):
