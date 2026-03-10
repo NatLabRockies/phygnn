@@ -22,8 +22,10 @@ from phygnn.layers.custom_layers import (
     SkipConnection,
     SpatioTemporalExpansion,
     Sup3rConcatObs,
+    Sup3rCrossAttention,
     Sup3rObsModel,
     TileLayer,
+    TokenizeEncodeBase,
     UnitConversion,
 )
 from phygnn.layers.handlers import HiddenLayers, Layers
@@ -579,9 +581,12 @@ def test_cbam_3d():
             tf.assert_equal(x_in, x)
 
 
-def test_cross_attn_2d():
+@pytest.mark.parametrize('patch_size', (1, 2, 3))
+def test_cross_attn_2d(patch_size):
     """Test the cross attention layer with 2D data (4D tensor input)"""
-    hidden_layers = [{'class': 'Sup3rCrossAttention'}]
+    hidden_layers = [
+        {'class': 'Sup3rCrossAttention', 'patch_size': patch_size}
+    ]
     layers = HiddenLayers(hidden_layers)
     assert len(layers.layers) == 1
 
@@ -598,9 +603,12 @@ def test_cross_attn_2d():
             tf.assert_equal(x_in, x)
 
 
-def test_cross_attn_3d():
+@pytest.mark.parametrize('patch_size', (1, 2, 3))
+def test_cross_attn_3d(patch_size):
     """Test the cross attention layer with 3D data (5D tensor input)"""
-    hidden_layers = [{'class': 'Sup3rCrossAttention'}]
+    hidden_layers = [
+        {'class': 'Sup3rCrossAttention', 'patch_size': patch_size}
+    ]
     layers = HiddenLayers(hidden_layers)
     assert len(layers.layers) == 1
 
@@ -615,6 +623,166 @@ def test_cross_attn_3d():
         assert x.shape == x_in.shape
         with pytest.raises(tf.errors.InvalidArgumentError):
             tf.assert_equal(x_in, x)
+
+
+def test_pos_encoding_patch_size_gt1_2d():
+    """Test 2D positional encoding pooling with patch_size > 1.
+
+    Positions are pooled before encoding, so we verify:
+    1. _get_positions returns correctly average-pooled positions
+    2. _pos_encoding matches _generic_encoding applied to those
+       pooled positions
+    3. Different patch rows get distinct encodings
+    """
+    embed_dim = 8
+    patch_size = 2
+    x = tf.zeros((1, 4, 4, 1), dtype=tf.float32)
+
+    # --- verify pooled positions (dim_index=1 = row) ---
+    pos = TokenizeEncodeBase._get_positions(
+        x, patch_size=patch_size, dim_index=1
+    )
+    # Raw row positions: [0/4, 1/4, 2/4, 3/4] = [0, .25, .5, .75]
+    # After AvgPool2D(2, 2) the two row-groups average to
+    # 0.125 and 0.625; column axis is constant.
+    assert pos.shape == (1, 2, 2, 1)
+    np.testing.assert_allclose(
+        pos[0, :, 0, 0].numpy(), [0.125, 0.625], atol=1e-6
+    )
+    # columns carry the same row-position value
+    np.testing.assert_allclose(
+        pos[0, :, 0, 0].numpy(),
+        pos[0, :, 1, 0].numpy(),
+    )
+
+    # --- verify full encoding ---
+    enc = TokenizeEncodeBase._pos_encoding(
+        x,
+        patch_size=patch_size,
+        dim_index=1,
+        embed_dim=embed_dim,
+    )
+    # 2*2 = 4 tokens
+    assert enc.shape == (1, 4, embed_dim)
+
+    # Reconstruct expected encoding from pooled positions
+    expected = TokenizeEncodeBase._generic_encoding(pos, d=embed_dim)
+    expected = tf.reshape(expected, (1, -1, embed_dim))
+    np.testing.assert_allclose(enc.numpy(), expected, rtol=1e-6, atol=1e-6)
+
+    # Different row-patches must produce different encodings
+    enc_spatial = tf.reshape(enc, (1, 2, 2, embed_dim))
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            enc_spatial[0, 0, 0].numpy(),
+            enc_spatial[0, 1, 0].numpy(),
+        )
+
+
+def test_pos_encoding_patch_size_gt1_3d():
+    """Test 3D positional encoding pooling with patch_size > 1.
+
+    Same logic as the 2D case but for a 5D tensor and
+    dim_index=3 (temporal axis).
+    """
+    embed_dim = 8
+    patch_size = 2
+    x = tf.zeros((1, 4, 4, 4, 1), dtype=tf.float32)
+
+    # --- verify pooled positions (dim_index=3 = temporal) ---
+    pos = TokenizeEncodeBase._get_positions(
+        x, patch_size=patch_size, dim_index=3
+    )
+    # Raw temporal positions: [0, .25, .5, .75]
+    # After AvgPool3D(2, 2) → shape (1, 2, 2, 2, 1)
+    assert pos.shape == (1, 2, 2, 2, 1)
+    # temporal averages: 0.125, 0.625  (constant across
+    # spatial dims)
+    np.testing.assert_allclose(
+        pos[0, 0, 0, :, 0].numpy(),
+        [0.125, 0.625],
+        atol=1e-6,
+    )
+    np.testing.assert_allclose(
+        pos[0, 0, 0, :, 0].numpy(),
+        pos[0, 1, 1, :, 0].numpy(),
+    )
+
+    # --- verify full encoding ---
+    enc = TokenizeEncodeBase._pos_encoding(
+        x,
+        patch_size=patch_size,
+        dim_index=3,
+        embed_dim=embed_dim,
+    )
+    # 2*2*2 = 8 tokens
+    assert enc.shape == (1, 8, embed_dim)
+
+    expected = TokenizeEncodeBase._generic_encoding(pos, d=embed_dim)
+    expected = tf.reshape(expected, (1, -1, embed_dim))
+    np.testing.assert_allclose(enc.numpy(), expected, rtol=1e-6, atol=1e-6)
+
+    # Different temporal patches must produce different
+    # encodings
+    enc_spatial = tf.reshape(enc, (1, 2, 2, 2, embed_dim))
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            enc_spatial[0, 0, 0, 0].numpy(),
+            enc_spatial[0, 0, 0, 1].numpy(),
+        )
+
+
+def test_cross_attn_patch_size_gt1_shapes():
+    """Test cross-attention with patch_size > 1, including
+    non-divisible spatial dimensions (5x7). Inputs are padded
+    before tokenize/encode, matching how call() works.
+    """
+    patch_size = 2
+    embed_dim = 8
+
+    for h, w in [(6, 8), (5, 7)]:
+        x = tf.random.normal(
+            (1, h, w, 3), dtype=tf.float32
+        )
+        y = tf.random.normal(
+            (1, h, w, 1), dtype=tf.float32
+        )
+
+        layer = Sup3rCrossAttention(
+            patch_size=patch_size, embed_dim=embed_dim
+        )
+        layer.build(x.shape)
+
+        # Pad to patch-divisible dims (same as call())
+        x_pad = TokenizeEncodeBase._pad_to_patch(
+            x, patch_size=patch_size
+        )
+        y_pad = TokenizeEncodeBase._pad_to_patch(
+            y, patch_size=patch_size
+        )
+
+        # Padded dims must be divisible by patch_size
+        for i in range(1, len(x_pad.shape) - 1):
+            assert x_pad.shape[i] % patch_size == 0
+
+        q, v = layer.tokenize(
+            x_pad, y_pad, embed_dim=embed_dim
+        )
+        q_enc, v_enc = layer.encode(
+            x_pad, y_pad, embed_dim=embed_dim
+        )
+
+        ph = int(np.ceil(h / patch_size)) * patch_size
+        pw = int(np.ceil(w / patch_size)) * patch_size
+        n_tokens = (ph // patch_size) * (pw // patch_size)
+        assert q.shape == (1, n_tokens, embed_dim)
+        assert v.shape == (1, n_tokens, embed_dim)
+        assert q_enc.shape == (1, n_tokens, embed_dim)
+        assert v_enc.shape == (1, n_tokens, embed_dim)
+
+        # Full forward pass must return original shape
+        out = layer(x, y)
+        assert out.shape == x.shape
 
 
 def test_fno_2d():
