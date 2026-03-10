@@ -119,9 +119,9 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
 
     @classmethod
     def _get_positions(cls, x, patch_size=1, dim_index=1):
-        """Helper function to get the positions for positional encoding. This is
-        necessary to give the attention block information about the spatial and
-        temporal structure of the data. This function will return the row,
+        """Helper function to get the positions for positional encoding. This
+        is necessary to give the attention block information about the spatial
+        and temporal structure of the data. This function will return the row,
         column, or depth index based on the dim_index argument.
 
         Parameters
