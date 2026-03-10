@@ -22,8 +22,10 @@ from phygnn.layers.custom_layers import (
     SkipConnection,
     SpatioTemporalExpansion,
     Sup3rConcatObs,
+    Sup3rCrossAttention,
     Sup3rObsModel,
     TileLayer,
+    TokenizeEncodeBase,
     UnitConversion,
 )
 from phygnn.layers.handlers import HiddenLayers, Layers
