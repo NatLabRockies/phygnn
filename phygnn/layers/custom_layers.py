@@ -134,8 +134,30 @@ class FlexiblePadding(tf.keras.layers.Layer):
 class TokenizeEncodeBase(tf.keras.layers.Layer):
     """Base layer with tokenization and positional encoding."""
 
+    def __init__(self, name=None, patch_size=1, embed_dim=64, **kwargs):
+        """Initialize the TokenizeEncodeBase layer.
+
+        Parameters
+        ----------
+        name : str | None
+            Name of layer.
+        patch_size : int
+            Height, width, and depth of patches. This is used to pool the
+            positional encoding into the same patch shape as tokens. Default is
+            1 for pixel-wise tokenization and encoding.
+        embed_dim : int
+            Dimension of the embedding. This determines the size of the output
+            tokens after encoding. Default is 64.
+        """
+        super().__init__(name=name, **kwargs)
+        self._tok_layer = None
+        self._pool_layer = None
+        self.patch_size = patch_size
+        self.embed_dim = embed_dim
+        self.rank = None
+
     @classmethod
-    def _generic_encoding(cls, k, d=64, omega=1e4):
+    def _generic_encode(cls, k, d=64, omega=1e4):
         """Helper function to create a generic positional encoding for
         attention blocks. This is necessary to give the attention block
         information about the spatial and temporal structure of the data.
@@ -161,8 +183,47 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         enc[..., 1::2] = tf.math.cos(theta)
         return enc
 
-    @classmethod
-    def _get_positions(cls, x, patch_size=1, dim_index=1):
+    def build(self, input_shape):
+        """Build the TokenizeEncodeBase layer based on an input shape
+
+        Parameters
+        ----------
+        input_shape : tuple
+            Shape tuple of the input tensor
+        """
+        self.rank = len(input_shape)
+
+        if self.rank not in {4, 5}:
+            msg = (
+                f'Input tensor must be 4D or 5D, but got {self.rank}D tensor.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
+        kwargs = {
+            'pool_size': self.patch_size,
+            'strides': self.patch_size,
+            'padding': 'valid',
+        }
+        self._pool_layer = (
+            tf.keras.layers.AveragePooling2D(**kwargs)
+            if self.rank == 4
+            else tf.keras.layers.AveragePooling3D(**kwargs)
+        )
+
+        kwargs = {
+            'kernel_size': [self.patch_size] * (self.rank - 2),
+            'strides': [self.patch_size] * (self.rank - 2),
+            'filters': self.embed_dim,
+            'padding': 'valid',
+        }
+        self._tok_layer = (
+            tf.keras.layers.Conv2D(**kwargs)
+            if self.rank == 4
+            else tf.keras.layers.Conv3D(**kwargs)
+        )
+
+    def _get_positions(self, x, dim_index=1):
         """Helper function to get the positions for positional encoding. This
         is necessary to give the attention block information about the spatial
         and temporal structure of the data. This function will return the row,
@@ -173,9 +234,6 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         x : tf.Tensor
             4D or 5D input tensor. This can be sparse with some NaN values,
             or gapless.
-        patch_size : int
-            Height, width, and depth of patches. This is used to pool the
-            positional encoding into the same patch shape as tokens.
         dim_index : int
             Dimension index for the positional encoding. For example, for a 4D
             tensor with shape (batch_size, height, width, features), the row
@@ -183,28 +241,20 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             (dim_index=1) and the column positional encoding would be along the
             width dimension (dim_index=2).
         """
-        kwargs = {
-            'pool_size': patch_size,
-            'strides': patch_size,
-            'padding': 'valid',
-        }
-        pool = (
-            tf.keras.layers.AveragePooling3D(**kwargs)
-            if len(x.shape) == 5
-            else tf.keras.layers.AveragePooling2D(**kwargs)
-        )
-
-        pos = tf.range(x.shape[dim_index]) / x.shape[dim_index]
+        pos = tf.linspace(0.0, 1.0, x.shape[dim_index])
         for dim in range(0, len(x.shape) - 1):
             if dim != dim_index:
                 pos = tf.expand_dims(pos, axis=dim)
                 pos = tf.repeat(pos, x.shape[dim], axis=dim)
 
         pos = tf.expand_dims(tf.cast(pos, dtype=x.dtype), axis=-1)
-        return pos if tf.math.reduce_any(tf.math.is_nan(x)) else pool(pos)
+        return (
+            pos
+            if tf.math.reduce_any(tf.math.is_nan(x))
+            else self._pool_layer(pos)
+        )
 
-    @classmethod
-    def _pos_encoding(cls, x, patch_size=1, dim_index=1, embed_dim=64):
+    def _pos_encode(self, x, dim_index=1):
         """Helper function to create a row positional encoding for attention
         blocks.  This is necessary to give the attention block information
         about the spatial and temporal structure of the data. This encoding is
@@ -216,17 +266,12 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         x : tf.Tensor
             4D or 5D input tensor. This can be sparse with some NaN values,
             or gapless.
-        patch_size : int
-            Height, width, and depth of patches.
         dim_index : int
             Dimension index for the positional encoding. For example, for a 4D
             tensor with shape (batch_size, height, width, features), the row
             positional encoding would be along the height dimension
             (dim_index=1) and the column positional encoding would be along the
             width dimension (dim_index=2).
-        embed_dim : int
-            Dimension of the positional encoding. This should match the
-            embed_dim of the attention block.
 
         Returns
         -------
@@ -234,33 +279,34 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             Positional encoding tensor with shape (batch_size, n_tokens,
             n_features)
         """
-        pos = cls._get_positions(x, patch_size=patch_size, dim_index=dim_index)
-        enc = cls._generic_encoding(pos, d=embed_dim)
+        pos = self._get_positions(x, dim_index=dim_index)
+        enc = self._generic_encode(pos, d=self.embed_dim)
 
         mask = tf.math.is_nan(x)
         if tf.math.reduce_any(mask):
             enc = enc[tf.math.logical_not(mask)[..., 0]]
-            return tf.reshape(enc, (x.shape[0], -1, embed_dim))
+            return tf.reshape(enc, (x.shape[0], -1, self.embed_dim))
 
-        return tf.reshape(enc, (x.shape[0], -1, embed_dim))
+        return tf.reshape(enc, (x.shape[0], -1, self.embed_dim))
 
     @classmethod
-    def _get_padding(cls, x, patch_size=1):
+    def _get_padding(cls, x_shape, patch_size=1):
         """Helper function to get the padding for the input tensor based on the
         patch size. This is necessary to ensure that the spatial dimensions of
         the input tensor are divisible by the patch size for tokenization.
 
         Parameters
         ----------
-        x : tf.Tensor
-            4D or 5D input tensor. This can be sparse with some NaN values,
-            or gapless.
+        x_shape : tf.TensorShape
+            Shape of the unpadded 4D or 5D input tensor.
         patch_size : int
-            Height, width, and depth of patches.
+            Height, width, and depth of patches. This is used to determine the
+            amount of padding needed for each spatial dimension. Default is 1
+            for pixel-wise tokenization.
         """
         pads = [[0, 0]]  # batch
-        for i in range(1, len(x.shape) - 1):
-            rem = x.shape[i] % patch_size
+        for i in range(1, len(x_shape) - 1):
+            rem = x_shape[i] % patch_size
             pad = (patch_size - rem) % patch_size
             pads.append([pad // 2, pad - pad // 2])
         pads.append([0, 0])  # features
@@ -286,39 +332,39 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         """
         if patch_size == 1:
             return x
-        pads = cls._get_padding(x, patch_size=patch_size)
+        pads = cls._get_padding(x.shape, patch_size=patch_size)
         return tf.pad(x, pads, mode='reflect')
 
     @classmethod
-    def _crop_to_shape(cls, x, out, patch_size=1):
+    def _crop_to_shape(cls, x_shape, out, patch_size=1):
         """Remove the padding added by :meth:`_pad_to_patch` so
         the output matches the original (unpadded) spatial shape.
 
         Parameters
         ----------
-        x : tf.Tensor
-            The original (unpadded) input tensor. This is used to get the
-            original spatial shape to crop to.
+        x_shape : tf.TensorShape
+            Shape of the original (unpadded) input tensor. This is used to get
+            the original spatial shape to crop to.
         out : tf.Tensor
             Tensor whose spatial dims may be larger than target.
         patch_size : int
-            Height, width, and depth of patches.
+            Height, width, and depth of patches. This is used to determine the
+            amount of padding that was added to the input tensor.
 
         Returns
         -------
         out : tf.Tensor
-            Tensor cropped to x.shape.
+            Tensor cropped to x_shape.
         """
         if patch_size == 1:
             return out
-        pads = cls._get_padding(x, patch_size=patch_size)
+        pads = cls._get_padding(x_shape, patch_size=patch_size)
         slices = []
         for pad in pads:
             slices.append(slice(pad[0], -pad[1] if pad[1] > 0 else None))
         return out[tuple(slices)]
 
-    @classmethod
-    def _tokenize(cls, x, patch_size=1, embed_dim=64):
+    def _tokenize(self, x):
         """Helper function to tokenize inputs for attention blocks. This is
         necessary for attention mechanisms, which require 3D inputs of shape
         (batch_size, n_tokens, n_features).
@@ -328,56 +374,53 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         x : tf.Tensor
             4D or 5D input tensor. This can be sparse with some NaN values,
             or gapless.
-        patch_size : int
-            Height, width, and depth of patches.
-        embed_dim : int
-            Dimension of the tokenized inputs.
 
         Returns
         -------
         x_tok : tf.Tensor
-            Tokenized tensor with shape (batch_size, n_tokens, n_features)
+            Tokenized tensor with shape (batch_size, n_tokens, embed_dim)
         """
-        if len(x.shape) not in {4, 5}:
-            msg = (
-                'Input tensor must be 4D or 5D, but received tensor with '
-                f'shape: {x.shape}'
-            )
-            logger.error(msg)
-            raise ValueError(msg)
-
-        # if input is sparse then tokenize only the non-NaN values with a dense
-        # layer
-        mask = tf.math.is_nan(x)
+        x_tok = self._tok_layer(x)
+        mask = tf.math.is_nan(x_tok)
         if tf.math.reduce_any(mask):
-            x_tok = x[tf.math.logical_not(mask)]
-            x_tok = tf.reshape(x_tok, (x.shape[0], -1, x.shape[-1]))
-            return tf.keras.layers.Dense(embed_dim)(x_tok)
+            x_tok = x_tok[tf.math.logical_not(mask)]
+        return tf.reshape(x_tok, (x.shape[0], -1, self.embed_dim))
 
-        # if input is gapless, we can use a convolutional layer to tokenize
-        # with the specified token shape and dimension
-        kernel_size = [patch_size] * (len(x.shape) - 2)
-        strides = [patch_size] * (len(x.shape) - 2)
-        conv_func = (
-            tf.keras.layers.Conv3D
-            if len(x.shape) == 5
-            else tf.keras.layers.Conv2D
-        )
-        tokenizer = conv_func(
-            kernel_size=kernel_size,
-            strides=strides,
-            filters=embed_dim,
-            padding='valid',
-        )
-        x_tok = tokenizer(x)
-        return tf.reshape(x_tok, (x.shape[0], -1, embed_dim))
+    def call(self, x):
+        """Calls the tokenization and positional encoding routines
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D input tensor. This can be sparse with some NaN values,
+            or gapless.
+
+        Returns
+        -------
+        x_tok : tf.Tensor
+            Tokenized tensor with shape (batch_size, n_tokens, embed_dim)
+        x_enc : tf.Tensor
+            Positional encoding tensor with shape (batch_size, n_tokens,
+            embed_dim)
+        x_pad : tf.Tensor
+            Padded input tensor with shape given by compute_output_shape.
+            This is returned so that cropping can be applied downstream
+        """
+        x_pad = self._pad_to_patch(x, patch_size=self.patch_size)
+        x_tok = self._tokenize(x_pad)
+        x_enc = self._pos_encode(x_pad, dim_index=1)
+        x_enc += self._pos_encode(x_pad, dim_index=2)
+        if self.rank == 5:
+            x_enc += self._pos_encode(x_pad, dim_index=3)
+        return x_tok, x_enc, x_pad.shape
 
 
-class Sup3rCrossAttention(TokenizeEncodeBase):
+class Sup3rCrossAttention(tf.keras.layers.Layer):
     """Custom layer to implement cross attention with tokenization and
     positional encoding. This is typically used for sparse observation
     data assimilation, but can also be used to attend to gapless data like
-    topography.
+    topography. Queries are typically the latent space of the model and
+    keys/values are the high-resolution features.
     """
 
     def __init__(
@@ -387,7 +430,8 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         embed_dim=64,
         num_heads=1,
         key_dim=64,
-        patch_size=1,
+        query_patch_size=1,
+        value_patch_size=1,
         dropout=0,
         **kwargs,
     ):
@@ -404,26 +448,40 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
             Number of attention heads
         key_dim : int
             Size of each attention head
-        dropout : float
-            Dropout rate for attention weights. Default is 0 (no dropout).
-        patch_size : int
-            Height, width, and depth of patches. Default is 1 for pixel-wise
-            tokenization.
+        query_patch_size : int
+            Height, width, and depth of patches for query tokenization. Default
+            is 1 for pixel-wise tokenization.
+        value_patch_size : int
+            Height, width, and depth of patches for value tokenization. Default
+            is 1 for pixel-wise tokenization. If value data is sparse this must
+            be 1. For gapless value data this can be > 1.
+        **kwargs : dict
+            Additional keyword arguments to pass to the MultiHeadAttention
+            layer.  This can include arguments like dropout for the attention
+            layer.
         """
 
         super().__init__(name=name)
         self.rank = None
         self.final_proj = None
-        self.out_proj = None
         self.features = features or []
         self.num_heads = num_heads
         self.key_dim = key_dim
-        self.patch_size = patch_size
         self.embed_dim = embed_dim
-        self.dropout = tf.keras.layers.Dropout(dropout)
+        self.q_patch_size = query_patch_size
+        self.v_patch_size = value_patch_size
         self.attention = tf.keras.layers.MultiHeadAttention(
-            num_heads=self.num_heads, key_dim=self.key_dim, **kwargs
+            num_heads=self.num_heads,
+            key_dim=self.key_dim,
+            **kwargs,
         )
+        self._q_tok_enc = TokenizeEncodeBase(
+            patch_size=query_patch_size, embed_dim=embed_dim
+        )
+        self._v_tok_enc = TokenizeEncodeBase(
+            patch_size=value_patch_size, embed_dim=embed_dim
+        )
+        self.up_layer = None
 
     def build(self, input_shape):
         """Build the CrossAttentionBlock layer based on an input shape
@@ -435,101 +493,34 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         """
         self.rank = len(input_shape)
         msg = (
-            'CrossAttentionBlock input must have at least 4 dimensions, but '
-            f'received input shape: {input_shape}'
+            'CrossAttentionBlock input must be 4D or 5D, but received input '
+            f'shape: {input_shape}'
         )
-        if self.rank < 4:
+        if self.rank not in {4, 5}:
             logger.error(msg)
             raise ValueError(msg)
 
-        self.out_proj = tf.keras.layers.Dense(self.embed_dim)
         self.final_proj = tf.keras.layers.Dense(input_shape[-1])
 
-    def tokenize(self, x, hi_res_feature, embed_dim=64):
-        """Tokenize the input tensors for the attention block. This is a helper
-        function that can be used to tokenize the inputs separately from the
-        call function if needed.
+        up_kwargs = {
+            'filters': input_shape[-1],
+            'kernel_size': self.q_patch_size,
+            'strides': self.q_patch_size,
+            'padding': 'valid',
+        }
+        self.up_layer = (
+            tf.keras.layers.Conv3DTranspose(**up_kwargs)
+            if self.rank == 5
+            else tf.keras.layers.Conv2DTranspose(**up_kwargs)
+        )
 
-        Parameters
-        ----------
-        x : tf.Tensor
-            4D or 5D input tensor. Typically this is the latent space tensor
-            being updated by the attention block.
-        hi_res_feature : tf.Tensor
-            4D or 5D high resolution feature tensor. This will be used as the
-            value input. This can be sparse observation data, possibly with
-            some NaN values, or high-resolution gapless data like topography.
-        embed_dim : int
-            Dimension of the tokenized inputs. This should match the embed_dim
-            of the attention block.
-        """
-        q = self._tokenize(
-            x,
-            patch_size=self.patch_size,
-            embed_dim=embed_dim,
-        )
-        v = self._tokenize(
-            hi_res_feature,
-            patch_size=self.patch_size,
-            embed_dim=embed_dim,
-        )
-        return q, v
-
-    def encode(self, x, hi_res_feature, embed_dim=64):
-        """Positional encoding for the input tensors for the attention block.
-        This is a helper function that can be used to encode the inputs
-        separately from the call function if needed.
-
-        Parameters
-        ----------
-        x : tf.Tensor
-            4D or 5D input tensor. Typically this is the latent space tensor
-            being updated by the attention block.
-        hi_res_feature : tf.Tensor
-            4D or 5D high resolution feature tensor. This will be used as the
-            value input. This can be sparse observation data, possibly with
-            some NaN values, or high-resolution gapless data like topography.
-        embed_dim : int
-            Dimension of the positional encoding. This should match the
-            embed_dim of the attention block.
-        """
-        q_enc = self._pos_encoding(
-            x, patch_size=self.patch_size, dim_index=1, embed_dim=embed_dim
-        )
-        q_enc += self._pos_encoding(
-            x, patch_size=self.patch_size, dim_index=2, embed_dim=embed_dim
-        )
-        v_enc = self._pos_encoding(
-            hi_res_feature,
-            patch_size=self.patch_size,
-            dim_index=1,
-            embed_dim=embed_dim,
-        )
-        v_enc += self._pos_encoding(
-            hi_res_feature,
-            patch_size=self.patch_size,
-            dim_index=2,
-            embed_dim=embed_dim,
-        )
-        if self.rank == 5:
-            q_enc += self._pos_encoding(
-                x, patch_size=self.patch_size, dim_index=3, embed_dim=embed_dim
-            )
-            v_enc += self._pos_encoding(
-                hi_res_feature,
-                patch_size=self.patch_size,
-                dim_index=3,
-                embed_dim=embed_dim,
-            )
-        return q_enc, v_enc
-
-    def upsample(self, out, x):
+    def upsample(self, out, x_shape):
         """Upsample the output of the attention block back to the
-        spatial shape of ``x`` when ``patch_size > 1``.
+        spatial shape of ``x`` when ``q_patch_size > 1``.
 
         ``x`` is expected to have already been padded via
         :meth:`_pad_to_patch` so that every spatial dimension is
-        divisible by ``patch_size``.  The transpose convolution
+        divisible by ``q_patch_size``.  The transpose convolution
         then produces exactly ``x.shape`` with no slicing needed.
 
         Parameters
@@ -537,8 +528,8 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         out : tf.Tensor
             3D tensor ``(batch, n_tokens, embed_dim)`` from the
             attention / projection layers.
-        x : tf.Tensor
-            The (padded) input tensor whose spatial shape the
+        x_shape : tf.TensorShape
+            The shape of the (padded) input tensor whose spatial shape the
             output should match.
 
         Returns
@@ -546,29 +537,14 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         out : tf.Tensor
             Tensor with the same shape as ``x``.
         """
-        if self.patch_size == 1:
-            return tf.reshape(out, x.shape)
-
-        n_grid = len(x.shape) - 2
+        if self.q_patch_size == 1:
+            return tf.reshape(out, x_shape)
+        n_grid = len(x_shape) - 2
         grid_dims = [
-            x.shape[i] // self.patch_size
-            for i in range(1, 1 + n_grid)
+            x_shape[i] // self.q_patch_size for i in range(1, 1 + n_grid)
         ]
-        out = tf.reshape(
-            out, [x.shape[0], *grid_dims, x.shape[-1]]
-        )
-
-        conv_func = (
-            tf.keras.layers.Conv3DTranspose
-            if n_grid == 3
-            else tf.keras.layers.Conv2DTranspose
-        )
-        return conv_func(
-            filters=x.shape[-1],
-            kernel_size=self.patch_size,
-            strides=self.patch_size,
-            padding='valid',
-        )(out)
+        out = tf.reshape(out, [x_shape[0], *grid_dims, x_shape[-1]])
+        return self.up_layer(out)
 
     def call(self, x, hi_res_feature):
         """Call attention layer
@@ -588,16 +564,14 @@ class Sup3rCrossAttention(TokenizeEncodeBase):
         x : tf.Tensor
             Output tensor of the attention block.
         """
-        x_pad = self._pad_to_patch(x, patch_size=self.patch_size)
-        hi_pad = self._pad_to_patch(hi_res_feature, patch_size=self.patch_size)
-        q, v = self.tokenize(x_pad, hi_pad, embed_dim=self.embed_dim)
-        q_enc, v_enc = self.encode(x_pad, hi_pad, embed_dim=self.embed_dim)
+        q, q_enc, xp_shape = self._q_tok_enc(x)
+        v, v_enc, _ = self._v_tok_enc(hi_res_feature)
         attn = self.attention(query=q + q_enc, value=v + v_enc, key=v + v_enc)
-        out = self.out_proj(attn)
-        out = self.dropout(out)
-        out = self.final_proj(out + q)
-        out = self.upsample(out, x_pad)
-        return self._crop_to_shape(x, out, patch_size=self.patch_size)
+        out = self.final_proj(attn + q)
+        out = self.upsample(out, xp_shape)
+        return TokenizeEncodeBase._crop_to_shape(
+            x.shape, out, patch_size=self.q_patch_size
+        )
 
 
 class ExpandDims(tf.keras.layers.Layer):
