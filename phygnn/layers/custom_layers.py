@@ -176,11 +176,18 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             has a wide range of frequencies
 
         """
-        enc = np.zeros(k.shape[:-1] + (d,), dtype=np.float32)
-        i = tf.range(d // 2, dtype=tf.float32)
+        assert d % 2 == 0, (
+            'Embedding dimension must be even for sin/cos encoding.'
+        )
+        i = tf.range(d // 2, dtype=k.dtype)
         theta = k / tf.pow(omega, (2 * i / d))
-        enc[..., ::2] = tf.math.sin(theta)
-        enc[..., 1::2] = tf.math.cos(theta)
+        enc = tf.stack([tf.sin(theta), tf.cos(theta)], axis=-1)
+
+        # Interleave the sin and cos encodings along the last dimension
+        enc = tf.reshape(
+             enc,
+             tf.concat([tf.shape(k)[:-1], [d]], axis=0),
+        )
         return enc
 
     def build(self, input_shape):
@@ -241,18 +248,19 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             (dim_index=1) and the column positional encoding would be along the
             width dimension (dim_index=2).
         """
-        pos = tf.linspace(0.0, 1.0, x.shape[dim_index])
+        shape = tf.shape(x)
+        pos = tf.linspace(0.0, 1.0, shape[dim_index])
         for dim in range(0, len(x.shape) - 1):
             if dim != dim_index:
                 pos = tf.expand_dims(pos, axis=dim)
-                pos = tf.repeat(pos, x.shape[dim], axis=dim)
+                pos = tf.repeat(pos, shape[dim], axis=dim)
 
         pos = tf.expand_dims(tf.cast(pos, dtype=x.dtype), axis=-1)
-        return (
-            pos
-            if tf.math.reduce_any(tf.math.is_nan(x))
-            else self._pool_layer(pos)
-        )
+        if tf.math.reduce_any(tf.math.is_nan(x)):
+            assert self.patch_size == 1, (
+                "Patch size must be 1 when input contains NaN values."
+            )
+        return self._pool_layer(pos)
 
     def _pos_encode(self, x, dim_index=1):
         """Helper function to create a row positional encoding for attention
@@ -284,7 +292,8 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
 
         mask = tf.math.is_nan(x)
         if tf.math.reduce_any(mask):
-            enc = enc[tf.math.logical_not(mask)[..., 0]]
+            nan_any = tf.math.reduce_any(mask, axis=-1)
+            enc = enc[tf.math.logical_not(nan_any)]
             return tf.reshape(enc, (x.shape[0], -1, self.embed_dim))
 
         return tf.reshape(enc, (x.shape[0], -1, self.embed_dim))
@@ -359,10 +368,14 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         if patch_size == 1:
             return out
         pads = cls._get_padding(x_shape, patch_size=patch_size)
-        slices = []
-        for pad in pads:
-            slices.append(slice(pad[0], -pad[1] if pad[1] > 0 else None))
-        return out[tuple(slices)]
+        # Convert pads to a tensor so cropping works with dynamic shapes.
+        pads_tensor = tf.convert_to_tensor(pads, dtype=tf.int32)
+        # pads_tensor has shape [rank, 2]: [pad_before, pad_after] per axis.
+        begin = pads_tensor[:, 0]
+        end = pads_tensor[:, 1]
+        input_shape = tf.shape(out)
+        size = input_shape - begin - end
+        return tf.slice(out, begin, size)
 
     def _tokenize(self, x):
         """Helper function to tokenize inputs for attention blocks. This is
@@ -383,8 +396,10 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         x_tok = self._tok_layer(x)
         mask = tf.math.is_nan(x_tok)
         if tf.math.reduce_any(mask):
-            x_tok = x_tok[tf.math.logical_not(mask)]
-        return tf.reshape(x_tok, (x.shape[0], -1, self.embed_dim))
+            nan_any = tf.math.reduce_any(mask, axis=-1)
+            x_tok = x_tok[tf.math.logical_not(nan_any)]
+        batch_size = tf.shape(x)[0]
+        return tf.reshape(x_tok, (batch_size, -1, self.embed_dim))
 
     def call(self, x):
         """Calls the tokenization and positional encoding routines
@@ -412,7 +427,7 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         x_enc += self._pos_encode(x_pad, dim_index=2)
         if self.rank == 5:
             x_enc += self._pos_encode(x_pad, dim_index=3)
-        return x_tok, x_enc, x_pad.shape
+        return x_tok, x_enc, tf.shape(x_pad)
 
 
 class Sup3rCrossAttention(tf.keras.layers.Layer):
@@ -421,6 +436,12 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
     data assimilation, but can also be used to attend to gapless data like
     topography. Queries are typically the latent space of the model and
     keys/values are the high-resolution features.
+
+    Note: This layer assumes that any sparse input data with NaN values has
+    NaNs for the same tokens across all features. If you want to attend to
+    sparse data with different NaN patterns across features, you should
+    use different attention layers for each feature or group of features with
+    the same NaN pattern.
     """
 
     def __init__(
@@ -432,7 +453,6 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         key_dim=64,
         query_patch_size=1,
         value_patch_size=1,
-        dropout=0,
         **kwargs,
     ):
         """
