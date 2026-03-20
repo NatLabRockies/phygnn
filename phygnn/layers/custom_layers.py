@@ -502,32 +502,27 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         )
         self.up_layer = None
 
-    def build(self, x_shape, hr_shape):
+    def build(self, input_shape):
         """Build the CrossAttentionBlock layer based on an input shape
 
         Parameters
         ----------
         input_shape : tuple
-            Shape tuple of the input tensor
+            Shape tuple of the input tensor.
         """
-        assert x_shape == hr_shape, (
-            f'Query and value inputs to CrossAttentionBlock must have the '
-            f'same shape, but received query shape: {x_shape} and value '
-            f'shape: {hr_shape}'
-        )
-        self.rank = len(x_shape)
+        self.rank = len(input_shape)
         msg = (
             'CrossAttentionBlock input must be 4D or 5D, but received input '
-            f'shape: {x_shape}'
+            f'shape: {input_shape}'
         )
         if self.rank not in {4, 5}:
             logger.error(msg)
             raise ValueError(msg)
 
-        self.final_proj = tf.keras.layers.Dense(x_shape[-1])
+        self.final_proj = tf.keras.layers.Dense(input_shape[-1])
 
         up_kwargs = {
-            'filters': x_shape[-1],
+            'filters': input_shape[-1],
             'kernel_size': self.q_patch_size,
             'strides': self.q_patch_size,
             'padding': 'valid',
