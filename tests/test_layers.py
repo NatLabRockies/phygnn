@@ -261,18 +261,18 @@ def test_double_skip():
     x_input = None
 
     for i, layer in enumerate(layers):
-        if i in (3, 11):  # skip start
+        if i in {3, 11}:  # skip start
             cache = tf.identity(x)
             assert id(cache) != id(x)
-        elif i in (7, 15):  # skip end
+        elif i in {7, 15}:  # skip end
             x_input = tf.identity(x)
             assert id(x_input) != id(x)
 
         x = layer(x)
 
-        if i in (3, 11):  # skip start
+        if i in {3, 11}:  # skip start
             assert layer._cache is not None
-        elif i in (7, 15):  # skip end
+        elif i in {7, 15}:  # skip end
             assert layer._cache is None
             tf.assert_equal(x, tf.add(x_input, cache))
 
