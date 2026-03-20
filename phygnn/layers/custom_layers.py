@@ -256,8 +256,8 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
                 pos = tf.repeat(pos, shape[dim], axis=dim)
 
         pos = tf.expand_dims(tf.cast(pos, dtype=x.dtype), axis=-1)
-        if tf.math.reduce_any(tf.math.is_nan(x)):
-            assert self.patch_size == 1, (
+        if tf.math.reduce_any(tf.math.is_nan(x)) and self.patch_size > 1:
+            raise ValueError(
                 "Patch size must be 1 when input contains NaN values."
             )
         return self._pool_layer(pos)
@@ -291,12 +291,13 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         enc = self._generic_encode(pos, d=self.embed_dim)
 
         mask = tf.math.is_nan(x)
+        batch_size = tf.shape(x)[0]
         if tf.math.reduce_any(mask):
             nan_any = tf.math.reduce_any(mask, axis=-1)
             enc = enc[tf.math.logical_not(nan_any)]
-            return tf.reshape(enc, (x.shape[0], -1, self.embed_dim))
+            return tf.reshape(enc, (batch_size, -1, self.embed_dim))
 
-        return tf.reshape(enc, (x.shape[0], -1, self.embed_dim))
+        return tf.reshape(enc, (batch_size, -1, self.embed_dim))
 
     @classmethod
     def _get_padding(cls, x_shape, patch_size=1):
@@ -341,7 +342,7 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         """
         if patch_size == 1:
             return x
-        pads = cls._get_padding(x.shape, patch_size=patch_size)
+        pads = cls._get_padding(tf.shape(x), patch_size=patch_size)
         return tf.pad(x, pads, mode='reflect')
 
     @classmethod
@@ -394,12 +395,10 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             Tokenized tensor with shape (batch_size, n_tokens, embed_dim)
         """
         x_tok = self._tok_layer(x)
-        mask = tf.math.is_nan(x_tok)
-        if tf.math.reduce_any(mask):
-            nan_any = tf.math.reduce_any(mask, axis=-1)
-            x_tok = x_tok[tf.math.logical_not(nan_any)]
-        batch_size = tf.shape(x)[0]
-        return tf.reshape(x_tok, (batch_size, -1, self.embed_dim))
+        nan_any = tf.math.reduce_any(tf.math.is_nan(x_tok), axis=-1)
+        valid_mask = tf.math.logical_not(nan_any)
+        x_tok = tf.boolean_mask(x_tok, valid_mask)
+        return tf.reshape(x_tok, (tf.shape(x)[0], -1, self.embed_dim))
 
     def call(self, x):
         """Calls the tokenization and positional encoding routines
@@ -503,7 +502,7 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         )
         self.up_layer = None
 
-    def build(self, input_shape):
+    def build(self, x_shape, hr_shape):
         """Build the CrossAttentionBlock layer based on an input shape
 
         Parameters
@@ -511,19 +510,24 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         input_shape : tuple
             Shape tuple of the input tensor
         """
-        self.rank = len(input_shape)
+        assert x_shape == hr_shape, (
+            f'Query and value inputs to CrossAttentionBlock must have the '
+            f'same shape, but received query shape: {x_shape} and value '
+            f'shape: {hr_shape}'
+        )
+        self.rank = len(x_shape)
         msg = (
             'CrossAttentionBlock input must be 4D or 5D, but received input '
-            f'shape: {input_shape}'
+            f'shape: {x_shape}'
         )
         if self.rank not in {4, 5}:
             logger.error(msg)
             raise ValueError(msg)
 
-        self.final_proj = tf.keras.layers.Dense(input_shape[-1])
+        self.final_proj = tf.keras.layers.Dense(x_shape[-1])
 
         up_kwargs = {
-            'filters': input_shape[-1],
+            'filters': x_shape[-1],
             'kernel_size': self.q_patch_size,
             'strides': self.q_patch_size,
             'padding': 'valid',
