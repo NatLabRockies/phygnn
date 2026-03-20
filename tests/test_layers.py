@@ -752,7 +752,7 @@ def test_cross_attn_patch_size_gt1_shapes():
             value_patch_size=patch_size,
             embed_dim=embed_dim,
         )
-        layer.build(x.shape)
+        layer.build(x.shape, y.shape)
 
         q, q_enc, q_pad_shape = layer._q_tok_enc(x)
         v, v_enc, v_pad_shape = layer._v_tok_enc(y)
