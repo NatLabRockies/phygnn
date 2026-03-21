@@ -185,8 +185,8 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
 
         # Interleave the sin and cos encodings along the last dimension
         enc = tf.reshape(
-             enc,
-             tf.concat([tf.shape(k)[:-1], [d]], axis=0),
+            enc,
+            tf.concat([tf.shape(k)[:-1], [d]], axis=0),
         )
         return enc
 
@@ -218,17 +218,22 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             else tf.keras.layers.AveragePooling3D(**kwargs)
         )
 
-        kwargs = {
-            'kernel_size': [self.patch_size] * (self.rank - 2),
-            'strides': [self.patch_size] * (self.rank - 2),
-            'filters': self.embed_dim,
-            'padding': 'valid',
-        }
-        self._tok_layer = (
-            tf.keras.layers.Conv2D(**kwargs)
-            if self.rank == 4
-            else tf.keras.layers.Conv3D(**kwargs)
-        )
+        if self.patch_size > 1:
+            kwargs = {
+                'kernel_size': [self.patch_size] * (self.rank - 2),
+                'strides': [self.patch_size] * (self.rank - 2),
+                'filters': self.embed_dim,
+                'padding': 'valid',
+            }
+            self._tok_layer = (
+                tf.keras.layers.Conv2D(**kwargs)
+                if self.rank == 4
+                else tf.keras.layers.Conv3D(**kwargs)
+            )
+        else:
+            self._tok_layer = tf.keras.layers.Dense(
+                self.embed_dim, use_bias=False
+            )
 
     def _get_positions(self, x, dim_index=1):
         """Helper function to get the positions for positional encoding. This
@@ -258,46 +263,9 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         pos = tf.expand_dims(tf.cast(pos, dtype=x.dtype), axis=-1)
         if tf.math.reduce_any(tf.math.is_nan(x)) and self.patch_size > 1:
             raise ValueError(
-                "Patch size must be 1 when input contains NaN values."
+                'Patch size must be 1 when input contains NaN values.'
             )
         return self._pool_layer(pos)
-
-    def _pos_encode(self, x, dim_index=1):
-        """Helper function to create a row positional encoding for attention
-        blocks.  This is necessary to give the attention block information
-        about the spatial and temporal structure of the data. This encoding is
-        based on the row index of the input tensor, so it will give the same
-        encoding to all pixels in the same row.
-
-        Parameters
-        ----------
-        x : tf.Tensor
-            4D or 5D input tensor. This can be sparse with some NaN values,
-            or gapless.
-        dim_index : int
-            Dimension index for the positional encoding. For example, for a 4D
-            tensor with shape (batch_size, height, width, features), the row
-            positional encoding would be along the height dimension
-            (dim_index=1) and the column positional encoding would be along the
-            width dimension (dim_index=2).
-
-        Returns
-        -------
-        x_enc : tf.Tensor
-            Positional encoding tensor with shape (batch_size, n_tokens,
-            n_features)
-        """
-        pos = self._get_positions(x, dim_index=dim_index)
-        enc = self._generic_encode(pos, d=self.embed_dim)
-
-        mask = tf.math.is_nan(x)
-        batch_size = tf.shape(x)[0]
-        if tf.math.reduce_any(mask):
-            nan_any = tf.math.reduce_any(mask, axis=-1)
-            enc = enc[tf.math.logical_not(nan_any)]
-            return tf.reshape(enc, (batch_size, -1, self.embed_dim))
-
-        return tf.reshape(enc, (batch_size, -1, self.embed_dim))
 
     @classmethod
     def _get_padding(cls, x_shape, patch_size=1):
@@ -378,10 +346,43 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         size = input_shape - begin - end
         return tf.slice(out, begin, size)
 
+    def _pos_encode(self, x, dim_index=1):
+        """Helper function to create a positional encoding for attention
+        blocks.  This is necessary to give the attention block information
+        about the spatial and temporal structure of the data.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D input tensor. This can be sparse with some NaN values,
+            or gapless.
+        dim_index : int
+            Dimension index for the positional encoding. For example, for a 4D
+            tensor with shape (batch_size, height, width, features), the row
+            positional encoding would be along the height dimension
+            (dim_index=1) and the column positional encoding would be along the
+            width dimension (dim_index=2).
+
+        Returns
+        -------
+        x_enc : tf.Tensor
+            Positional encoding tensor with shape (1, batch_size * n_tokens,
+            n_features)
+        """
+        pos = self._get_positions(x, dim_index=dim_index)
+        enc = self._generic_encode(pos, d=self.embed_dim)
+
+        if self.patch_size == 1:
+            nan_any = tf.math.reduce_any(tf.math.is_nan(x), axis=-1)
+            valid_mask = tf.math.logical_not(nan_any)
+            enc = tf.boolean_mask(enc, valid_mask)
+
+        # batch members can have different NaN patterns so we flatten across
+        # the batch dimension
+        return tf.reshape(enc, (1, -1, self.embed_dim))
+
     def _tokenize(self, x):
-        """Helper function to tokenize inputs for attention blocks. This is
-        necessary for attention mechanisms, which require 3D inputs of shape
-        (batch_size, n_tokens, n_features).
+        """Helper function to tokenize inputs for attention blocks.
 
         Parameters
         ----------
@@ -392,13 +393,18 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         Returns
         -------
         x_tok : tf.Tensor
-            Tokenized tensor with shape (batch_size, n_tokens, embed_dim)
+            Tokenized tensor with shape (1, batch_size * n_tokens, embed_dim)
         """
-        x_tok = self._tok_layer(x)
-        nan_any = tf.math.reduce_any(tf.math.is_nan(x_tok), axis=-1)
-        valid_mask = tf.math.logical_not(nan_any)
-        x_tok = tf.boolean_mask(x_tok, valid_mask)
-        return tf.reshape(x_tok, (tf.shape(x)[0], -1, self.embed_dim))
+        x_tok = x
+        if self.patch_size == 1:
+            nan_any = tf.math.reduce_any(tf.math.is_nan(x_tok), axis=-1)
+            valid_mask = tf.math.logical_not(nan_any)
+            x_tok = tf.boolean_mask(x_tok, valid_mask)
+        x_tok = self._tok_layer(x_tok)
+
+        # batch members can have different NaN patterns so we flatten across
+        # the batch dimension
+        return tf.reshape(x_tok, (1, -1, self.embed_dim))
 
     def call(self, x):
         """Calls the tokenization and positional encoding routines
@@ -585,11 +591,15 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         """
         q, q_enc, xp_shape = self._q_tok_enc(x)
         v, v_enc, _ = self._v_tok_enc(hi_res_feature)
+
+        if tf.math.reduce_all(tf.math.is_nan(hi_res_feature)):
+            return x
+
         attn = self.attention(query=q + q_enc, value=v + v_enc, key=v + v_enc)
         out = self.final_proj(attn + q)
         out = self.upsample(out, xp_shape)
         return TokenizeEncodeBase._crop_to_shape(
-            x.shape, out, patch_size=self.q_patch_size
+            tf.shape(x), out, patch_size=self.q_patch_size
         )
 
 
