@@ -599,7 +599,7 @@ def test_cross_attn_2d(patch_size):
     x = np.random.normal(0, 1, size=(4, 4, 4, 3))
     y = np.random.uniform(0, 1, size=(4, 4, 4, 1))
     mask = np.random.choice([False, True], (1, 4, 4), p=[0.1, 0.9])
-    mask = np.repeat(mask, 4, axis=0)[:, :, :, 0]  # shape (4, 4, 4)
+    mask = np.repeat(mask, 4, axis=0)  # shape (4, 4, 4)
     y[mask] = np.nan
 
     for layer in layers:
