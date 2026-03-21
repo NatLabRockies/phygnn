@@ -589,14 +589,17 @@ def test_cross_attn_2d(patch_size):
             'class': 'Sup3rCrossAttention',
             'query_patch_size': patch_size,
             'value_patch_size': 1,
+            'embed_dim': 8,
+            'key_dim': 8,
         }
     ]
     layers = HiddenLayers(hidden_layers)
     assert len(layers.layers) == 1
 
-    x = np.random.normal(0, 1, size=(1, 4, 4, 3))
-    y = np.random.uniform(0, 1, size=(1, 4, 4, 1))
+    x = np.random.normal(0, 1, size=(4, 4, 4, 3))
+    y = np.random.uniform(0, 1, size=(4, 4, 4, 1))
     mask = np.random.choice([False, True], (1, 4, 4), p=[0.1, 0.9])
+    mask = np.repeat(mask, 4, axis=0)[:, :, :, 0]  # shape (4, 4, 4)
     y[mask] = np.nan
 
     for layer in layers:
@@ -616,6 +619,8 @@ def test_cross_attn_3d(patch_size):
             'class': 'Sup3rCrossAttention',
             'query_patch_size': patch_size,
             'value_patch_size': 1,
+            'embed_dim': 8,
+            'key_dim': 8,
         }
     ]
     layers = HiddenLayers(hidden_layers)
