@@ -25,7 +25,7 @@ from phygnn.layers.custom_layers import (
     Sup3rCrossAttention,
     Sup3rObsModel,
     TileLayer,
-    TokenizeEncodeBase,
+    TokenizeEncode,
     UnitConversion,
 )
 from phygnn.layers.handlers import HiddenLayers, Layers
@@ -617,6 +617,8 @@ def test_cross_attn_3d(patch_size):
     hidden_layers = [
         {
             'class': 'Sup3rCrossAttention',
+            'features': ['a', 'b', 'c'],
+            'exo_features': ['d', 'e', 'f'],
             'query_patch_size': patch_size,
             'value_patch_size': 1,
             'embed_dim': 8,
