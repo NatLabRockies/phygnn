@@ -87,11 +87,11 @@ class FlexiblePadding(tf.keras.layers.Layer):
         return self._pad_fun(x, self.paddings, mode=self.mode)
 
 
-class TokenizeEncodeBase(tf.keras.layers.Layer):
+class TokenizeEncode(tf.keras.layers.Layer):
     """Base layer with tokenization and positional encoding."""
 
-    def __init__(self, name=None, patch_size=1, embed_dim=64, **kwargs):
-        """Initialize the TokenizeEncodeBase layer.
+    def __init__(self, name=None, patch_size=1, embed_dim=64):
+        """Initialize the TokenizeEncode layer.
 
         Parameters
         ----------
@@ -105,7 +105,7 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             Dimension of the embedding. This determines the size of the output
             tokens after encoding. Default is 64.
         """
-        super().__init__(name=name, **kwargs)
+        super().__init__(name=name)
         self._tok_layer = None
         self._pool_layer = None
         self.patch_size = patch_size
@@ -146,8 +146,172 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         )
         return enc
 
+    def _mask(self, x, out):
+        """Helper function to mask output tokens based on NaN values in the
+        input tensor.
+        """
+        if self.patch_size == 1:
+            nan_any = tf.math.reduce_any(tf.math.is_nan(x), axis=-1)
+            valid_mask = tf.math.logical_not(nan_any)
+            out = tf.boolean_mask(out, valid_mask)
+        tf.debugging.assert_all_finite(
+            out, message='Masked output contains NaN or Inf values.'
+        )
+        return out
+
+    def encode_lat_lon(self, x, lat, lon, d=64, omega=1e4):
+        """Helper function to create a positional encoding for latitude and
+        longitude. This is necessary to give the attention block information
+        about the spatial structure of the data.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            Input tensor to encode. Must have 4D or 5D shape (..., 1). This is
+            only used to get the batch and spatial dimensions for the output
+            encoding.
+        lat : tf.Tensor
+            Tensor of latitudes to encode. Must have 4D or 5D shape (..., 1).
+        lon : tf.Tensor
+            Tensor of longitudes to encode. Must have 4D or 5D shape (..., 1).
+        d : int
+            Dimension of the positional encoding. This should match the
+            embed_dim of the attention block.
+        omega : float
+            Base frequency for the positional encoding. This is typically set
+            to a large number like 1e4 to ensure that the positional encoding
+            has a wide range of frequencies
+
+        Returns
+        -------
+        lat_lon_enc : tf.Tensor
+            Positional encoding tensor for latitude and longitude with shape
+            (..., d)
+        """
+        assert d % 4 == 0, (
+            'Embedding dimension must be divisible by 4 for latitude and '
+            'longitude encoding.'
+        )
+        lat_enc = self._generic_encode(lat, d=d // 2, omega=omega)
+        lon_enc = self._generic_encode(lon, d=d // 2, omega=omega)
+        out = tf.concat([lat_enc, lon_enc], axis=-1)
+        out = self._mask(x, out)
+        return tf.reshape(out, (tf.shape(x)[0], -1, d))
+
+    def encode_row_col(self, x, d=64, omega=1e4):
+        """Helper function to create a positional encoding for row and column
+        indices. This is necessary to give the attention block information
+        about the spatial structure of the data.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            Input tensor to encode. Must have 4D or 5D shape (..., 1). This is
+            only used to get the batch and spatial dimensions for the output
+            encoding.
+        d : int
+            Dimension of the positional encoding. This should match the
+            embed_dim of the attention block.
+        omega : float
+            Base frequency for the positional encoding. This is typically set
+            to a large number like 1e4 to ensure that the positional encoding
+            has a wide range of frequencies
+
+        Returns
+        -------
+        row_col_enc : tf.Tensor
+            Positional encoding tensor for row and column indices with shape
+            (..., d)
+        """
+        assert d % 4 == 0, (
+            'Embedding dimension must be divisible by 4 for row and column '
+            'encoding.'
+        )
+        row_enc = self._generic_encode(
+            self.get_inds(x, dim_index=1), d=d // 2, omega=omega
+        )
+        col_enc = self._generic_encode(
+            self.get_inds(x, dim_index=2), d=d // 2, omega=omega
+        )
+        out = tf.concat([row_enc, col_enc], axis=-1)
+        out = self._mask(x, out)
+        return tf.reshape(out, (tf.shape(x)[0], -1, d))
+
+    def encode_time(self, x, time, d=64, omega=1e4):
+        """Helper function to create a positional encoding for time. This is
+        necessary to give the attention block information about the temporal
+        structure of the data.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            Input tensor to encode. Must have 4D or 5D shape (..., 1). This is
+            only used to get the batch and spatial dimensions for the output
+            encoding.
+        time : tf.Tensor
+            Tensor of datetime values to encode. Must have 4D or 5D shape (...,
+            1).
+        d : int
+            Dimension of the positional encoding. This should match the
+            embed_dim of the attention block.
+        omega : float
+            Base frequency for the positional encoding. This is typically set
+            to a large number like 1e4 to ensure that the positional encoding
+            has a wide range of frequencies
+
+        Returns
+        -------
+        time_enc : tf.Tensor
+            Positional encoding tensor for time with shape (..., d)
+        """
+        assert d % 4 == 0, (
+            'Embedding dimension must be divisible by 4 for time encoding.'
+        )
+        doy = tf.cast(
+            tf.experimental.numpy.datetime_as_string(time, unit='D'),
+            tf.float32,
+        )
+        soy = tf.cast(
+            tf.experimental.numpy.datetime_as_string(time, unit='s'),
+            tf.float32,
+        )
+        doy_enc = self._generic_encode(doy, d=d // 2, omega=omega)
+        soy_enc = self._generic_encode(soy, d=d // 2, omega=omega)
+        out = tf.concat([doy_enc, soy_enc], axis=-1)
+        out = self._mask(x, out)
+        return tf.reshape(out, (tf.shape(x)[0], -1, d))
+
+    def encode_depth(self, x, d=64, omega=1e4):
+        """Helper function to create a positional encoding for depth. This is
+        necessary to give the attention block information about the vertical
+        structure of the data.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            Input tensor to encode. Must have 4D or 5D shape (..., 1). This is
+            only used to get the batch and spatial dimensions for the output
+            encoding.
+        d : int
+            Dimension of the positional encoding. This should match the
+            embed_dim of the attention block.
+        omega : float
+            Base frequency for the positional encoding. This is typically set
+            to a large number like 1e4 to ensure that the positional encoding
+            has a wide range of frequencies
+
+        Returns
+        -------
+        depth_enc : tf.Tensor
+            Positional encoding tensor for depth with shape (..., d)
+        """
+        depth = self.get_inds(x, dim_index=3)
+        depth_enc = self._generic_encode(depth, d=d, omega=omega)
+        depth_enc = self._mask(x, depth_enc)
+        return tf.reshape(depth_enc, (tf.shape(x)[0], -1, d))
+
     def build(self, input_shape):
-        """Build the TokenizeEncodeBase layer based on an input shape
+        """Build the TokenizeEncode layer based on an input shape
 
         Parameters
         ----------
@@ -191,11 +355,10 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
                 self.embed_dim, use_bias=False
             )
 
-    def _get_positions(self, x, dim_index=1):
-        """Helper function to get the positions for positional encoding. This
-        is necessary to give the attention block information about the spatial
-        and temporal structure of the data. This function will return the row,
-        column, or depth index based on the dim_index argument.
+    def get_inds(self, x, dim_index=1):
+        """Helper function to get the normalized indicesfor positional
+        encoding.  This function will return the normalized row, column, or
+        depth index based on the dim_index argument.
 
         Parameters
         ----------
@@ -247,7 +410,7 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         return pads
 
     @classmethod
-    def _pad_to_patch(cls, x, patch_size=1):
+    def pad(cls, x, patch_size=1):
         """Pad spatial dimensions of ``x`` so they are evenly
         divisible by ``patch_size``.
 
@@ -270,8 +433,8 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         return tf.pad(x, pads, mode='reflect')
 
     @classmethod
-    def _crop_to_shape(cls, x_shape, out, patch_size=1):
-        """Remove the padding added by :meth:`_pad_to_patch` so
+    def crop(cls, x_shape, out, patch_size=1):
+        """Remove the padding added by :meth:`pad` so
         the output matches the original (unpadded) spatial shape.
 
         Parameters
@@ -302,42 +465,7 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         size = input_shape - begin - end
         return tf.slice(out, begin, size)
 
-    def _pos_encode(self, x, dim_index=1):
-        """Helper function to create a positional encoding for attention
-        blocks.  This is necessary to give the attention block information
-        about the spatial and temporal structure of the data.
-
-        Parameters
-        ----------
-        x : tf.Tensor
-            4D or 5D input tensor. This can be sparse with some NaN values,
-            or gapless.
-        dim_index : int
-            Dimension index for the positional encoding. For example, for a 4D
-            tensor with shape (batch_size, height, width, features), the row
-            positional encoding would be along the height dimension
-            (dim_index=1) and the column positional encoding would be along the
-            width dimension (dim_index=2).
-
-        Returns
-        -------
-        x_enc : tf.Tensor
-            Positional encoding tensor with shape (1, batch_size * n_tokens,
-            n_features)
-        """
-        pos = self._get_positions(x, dim_index=dim_index)
-        enc = self._generic_encode(pos, d=self.embed_dim)
-
-        if self.patch_size == 1:
-            nan_any = tf.math.reduce_any(tf.math.is_nan(x), axis=-1)
-            valid_mask = tf.math.logical_not(nan_any)
-            enc = tf.boolean_mask(enc, valid_mask)
-
-        # batch members can have different NaN patterns so we flatten across
-        # the batch dimension
-        return tf.reshape(enc, (1, -1, self.embed_dim))
-
-    def _tokenize(self, x):
+    def tokenize(self, x):
         """Helper function to tokenize inputs for attention blocks.
 
         Parameters
@@ -349,20 +477,16 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         Returns
         -------
         x_tok : tf.Tensor
-            Tokenized tensor with shape (1, batch_size * n_tokens, embed_dim)
+            Tokenized tensor with shape (batch_size, n_tokens, embed_dim)
         """
-        x_tok = x
-        if self.patch_size == 1:
-            nan_any = tf.math.reduce_any(tf.math.is_nan(x_tok), axis=-1)
-            valid_mask = tf.math.logical_not(nan_any)
-            x_tok = tf.boolean_mask(x_tok, valid_mask)
+        x_tok = self._mask(x, x)
         x_tok = self._tok_layer(x_tok)
 
-        # batch members can have different NaN patterns so we flatten across
-        # the batch dimension
-        return tf.reshape(x_tok, (1, -1, self.embed_dim))
+        # batch members can have different NaN patterns in general so this
+        # reshape could fail if batch_size > 1
+        return tf.reshape(x_tok, (tf.shape(x)[0], -1, self.embed_dim))
 
-    def call(self, x):
+    def call(self, x, lat=None, lon=None, time=None):
         """Calls the tokenization and positional encoding routines
 
         Parameters
@@ -370,6 +494,15 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
         x : tf.Tensor
             4D or 5D input tensor. This can be sparse with some NaN values,
             or gapless.
+        lat : tf.Tensor | None
+            Tensor of latitudes for positional encoding. Must have 4D or 5D
+            shape (..., 1). If None, latitude encoding will not be included.
+        lon : tf.Tensor | None
+            Tensor of longitudes for positional encoding. Must have 4D or 5D
+            shape (..., 1). If None, longitude encoding will not be included.
+        time : tf.Tensor | None
+            Tensor of datetime values for positional encoding. Must have 4D or
+            5D shape (..., 1). If None, time encoding will not be included.
 
         Returns
         -------
@@ -382,12 +515,25 @@ class TokenizeEncodeBase(tf.keras.layers.Layer):
             Padded input tensor with shape given by compute_output_shape.
             This is returned so that cropping can be applied downstream
         """
-        x_pad = self._pad_to_patch(x, patch_size=self.patch_size)
-        x_tok = self._tokenize(x_pad)
-        x_enc = self._pos_encode(x_pad, dim_index=1)
-        x_enc += self._pos_encode(x_pad, dim_index=2)
-        if self.rank == 5:
-            x_enc += self._pos_encode(x_pad, dim_index=3)
+        x_pad = self.pad(x, patch_size=self.patch_size)
+        if lat is not None and lon is not None:
+            lat_pad = self.pad(lat, patch_size=self.patch_size)
+            lon_pad = self.pad(lon, patch_size=self.patch_size)
+            x_enc = self.encode_lat_lon(
+                x_pad, lat_pad, lon_pad, d=self.embed_dim
+            )
+        else:
+            x_enc = self.encode_row_col(x_pad, d=self.embed_dim)
+        if self.rank == 5 and time is not None:
+            time_pad = self.pad(time, patch_size=self.patch_size)
+            time_enc = self.encode_time(x_pad, time_pad, d=self.embed_dim)
+            x_enc += time_enc
+        elif self.rank == 5:
+            x_enc += self.encode_depth(x_pad, d=self.embed_dim)
+        x_tok = self.tokenize(x_pad)
+        tf.debugging.assert_all_finite(
+            x_tok, message='Tokenized output contains NaN or Inf values.'
+        )
         return x_tok, x_enc, tf.shape(x_pad)
 
 
@@ -409,6 +555,7 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         self,
         name=None,
         features=None,
+        exo_features=None,
         embed_dim=64,
         num_heads=1,
         key_dim=64,
@@ -423,6 +570,9 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
             Name of layer.
         features : list[str] | None
             List of hi-resolution feature names.
+        exo_features : list[str] | None
+            List of exogenous feature names. These are features that will be
+            used for positional encoding like latitude, longitude, and time.
         embed_dim : int
             Dimension of the tokenized inputs.
         num_heads : int
@@ -443,9 +593,10 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         """
 
         super().__init__(name=name)
+        self.features = features or []
+        self.exo_features = exo_features or []
         self.rank = None
         self.final_proj = None
-        self.features = features or []
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.embed_dim = embed_dim
@@ -456,10 +607,10 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
             key_dim=self.key_dim,
             **kwargs,
         )
-        self._q_tok_enc = TokenizeEncodeBase(
+        self.q_tok_enc = TokenizeEncode(
             patch_size=query_patch_size, embed_dim=embed_dim
         )
-        self._v_tok_enc = TokenizeEncodeBase(
+        self.v_tok_enc = TokenizeEncode(
             patch_size=value_patch_size, embed_dim=embed_dim
         )
         self.up_layer = None
@@ -527,8 +678,10 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         out = tf.reshape(out, [x_shape[0], *grid_dims, x_shape[-1]])
         return self.up_layer(out)
 
-    def call(self, x, hi_res_feature):
-        """Call attention layer
+    def _call(self, x, hi_res_feature, idx, lat=None, lon=None, time=None):
+        """Call attention layer for a single batch member. This is necessary to
+        handle different NaN patterns across batch members in the case of
+        sparse observation data.
 
         Parameters
         ----------
@@ -539,23 +692,88 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
             4D or 5D high resolution feature tensor. This will be used as the
             value input. This can be sparse observation data, possibly with
             some NaN values, or high-resolution gapless data like topography.
+        idx : int
+            Index of the batch member being processed.
+        lat : tf.Tensor, optional
+            Latitude tensor for positional encoding. Default is None.
+        lon : tf.Tensor, optional
+            Longitude tensor for positional encoding. Default is None.
+        time : tf.Tensor, optional
+            Time tensor for positional encoding. Default is None.
 
         Returns
         -------
         x : tf.Tensor
             Output tensor of the attention block.
         """
-        q, q_enc, xp_shape = self._q_tok_enc(x)
-        v, v_enc, _ = self._v_tok_enc(hi_res_feature)
+        x_in = x[idx : idx + 1]
+        hr_in = hi_res_feature[idx : idx + 1]
+        lat = None if lat is None else lat[idx : idx + 1]
+        lon = None if lon is None else lon[idx : idx + 1]
+        time = None if time is None else time[idx : idx + 1]
 
-        if tf.math.reduce_all(tf.math.is_nan(hi_res_feature)):
-            return x
+        if tf.math.reduce_all(tf.math.is_nan(hr_in)):
+            return tf.squeeze(x_in, axis=0)
+
+        kwargs = {'lat': lat, 'lon': lon, 'time': time}
+        q, q_enc, xp_shape = self.q_tok_enc(x_in, **kwargs)
+        v, v_enc, _ = self.v_tok_enc(hr_in, **kwargs)
 
         attn = self.attention(query=q + q_enc, value=v + v_enc, key=v + v_enc)
         out = self.final_proj(attn + q)
         out = self.upsample(out, xp_shape)
-        return TokenizeEncodeBase._crop_to_shape(
-            tf.shape(x), out, patch_size=self.q_patch_size
+
+        tf.debugging.assert_all_finite(
+            out, message='Attention output contains NaN or Inf values.'
+        )
+
+        out = TokenizeEncode.crop(
+            tf.shape(x_in), out, patch_size=self.q_patch_size
+        )
+        return tf.squeeze(out, axis=0)
+
+    def call(self, x, hi_res_feature, exo_data=None):
+        """Call attention layer across batch dimension to handle different NaN
+        patterns in the case of sparse observation data.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D input tensor. Typically this is the latent space tensor
+            being updated by the attention block.
+        hi_res_feature : tf.Tensor
+            4D or 5D high resolution feature tensor. This will be used as the
+            value input. This can be sparse observation data, possibly with
+            some NaN values, or high-resolution gapless data like topography.
+        exo_data: tf.Tensor
+            4D or 5D tensor of features to use for positional encoding. This
+            can include latitude, longitude, and time features, in that order.
+
+        Returns
+        -------
+        x : tf.Tensor
+            Output tensor of the attention block.
+        """
+        lat = None if exo_data is None else exo_data[..., 0:1]
+        lon = None if exo_data is None else exo_data[..., 1:2]
+        time = (
+            None
+            if exo_data is None or exo_data.shape[-1] < 3
+            else exo_data[..., 2:3]
+        )
+
+        out_spec = tf.TensorSpec(shape=x.shape[1:], dtype=x.dtype)
+        return tf.map_fn(
+            lambda i: self._call(
+                x,
+                hi_res_feature,
+                lat=lat,
+                lon=lon,
+                time=time,
+                idx=i,
+            ),
+            tf.range(tf.shape(x)[0]),
+            fn_output_signature=out_spec,
         )
 
 
@@ -668,8 +886,7 @@ class GaussianAveragePooling2D(tf.keras.layers.Layer):
         self.trainable = trainable
         self.sigma = sigma
 
-    # pylint: disable=unused-argument
-    def build(self, input_shape):
+    def build(self, input_shape):  # noqa: ARG002
         """Custom implementation of the tf layer build method.
 
         Initializes the trainable sigma variable
@@ -707,7 +924,7 @@ class GaussianAveragePooling2D(tf.keras.layers.Layer):
             -0.5 * tf.math.square(ax) / tf.math.square(self.sigma)
         )
         kernel = tf.expand_dims(gauss, 0) * tf.expand_dims(gauss, -1)
-        kernel = kernel / tf.math.reduce_sum(kernel)
+        kernel /= tf.math.reduce_sum(kernel)
         kernel = tf.expand_dims(kernel, -1)
         kernel = tf.expand_dims(kernel, -1)
         return kernel

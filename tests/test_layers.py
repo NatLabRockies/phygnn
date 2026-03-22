@@ -25,7 +25,7 @@ from phygnn.layers.custom_layers import (
     Sup3rCrossAttention,
     Sup3rObsModel,
     TileLayer,
-    TokenizeEncodeBase,
+    TokenizeEncode,
     UnitConversion,
 )
 from phygnn.layers.handlers import HiddenLayers, Layers
@@ -617,6 +617,8 @@ def test_cross_attn_3d(patch_size):
     hidden_layers = [
         {
             'class': 'Sup3rCrossAttention',
+            'features': ['a', 'b', 'c'],
+            'exo_features': ['d', 'e', 'f'],
             'query_patch_size': patch_size,
             'value_patch_size': 1,
             'embed_dim': 8,
@@ -653,7 +655,7 @@ def test_pos_encoding_patch_size_gt1_2d():
     patch_size = 2
     x = tf.zeros((1, 4, 4, 1), dtype=tf.float32)
 
-    tok_enc = TokenizeEncodeBase(patch_size=patch_size, embed_dim=embed_dim)
+    tok_enc = TokenizeEncode(patch_size=patch_size, embed_dim=embed_dim)
     tok_enc.build(x.shape)
 
     # --- verify pooled positions (dim_index=1 = row) ---
@@ -678,7 +680,7 @@ def test_pos_encoding_patch_size_gt1_2d():
     assert enc.shape == (1, 4, embed_dim)
 
     # Reconstruct expected encoding from pooled positions
-    expected = TokenizeEncodeBase._generic_encode(pos, d=embed_dim)
+    expected = TokenizeEncode._generic_encode(pos, d=embed_dim)
     expected = tf.reshape(expected, (1, -1, embed_dim))
     np.testing.assert_allclose(enc.numpy(), expected, rtol=1e-6, atol=1e-6)
 
@@ -700,7 +702,7 @@ def test_pos_encoding_patch_size_gt1_3d():
     embed_dim = 8
     patch_size = 2
     x = tf.zeros((1, 4, 4, 4, 1), dtype=tf.float32)
-    tok_enc = TokenizeEncodeBase(patch_size=patch_size, embed_dim=embed_dim)
+    tok_enc = TokenizeEncode(patch_size=patch_size, embed_dim=embed_dim)
     tok_enc.build(x.shape)
 
     # --- verify pooled positions (dim_index=3 = temporal) ---
@@ -726,7 +728,7 @@ def test_pos_encoding_patch_size_gt1_3d():
     # 2*2*2 = 8 tokens
     assert enc.shape == (1, 8, embed_dim)
 
-    expected = TokenizeEncodeBase._generic_encode(pos, d=embed_dim)
+    expected = TokenizeEncode._generic_encode(pos, d=embed_dim)
     expected = tf.reshape(expected, (1, -1, embed_dim))
     np.testing.assert_allclose(enc.numpy(), expected, rtol=1e-6, atol=1e-6)
 
@@ -762,7 +764,7 @@ def test_cross_attn_patch_size_gt1_shapes():
         q, q_enc, q_pad_shape = layer._q_tok_enc(x)
         v, v_enc, v_pad_shape = layer._v_tok_enc(y)
 
-        # Padded dims (returned by TokenizeEncodeBase.call) must be
+        # Padded dims (returned by TokenizeEncode.call) must be
         # divisible by patch_size.
         for i in range(1, len(q_pad_shape) - 1):
             assert q_pad_shape[i] % patch_size == 0
