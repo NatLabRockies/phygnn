@@ -8360,7 +8360,7 @@ packages:
   timestamp: 1733408419340
 - pypi: ./
   name: nrel-phygnn
-  version: 0.0.34.dev22+g818aaf730.d20260310
+  version: 0.0.34.dev30+g11485b8a1.d20260320
   sha256: d472ffb1fd9c7d4572a98496dada61381e7423e1f2f3819067936eb980eb94bd
   requires_dist:
   - matplotlib>=3.1
