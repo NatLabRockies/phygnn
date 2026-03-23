@@ -8,8 +8,6 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import pytest
 import tensorflow as tf
-
-from phygnn import TfModel
 from phygnn.layers.custom_layers import (
     ExpandDims,
     FlattenAxis,
@@ -29,6 +27,8 @@ from phygnn.layers.custom_layers import (
     UnitConversion,
 )
 from phygnn.layers.handlers import HiddenLayers, Layers
+
+from phygnn import TfModel
 
 
 @pytest.mark.parametrize(
@@ -646,8 +646,8 @@ def test_pos_encoding_patch_size_gt1_2d():
     """Test 2D positional encoding pooling with patch_size > 1.
 
     Positions are pooled before encoding, so we verify:
-    1. _get_positions returns correctly average-pooled positions
-    2. _pos_encode matches _generic_encode applied to those
+    1. get_inds returns correctly average-pooled positions
+    2. encoding from get_inds matches _generic_encode applied to those
        pooled positions
     3. Different patch rows get distinct encodings
     """
@@ -659,7 +659,7 @@ def test_pos_encoding_patch_size_gt1_2d():
     tok_enc.build(x.shape)
 
     # --- verify pooled positions (dim_index=1 = row) ---
-    pos = tok_enc._get_positions(x, dim_index=1)
+    pos = tok_enc.get_inds(x, dim_index=1)
     # Raw row positions come from tf.linspace(0, 1, 4):
     # [0, 1/3, 2/3, 1]
     # After AvgPool2D(2, 2) the two row-groups average to
@@ -675,7 +675,10 @@ def test_pos_encoding_patch_size_gt1_2d():
     )
 
     # --- verify full encoding ---
-    enc = tok_enc._pos_encode(x, dim_index=1)
+    enc = TokenizeEncode._generic_encode(
+        tok_enc.get_inds(x, dim_index=1), d=embed_dim
+    )
+    enc = tf.reshape(enc, (1, -1, embed_dim))
     # 2*2 = 4 tokens
     assert enc.shape == (1, 4, embed_dim)
 
@@ -706,7 +709,7 @@ def test_pos_encoding_patch_size_gt1_3d():
     tok_enc.build(x.shape)
 
     # --- verify pooled positions (dim_index=3 = temporal) ---
-    pos = tok_enc._get_positions(x, dim_index=3)
+    pos = tok_enc.get_inds(x, dim_index=3)
     # Raw temporal positions come from tf.linspace(0, 1, 4):
     # [0, 1/3, 2/3, 1]
     # After AvgPool3D(2, 2) → shape (1, 2, 2, 2, 1)
@@ -724,7 +727,10 @@ def test_pos_encoding_patch_size_gt1_3d():
     )
 
     # --- verify full encoding ---
-    enc = tok_enc._pos_encode(x, dim_index=3)
+    enc = TokenizeEncode._generic_encode(
+        tok_enc.get_inds(x, dim_index=3), d=embed_dim
+    )
+    enc = tf.reshape(enc, (1, -1, embed_dim))
     # 2*2*2 = 8 tokens
     assert enc.shape == (1, 8, embed_dim)
 
@@ -740,6 +746,78 @@ def test_pos_encoding_patch_size_gt1_3d():
             enc_spatial[0, 0, 0, 0].numpy(),
             enc_spatial[0, 0, 0, 1].numpy(),
         )
+
+
+def test_tokenize_encode_lat_lon_encoding_values():
+    """Test TokenizeEncode lat/lon encoding matches generic encoding."""
+    embed_dim = 8
+    x = tf.zeros((1, 2, 2, 1), dtype=tf.float32)
+    lat = tf.constant(
+        [[[[0.0], [1.0]], [[2.0], [3.0]]]], dtype=tf.float32
+    )
+    lon = tf.constant(
+        [[[[10.0], [10.0]], [[20.0], [20.0]]]], dtype=tf.float32
+    )
+
+    tok_enc = TokenizeEncode(patch_size=1, embed_dim=embed_dim)
+    tok_enc.build(x.shape)
+
+    enc = tok_enc.encode_lat_lon(x, lat, lon, d=embed_dim)
+    expected = tf.concat(
+        [
+            TokenizeEncode._generic_encode(lat, d=embed_dim // 2),
+            TokenizeEncode._generic_encode(lon, d=embed_dim // 2),
+        ],
+        axis=-1,
+    )
+    expected = tf.reshape(expected, (1, -1, embed_dim))
+    np.testing.assert_allclose(enc.numpy(), expected.numpy(), atol=1e-6)
+
+    _, x_enc, _ = tok_enc(x, lat=lat, lon=lon)
+    np.testing.assert_allclose(x_enc.numpy(), enc.numpy(), atol=1e-6)
+
+
+def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
+    """Test 5D call() adds time encoding when lat/lon/time are provided."""
+    embed_dim = 8
+    x = tf.zeros((1, 2, 2, 2, 1), dtype=tf.float32)
+    lat = tf.ones_like(x)
+    lon = 2.0 * tf.ones_like(x)
+    time = 3.0 * tf.ones_like(x)
+
+    tok_enc = TokenizeEncode(patch_size=1, embed_dim=embed_dim)
+    tok_enc.build(x.shape)
+
+    n_tokens = int(np.prod(x.shape[1:-1]))
+    lat_lon_out = tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
+    time_out = 2.0 * tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
+    depth_out = 3.0 * tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
+
+    calls = {"lat_lon": 0, "time": 0, "depth": 0}
+
+    def _fake_lat_lon(*args, **kwargs):  # noqa: ARG001
+        calls["lat_lon"] += 1
+        return lat_lon_out
+
+    def _fake_time(*args, **kwargs):  # noqa: ARG001
+        calls["time"] += 1
+        return time_out
+
+    def _fake_depth(*args, **kwargs):  # noqa: ARG001
+        calls["depth"] += 1
+        return depth_out
+
+    monkeypatch.setattr(tok_enc, "encode_lat_lon", _fake_lat_lon)
+    monkeypatch.setattr(tok_enc, "encode_time", _fake_time)
+    monkeypatch.setattr(tok_enc, "encode_depth", _fake_depth)
+
+    _, x_enc, _ = tok_enc(x, lat=lat, lon=lon, time=time)
+    expected = lat_lon_out + time_out
+
+    np.testing.assert_allclose(x_enc.numpy(), expected.numpy(), atol=1e-6)
+    assert calls["lat_lon"] == 1
+    assert calls["time"] == 1
+    assert calls["depth"] == 0
 
 
 def test_cross_attn_patch_size_gt1_shapes():
@@ -761,8 +839,8 @@ def test_cross_attn_patch_size_gt1_shapes():
         )
         layer.build(x.shape)
 
-        q, q_enc, q_pad_shape = layer._q_tok_enc(x)
-        v, v_enc, v_pad_shape = layer._v_tok_enc(y)
+        q, q_enc, q_pad_shape = layer.q_tok_enc(x)
+        v, v_enc, v_pad_shape = layer.v_tok_enc(y)
 
         # Padded dims (returned by TokenizeEncode.call) must be
         # divisible by patch_size.
@@ -781,6 +859,34 @@ def test_cross_attn_patch_size_gt1_shapes():
         # Full forward pass must return original shape
         out = layer(x, y)
         assert out.shape == x.shape
+
+
+def test_cross_attn_exo_data_time_forwarding(monkeypatch):
+    """Test Sup3rCrossAttention forwards lat/lon/time from exo_data."""
+    layer = Sup3rCrossAttention(query_patch_size=1, value_patch_size=1)
+
+    x = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
+    y = tf.random.normal((1, 3, 4, 1), dtype=tf.float32)
+
+    calls = []
+
+    def _fake_call(x, hi_res_feature, idx, lat=None, lon=None, time=None):
+        del hi_res_feature
+        calls.append((lat is not None, lon is not None, time is not None))
+        return x[idx]
+
+    monkeypatch.setattr(layer, '_call', _fake_call)
+
+    exo_data = tf.random.normal((1, 3, 4, 3), dtype=tf.float32)
+    out = layer(x, y, exo_data=exo_data)
+    np.testing.assert_allclose(out.numpy(), x.numpy(), atol=1e-6)
+    assert calls == [(True, True, True)]
+
+    calls.clear()
+    exo_data = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
+    out = layer(x, y, exo_data=exo_data)
+    np.testing.assert_allclose(out.numpy(), x.numpy(), atol=1e-6)
+    assert calls == [(True, True, False)]
 
 
 def test_fno_2d():
