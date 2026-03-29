@@ -357,6 +357,7 @@ class Sup3rCrossAlibi(tf.keras.layers.Layer):
         self.key_dim = key_dim
         self.depth = key_dim // self.num_heads
         self.embed_dim = embed_dim
+        self.sigma = sigma
         self.tq = Tokenizer(embed_dim=embed_dim)
         self.tk = Tokenizer(embed_dim=embed_dim)
         self.tv = Tokenizer(embed_dim=embed_dim)
