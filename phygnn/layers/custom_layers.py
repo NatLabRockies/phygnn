@@ -725,7 +725,17 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         out = tf.transpose(attn, perm=[0, 2, 1, 3])
         return tf.reshape(out, (batch_size, -1, self.key_dim))
 
-    def call(self, query, key, value, bias=None, mask=None):
+    def call(
+        self,
+        query,
+        key,
+        value,
+        query_pe=None,
+        key_pe=None,
+        value_pe=None,
+        bias=None,
+        mask=None,
+    ):
         """Compute multi-head attention output.
 
         Parameters
@@ -736,6 +746,15 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             Key tensor with shape (batch_size, seq_k, features)
         value : tf.Tensor
             Value tensor with shape (batch_size, seq_v, features)
+        query_pe : tf.Tensor | None
+            Optional positional encoding tensor for the query with shape
+            (batch_size, seq_q, embed_dim).
+        key_pe : tf.Tensor | None
+            Optional positional encoding tensor for the key with shape
+            (batch_size, seq_k, embed_dim).
+        value_pe : tf.Tensor | None
+            Optional positional encoding tensor for the value with shape
+            (batch_size, seq_v, embed_dim).
         bias : tf.Tensor | None
             Optional bias tensor to add to the attention scores before softmax.
             Must be broadcastable to shape (batch_size, num_heads, seq_q,
@@ -751,6 +770,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         q = self.wq(query)  # (batch, seq_q, d_model)
         k = self.wk(key)
         v = self.wv(value)
+
+        # Add positional encodings to query, key, and value tensors if
+        # provided.
+        q += query_pe if query_pe is not None else 0
+        k += key_pe if key_pe is not None else 0
+        v += value_pe if value_pe is not None else 0
 
         q = self.split_heads(q, batch_size)  # (batch, heads, seq_q, depth)
         k = self.split_heads(k, batch_size)
@@ -886,7 +911,11 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         # get positional encodings for query and value inputs
         qe = self.pe(x_in, lat=lat, lon=lon, time=time)
         ve = self.pe(hr_in, lat=lat, lon=lon, time=time)
-        attn = self.attention(query=q + qe, key=k + ve, value=v + ve)
+
+        # providing the encodings separately means they are outside the
+        # learned projections. This seems to help the model condition on
+        # the positional information.
+        attn = self.attention(query=q, key=k, value=v, query_pe=qe, key_pe=ve)
         out = self.final_proj(attn)
         return tf.reshape(out, tf.shape(x_in))
 
@@ -1089,8 +1118,8 @@ class Sup3rCrossAlibi(Sup3rCrossAttention):
         lat_q = tf.reshape(lat, (tf.shape(lat)[0], -1, 1))
         lon_q = tf.reshape(lon, (tf.shape(lon)[0], -1, 1))
 
-        lat_v = self.pe._mask(hi_res_feature, lat)
-        lon_v = self.pe._mask(hi_res_feature, lon)
+        lat_v = self.tv._mask(hi_res_feature, lat)
+        lon_v = self.tv._mask(hi_res_feature, lon)
         lat_v = tf.reshape(lat_v, (tf.shape(lat)[0], 1, -1))
         lon_v = tf.reshape(lon_v, (tf.shape(lon)[0], 1, -1))
 
