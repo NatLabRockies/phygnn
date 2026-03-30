@@ -606,11 +606,10 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     """Custom multi-head attention layer that allows for separate positional
     encoding bias and masking."""
 
-    def __init__(self, key_dim, num_heads, dropout=0, **kwargs):
+    def __init__(self, key_dim, num_heads, **kwargs):
         super().__init__(**kwargs)
         self.num_heads = num_heads
         self.key_dim = key_dim
-        self.dropout = dropout
 
         assert key_dim % self.num_heads == 0 and key_dim % 2 == 0, (
             'key_dim must be divisible by num_heads and 2 for this '
@@ -624,7 +623,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.wv = tf.keras.layers.Dense(key_dim)
 
         self.dense = tf.keras.layers.Dense(key_dim)
-        self.attn_dropout = tf.keras.layers.Dropout(dropout)
 
     def split_heads(self, x, batch_size):
         """Split the last dimension into (num_heads, depth) and reorder
@@ -765,7 +763,6 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         embed_dim=64,
         num_heads=1,
         key_dim=64,
-        dropout=0,
         **kwargs,
     ):
         """
@@ -784,8 +781,6 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
             Number of attention heads
         key_dim : int
             Size of each attention head
-        dropout : float
-            Dropout rate for the attention layer.
         **kwargs
              Additional keyword arguments to pass to the parent class. This can
              include arguments like trainable and dtype.
@@ -805,7 +800,7 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         self.tv = Tokenizer(embed_dim=embed_dim)
         self.pe = PositionEncoder(embed_dim=embed_dim)
         self.attention = MultiHeadAttention(
-            key_dim=key_dim, num_heads=num_heads, dropout=dropout
+            key_dim=key_dim, num_heads=num_heads
         )
 
     def build(self, input_shape):
@@ -871,7 +866,13 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         # providing the encodings separately means they are outside the
         # learned projections. This seems to help the model condition on
         # the positional information.
-        attn = self.attention(query=q, key=k, value=v, query_pe=qe, key_pe=ve)
+        attn = self.attention(
+            query=q,
+            key=k,
+            value=v,
+            query_pe=qe,
+            key_pe=ve,
+        )
         out = self.final_proj(attn)
         return tf.reshape(out, tf.shape(x_in))
 
