@@ -2,6 +2,7 @@
 Test the custom tensorflow utilities
 """
 
+import inspect
 import os
 from tempfile import TemporaryDirectory
 
@@ -18,6 +19,8 @@ from phygnn.layers.custom_layers import (
     GaussianNoiseAxis,
     LogTransform,
     MaskedSqueezeAndExcitation,
+    PatchLayer,
+    PositionEncoder,
     SigLin,
     SkipConnection,
     SpatioTemporalExpansion,
@@ -25,7 +28,7 @@ from phygnn.layers.custom_layers import (
     Sup3rCrossAttention,
     Sup3rObsModel,
     TileLayer,
-    TokenizeEncode,
+    Tokenizer,
     UnitConversion,
 )
 from phygnn.layers.handlers import HiddenLayers, Layers
@@ -581,14 +584,11 @@ def test_cbam_3d():
             tf.assert_equal(x_in, x)
 
 
-@pytest.mark.parametrize('patch_size', (1, 2, 3))
-def test_cross_attn_2d(patch_size):
+def test_cross_attn_2d():
     """Test the cross attention layer with 2D data (4D tensor input)"""
     hidden_layers = [
         {
             'class': 'Sup3rCrossAttention',
-            'query_patch_size': patch_size,
-            'value_patch_size': 1,
             'embed_dim': 8,
             'key_dim': 8,
         }
@@ -611,16 +611,13 @@ def test_cross_attn_2d(patch_size):
     assert not any(np.isnan(x.numpy().flatten()))
 
 
-@pytest.mark.parametrize('patch_size', (1, 2, 3))
-def test_cross_attn_3d(patch_size):
+def test_cross_attn_3d():
     """Test the cross attention layer with 3D data (5D tensor input)"""
     hidden_layers = [
         {
             'class': 'Sup3rCrossAttention',
             'features': ['a', 'b', 'c'],
             'exo_features': ['d', 'e', 'f'],
-            'query_patch_size': patch_size,
-            'value_patch_size': 1,
             'embed_dim': 8,
             'key_dim': 8,
         }
@@ -640,6 +637,320 @@ def test_cross_attn_3d(patch_size):
         with pytest.raises(tf.errors.InvalidArgumentError):
             tf.assert_equal(x_in, x)
     assert not any(np.isnan(x.numpy().flatten()))
+
+
+def test_pos_encoding_patch_size_gt1_2d():
+    """Test 2D positional encoding pooling with patch_size > 1.
+
+    Positions are pooled before encoding, so we verify:
+    1. get_inds returns correctly average-pooled positions
+    2. encoding from get_inds matches _generic_encode applied to those
+       pooled positions
+    3. Different patch rows get distinct encodings
+    """
+    embed_dim = 8
+    patch_size = 2
+    n_rows, n_cols = 4, 4
+    x = tf.zeros((1, n_rows, n_cols, 1), dtype=tf.float32)
+
+    tok_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
+    tok_enc.build(x.shape)
+
+    n_row_patches = n_rows // patch_size
+    n_col_patches = n_cols // patch_size
+    n_tokens = n_row_patches * n_col_patches
+
+    # --- verify pooled positions (dim_index=1 = row) ---
+    pos = tok_enc.get_inds(x, dim_index=1)
+    assert pos.shape == (1, n_row_patches, n_col_patches, 1)
+
+    # Expected: linspace(0, 1, n_rows) pooled with pool_size=patch_size
+    raw_positions = np.linspace(0.0, 1.0, n_rows)
+    expected_pooled = np.array([
+        raw_positions[i * patch_size:(i + 1) * patch_size].mean()
+        for i in range(n_row_patches)
+    ])
+    np.testing.assert_allclose(
+        pos[0, :, 0, 0].numpy(), expected_pooled, atol=1e-6
+    )
+    # columns carry the same row-position value
+    np.testing.assert_allclose(
+        pos[0, :, 0, 0].numpy(),
+        pos[0, :, 1, 0].numpy(),
+    )
+
+    # --- verify full encoding ---
+    enc = PositionEncoder._generic_encode(
+        tok_enc.get_inds(x, dim_index=1), d=embed_dim
+    )
+    enc = tf.reshape(enc, (1, -1, embed_dim))
+    assert enc.shape == (1, n_tokens, embed_dim)
+
+    # Reconstruct expected encoding from pooled positions
+    expected = PositionEncoder._generic_encode(pos, d=embed_dim)
+    expected = tf.reshape(expected, (1, -1, embed_dim))
+    np.testing.assert_allclose(enc.numpy(), expected, rtol=1e-6, atol=1e-6)
+
+    # Different row-patches must produce different encodings
+    enc_spatial = tf.reshape(enc, (1, n_row_patches, n_col_patches, embed_dim))
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            enc_spatial[0, 0, 0].numpy(),
+            enc_spatial[0, 1, 0].numpy(),
+        )
+
+
+def test_pos_encoding_patch_size_gt1_3d():
+    """Test 3D positional encoding pooling with patch_size > 1.
+
+    Same logic as the 2D case but for a 5D tensor and
+    dim_index=3 (temporal axis).
+    """
+    embed_dim = 8
+    patch_size = 2
+    n_rows, n_cols, n_times = 4, 4, 4
+    x = tf.zeros((1, n_rows, n_cols, n_times, 1), dtype=tf.float32)
+    tok_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
+    tok_enc.build(x.shape)
+
+    n_row_patches = n_rows // patch_size
+    n_col_patches = n_cols // patch_size
+    n_time_patches = n_times // patch_size
+    n_tokens = n_row_patches * n_col_patches * n_time_patches
+
+    # --- verify pooled positions (dim_index=3 = temporal) ---
+    pos = tok_enc.get_inds(x, dim_index=3)
+    assert pos.shape == (1, n_row_patches, n_col_patches, n_time_patches, 1)
+
+    # Expected: linspace(0, 1, n_times) pooled with pool_size=patch_size
+    raw_positions = np.linspace(0.0, 1.0, n_times)
+    expected_pooled = np.array([
+        raw_positions[i * patch_size:(i + 1) * patch_size].mean()
+        for i in range(n_time_patches)
+    ])
+    np.testing.assert_allclose(
+        pos[0, 0, 0, :, 0].numpy(),
+        expected_pooled,
+        atol=1e-6,
+    )
+    np.testing.assert_allclose(
+        pos[0, 0, 0, :, 0].numpy(),
+        pos[0, 1, 1, :, 0].numpy(),
+    )
+
+    # --- verify full encoding ---
+    enc = PositionEncoder._generic_encode(
+        tok_enc.get_inds(x, dim_index=3), d=embed_dim
+    )
+    enc = tf.reshape(enc, (1, -1, embed_dim))
+    assert enc.shape == (1, n_tokens, embed_dim)
+
+    expected = PositionEncoder._generic_encode(pos, d=embed_dim)
+    expected = tf.reshape(expected, (1, -1, embed_dim))
+    np.testing.assert_allclose(enc.numpy(), expected, rtol=1e-6, atol=1e-6)
+
+    # Different temporal patches must produce different encodings
+    enc_spatial = tf.reshape(
+        enc, (1, n_row_patches, n_col_patches, n_time_patches, embed_dim)
+    )
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            enc_spatial[0, 0, 0, 0].numpy(),
+            enc_spatial[0, 0, 0, 1].numpy(),
+        )
+
+
+def test_tokenize_encode_lat_lon_encoding_values():
+    """Test PositionEncoder lat/lon encoding matches freq encoding."""
+    embed_dim = 8
+    x = tf.zeros((1, 2, 2, 1), dtype=tf.float32)
+    lat = tf.constant([[[[0.0], [1.0]], [[2.0], [3.0]]]], dtype=tf.float32)
+    lon = tf.constant([[[[10.0], [10.0]], [[20.0], [20.0]]]], dtype=tf.float32)
+
+    pos_enc = PositionEncoder(patch_size=1, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
+
+    # Derive freq range from PositionEncoder.call defaults to avoid drift
+    _call_sig = inspect.signature(PositionEncoder.call)
+    minf = _call_sig.parameters['minf'].default
+    maxf = _call_sig.parameters['maxf'].default
+
+    enc = pos_enc.encode_lat_lon(x, lat, lon, minf=minf, maxf=maxf)
+    expected = tf.concat(
+        [
+            PositionEncoder._freq_encode(
+                np.pi * lat / 180, d=embed_dim // 2, minf=minf, maxf=maxf
+            ),
+            PositionEncoder._freq_encode(
+                np.pi * lon / 180, d=embed_dim // 2, minf=minf, maxf=maxf
+            ),
+        ],
+        axis=-1,
+    )
+    expected = tf.reshape(expected, (1, -1, embed_dim))
+    np.testing.assert_allclose(enc.numpy(), expected.numpy(), atol=1e-6)
+
+    x_enc = pos_enc(x, lat=lat, lon=lon)
+    np.testing.assert_allclose(x_enc.numpy(), enc.numpy(), atol=1e-6)
+
+
+def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
+    """Test 5D call() adds time encoding when lat/lon/time are provided."""
+    embed_dim = 8
+    x = tf.zeros((1, 2, 2, 2, 1), dtype=tf.float32)
+    lat = tf.ones_like(x)
+    lon = 2.0 * tf.ones_like(x)
+    time = 3.0 * tf.ones_like(x)
+
+    pos_enc = PositionEncoder(patch_size=1, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
+
+    n_tokens = int(np.prod(x.shape[1:-1]))
+    lat_lon_out = tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
+    time_out = 2.0 * tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
+    depth_out = 3.0 * tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
+
+    calls = {'lat_lon': 0, 'time': 0, 'depth': 0}
+
+    def _fake_lat_lon(*args, **kwargs):  # noqa: ARG001
+        calls['lat_lon'] += 1
+        return lat_lon_out
+
+    def _fake_time(*args, **kwargs):  # noqa: ARG001
+        calls['time'] += 1
+        return time_out
+
+    def _fake_depth(*args, **kwargs):  # noqa: ARG001
+        calls['depth'] += 1
+        return depth_out
+
+    monkeypatch.setattr(pos_enc, 'encode_lat_lon', _fake_lat_lon)
+    monkeypatch.setattr(pos_enc, 'encode_time', _fake_time)
+    monkeypatch.setattr(pos_enc, 'encode_depth', _fake_depth)
+
+    x_enc = pos_enc(x, lat=lat, lon=lon, time=time)
+    expected = lat_lon_out + time_out
+
+    np.testing.assert_allclose(x_enc.numpy(), expected.numpy(), atol=1e-6)
+    assert calls['lat_lon'] == 1
+    assert calls['time'] == 1
+    assert calls['depth'] == 0
+
+
+def test_cross_attn_patch_size_gt1_shapes():
+    """Test Tokenizer and PositionEncoder with patch_size > 1, including
+    non-divisible spatial dimensions (5x7). Inputs are padded via
+    PatchLayer.pad() before tokenize/encode.
+    """
+    patch_size = 2
+    embed_dim = 8
+
+    for h, w in [(6, 8), (5, 7)]:
+        x = tf.random.normal((1, h, w, 3), dtype=tf.float32)
+        y = tf.random.normal((1, h, w, 1), dtype=tf.float32)
+
+        x_padded = PatchLayer.pad(x, patch_size=patch_size)
+        y_padded = PatchLayer.pad(y, patch_size=patch_size)
+
+        # Padded dims must be divisible by patch_size.
+        for i in range(1, len(x_padded.shape) - 1):
+            assert x_padded.shape[i] % patch_size == 0
+            assert y_padded.shape[i] % patch_size == 0
+
+        ph = int(np.ceil(h / patch_size)) * patch_size
+        pw = int(np.ceil(w / patch_size)) * patch_size
+        n_tokens = (ph // patch_size) * (pw // patch_size)
+
+        tokenizer_q = Tokenizer(patch_size=patch_size, embed_dim=embed_dim)
+        tokenizer_v = Tokenizer(patch_size=patch_size, embed_dim=embed_dim)
+        pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
+
+        q = tokenizer_q(x_padded)
+        v = tokenizer_v(y_padded)
+        q_enc = pos_enc(x_padded)
+        v_enc = pos_enc(y_padded)
+
+        assert q.shape == (1, n_tokens, embed_dim)
+        assert v.shape == (1, n_tokens, embed_dim)
+        assert q_enc.shape == (1, n_tokens, embed_dim)
+        assert v_enc.shape == (1, n_tokens, embed_dim)
+
+        # Full Sup3rCrossAttention forward pass must return original shape
+        layer = Sup3rCrossAttention(embed_dim=embed_dim, key_dim=embed_dim)
+        out = layer(x, y)
+        assert out.shape == x.shape
+
+
+def test_cross_attn_exo_data_time_forwarding(monkeypatch):
+    """Test Sup3rCrossAttention forwards lat/lon/time from exo_data."""
+    layer = Sup3rCrossAttention()
+
+    x = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
+    y = tf.random.normal((1, 3, 4, 1), dtype=tf.float32)
+
+    calls = []
+
+    def _fake_call(x, hi_res_feature, idx, lat=None, lon=None, time=None):
+        del hi_res_feature
+        calls.append((lat is not None, lon is not None, time is not None))
+        return x[idx]
+
+    monkeypatch.setattr(layer, '_call', _fake_call)
+
+    exo_data = tf.random.normal((1, 3, 4, 3), dtype=tf.float32)
+    out = layer(x, y, exo_data=exo_data)
+    np.testing.assert_allclose(out.numpy(), x.numpy(), atol=1e-6)
+    assert calls == [(True, True, True)]
+
+    calls.clear()
+    exo_data = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
+    out = layer(x, y, exo_data=exo_data)
+    np.testing.assert_allclose(out.numpy(), x.numpy(), atol=1e-6)
+    assert calls == [(True, True, False)]
+
+
+def test_fno_2d():
+    """Test the FNO layer with 2D data (4D tensor input)"""
+    hidden_layers = [
+        {
+            'class': 'FNO',
+            'filters': 8,
+            'sparsity_threshold': 0.01,
+            'activation': 'relu',
+        }
+    ]
+    layers = HiddenLayers(hidden_layers)
+    assert len(layers.layers) == 1
+
+    x = np.random.normal(0, 1, size=(1, 4, 4, 3))
+
+    for layer in layers:
+        x_in = x
+        x = layer(x)
+        with pytest.raises(tf.errors.InvalidArgumentError):
+            tf.assert_equal(x_in, x)
+
+
+def test_fno_3d():
+    """Test the FNO layer with 3D data (5D tensor input)"""
+    hidden_layers = [
+        {
+            'class': 'FNO',
+            'filters': 8,
+            'sparsity_threshold': 0.01,
+            'activation': 'relu',
+        }
+    ]
+    layers = HiddenLayers(hidden_layers)
+    assert len(layers.layers) == 1
+
+    x = np.random.normal(0, 1, size=(1, 4, 4, 6, 3))
+
+    for layer in layers:
+        x_in = x
+        x = layer(x)
+        with pytest.raises(tf.errors.InvalidArgumentError):
+            tf.assert_equal(x_in, x)
 
 
 def test_functional_layer():
