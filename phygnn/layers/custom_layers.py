@@ -380,7 +380,7 @@ class PositionEncoder(PatchLayer):
         return tf.stack([tf.sin(theta), tf.cos(theta)], axis=-1)
 
     @classmethod
-    def _freq_encode(cls, k, d=64, minf=2048, maxf=8192):
+    def _freq_encode(cls, k, d=64, minf=1, maxf=8192):
         """Helper function to create a frequency specified positional encoding
         for attention blocks.
 
@@ -394,7 +394,7 @@ class PositionEncoder(PatchLayer):
             embed_dim of the attention block.
         minf : float
             Minimum frequency for the positional encoding. This is typically
-            set to a value like 2048 to ensure that the positional encoding
+            set to a value like 1 to ensure that the positional encoding
             captures low frequency information.
         maxf : float
             Maximum frequency for the positional encoding. This is typically
@@ -906,17 +906,10 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         # get positional encodings for query and value inputs
         qe = self.pe(x_in, lat=lat, lon=lon, time=time)
         ve = self.pe(hr_in, lat=lat, lon=lon, time=time)
-
         # providing the encodings separately means they are outside the
         # learned projections. This seems to help the model condition on
         # the positional information.
-        attn = self.attention(
-            query=q,
-            key=k,
-            value=v,
-            query_pe=qe,
-            key_pe=ve,
-        )
+        attn = self.attention(query=q, key=k, value=v, query_pe=qe, key_pe=ve)
         out = self.final_proj(attn)
         return tf.reshape(out, tf.shape(x_in))
 
