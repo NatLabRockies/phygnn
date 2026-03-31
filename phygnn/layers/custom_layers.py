@@ -906,9 +906,11 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         # get positional encodings for query and value inputs
         qe = self.pe(x_in, lat=lat, lon=lon, time=time)
         ve = self.pe(hr_in, lat=lat, lon=lon, time=time)
-        # providing the encodings separately means they are outside the
+        # Providing the encodings separately here puts them outside the
         # learned projections. This seems to help the model condition on
-        # the positional information.
+        # the positional information. This follows the approach from
+        # Shaw et al. (2018) Self-Attention with Relative Position
+        # Representations}, https://arxiv.org/abs/1803.02155
         attn = self.attention(query=q, key=k, value=v, query_pe=qe, key_pe=ve)
         out = self.final_proj(attn)
         return tf.reshape(out, tf.shape(x_in))
