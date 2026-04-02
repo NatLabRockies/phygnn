@@ -2,7 +2,6 @@
 Test the custom tensorflow utilities
 """
 
-import inspect
 import os
 from tempfile import TemporaryDirectory
 
@@ -602,9 +601,17 @@ def test_cross_attn_2d():
     mask = np.repeat(mask, 4, axis=0)  # shape (4, 4, 4)
     y[mask] = np.nan
 
+    lat = np.linspace(30, 40, 4).reshape(1, 4, 1, 1) * np.ones((4, 1, 4, 1))
+    lon = np.linspace(-100, -90, 4).reshape(1, 1, 4, 1) * np.ones((4, 4, 1, 1))
+    exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
+
     for layer in layers:
         x_in = x
-        x = layer(x.astype(np.float32), y.astype(np.float32))
+        x = layer(
+            x.astype(np.float32),
+            y.astype(np.float32),
+            exo_data=exo_data,
+        )
         assert x.shape == x_in.shape
         with pytest.raises(tf.errors.InvalidArgumentError):
             tf.assert_equal(x_in, x)
@@ -630,9 +637,17 @@ def test_cross_attn_3d():
     mask = np.random.choice([False, True], (1, 10, 10, 6), p=[0.1, 0.9])
     y[mask] = np.nan
 
+    lat = np.linspace(30, 40, 10).reshape(1, 10, 1, 1, 1) * np.ones(
+        (1, 1, 10, 6, 1)
+    )
+    lon = np.linspace(-100, -90, 10).reshape(1, 1, 10, 1, 1) * np.ones(
+        (1, 10, 1, 6, 1)
+    )
+    exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
+
     for layer in layers:
         x_in = x
-        x = layer(x, y)
+        x = layer(x, y, exo_data=exo_data)
         assert x.shape == x_in.shape
         with pytest.raises(tf.errors.InvalidArgumentError):
             tf.assert_equal(x_in, x)
@@ -640,59 +655,36 @@ def test_cross_attn_3d():
 
 
 def test_pos_encoding_patch_size_gt1_2d():
-    """Test 2D positional encoding pooling with patch_size > 1.
+    """Test 2D positional encoding with patch_size > 1.
 
-    Positions are pooled before encoding, so we verify:
-    1. get_inds returns correctly average-pooled positions
-    2. encoding from get_inds matches _generic_encode applied to those
-       pooled positions
-    3. Different patch rows get distinct encodings
+    Verify:
+    1. Encoding output has the correct token shape
+    2. Different spatial positions get distinct encodings
     """
     embed_dim = 8
     patch_size = 2
     n_rows, n_cols = 4, 4
     x = tf.zeros((1, n_rows, n_cols, 1), dtype=tf.float32)
 
-    tok_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
-    tok_enc.build(x.shape)
+    pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
 
-    n_row_patches = n_rows // patch_size
-    n_col_patches = n_cols // patch_size
-    n_tokens = n_row_patches * n_col_patches
+    n_tokens = n_rows * n_cols
 
-    # --- verify pooled positions (dim_index=1 = row) ---
-    pos = tok_enc.get_inds(x, dim_index=1)
-    assert pos.shape == (1, n_row_patches, n_col_patches, 1)
-
-    # Expected: linspace(0, 1, n_rows) pooled with pool_size=patch_size
-    raw_positions = np.linspace(0.0, 1.0, n_rows)
-    expected_pooled = np.array([
-        raw_positions[i * patch_size:(i + 1) * patch_size].mean()
-        for i in range(n_row_patches)
-    ])
-    np.testing.assert_allclose(
-        pos[0, :, 0, 0].numpy(), expected_pooled, atol=1e-6
+    lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1) * np.ones(
+        (1, 1, n_cols, 1)
     )
-    # columns carry the same row-position value
-    np.testing.assert_allclose(
-        pos[0, :, 0, 0].numpy(),
-        pos[0, :, 1, 0].numpy(),
+    lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1) * np.ones(
+        (1, n_rows, 1, 1)
     )
+    lat = tf.constant(lat, dtype=tf.float32)
+    lon = tf.constant(lon, dtype=tf.float32)
 
-    # --- verify full encoding ---
-    enc = PositionEncoder._generic_encode(
-        tok_enc.get_inds(x, dim_index=1), d=embed_dim
-    )
-    enc = tf.reshape(enc, (1, -1, embed_dim))
+    enc = pos_enc(x, lat=lat, lon=lon)
     assert enc.shape == (1, n_tokens, embed_dim)
 
-    # Reconstruct expected encoding from pooled positions
-    expected = PositionEncoder._generic_encode(pos, d=embed_dim)
-    expected = tf.reshape(expected, (1, -1, embed_dim))
-    np.testing.assert_allclose(enc.numpy(), expected, rtol=1e-6, atol=1e-6)
-
-    # Different row-patches must produce different encodings
-    enc_spatial = tf.reshape(enc, (1, n_row_patches, n_col_patches, embed_dim))
+    # Different rows must produce different encodings
+    enc_spatial = tf.reshape(enc, (1, n_rows, n_cols, embed_dim))
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(
             enc_spatial[0, 0, 0].numpy(),
@@ -701,62 +693,40 @@ def test_pos_encoding_patch_size_gt1_2d():
 
 
 def test_pos_encoding_patch_size_gt1_3d():
-    """Test 3D positional encoding pooling with patch_size > 1.
+    """Test 3D positional encoding with patch_size > 1.
 
-    Same logic as the 2D case but for a 5D tensor and
-    dim_index=3 (temporal axis).
+    Same logic as the 2D case but for a 5D tensor.
     """
     embed_dim = 8
     patch_size = 2
     n_rows, n_cols, n_times = 4, 4, 4
     x = tf.zeros((1, n_rows, n_cols, n_times, 1), dtype=tf.float32)
-    tok_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
-    tok_enc.build(x.shape)
 
-    n_row_patches = n_rows // patch_size
-    n_col_patches = n_cols // patch_size
-    n_time_patches = n_times // patch_size
-    n_tokens = n_row_patches * n_col_patches * n_time_patches
+    pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
 
-    # --- verify pooled positions (dim_index=3 = temporal) ---
-    pos = tok_enc.get_inds(x, dim_index=3)
-    assert pos.shape == (1, n_row_patches, n_col_patches, n_time_patches, 1)
+    n_tokens = n_rows * n_cols * n_times
 
-    # Expected: linspace(0, 1, n_times) pooled with pool_size=patch_size
-    raw_positions = np.linspace(0.0, 1.0, n_times)
-    expected_pooled = np.array([
-        raw_positions[i * patch_size:(i + 1) * patch_size].mean()
-        for i in range(n_time_patches)
-    ])
-    np.testing.assert_allclose(
-        pos[0, 0, 0, :, 0].numpy(),
-        expected_pooled,
-        atol=1e-6,
+    lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1, 1) * np.ones(
+        (1, 1, n_cols, n_times, 1)
     )
-    np.testing.assert_allclose(
-        pos[0, 0, 0, :, 0].numpy(),
-        pos[0, 1, 1, :, 0].numpy(),
+    lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1, 1) * np.ones(
+        (1, n_rows, 1, n_times, 1)
     )
+    lat = tf.constant(lat, dtype=tf.float32)
+    lon = tf.constant(lon, dtype=tf.float32)
 
-    # --- verify full encoding ---
-    enc = PositionEncoder._generic_encode(
-        tok_enc.get_inds(x, dim_index=3), d=embed_dim
-    )
-    enc = tf.reshape(enc, (1, -1, embed_dim))
+    enc = pos_enc(x, lat=lat, lon=lon)
     assert enc.shape == (1, n_tokens, embed_dim)
 
-    expected = PositionEncoder._generic_encode(pos, d=embed_dim)
-    expected = tf.reshape(expected, (1, -1, embed_dim))
-    np.testing.assert_allclose(enc.numpy(), expected, rtol=1e-6, atol=1e-6)
-
-    # Different temporal patches must produce different encodings
+    # Different spatial positions must produce different encodings
     enc_spatial = tf.reshape(
-        enc, (1, n_row_patches, n_col_patches, n_time_patches, embed_dim)
+        enc, (1, n_rows, n_cols, n_times, embed_dim)
     )
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(
             enc_spatial[0, 0, 0, 0].numpy(),
-            enc_spatial[0, 0, 0, 1].numpy(),
+            enc_spatial[0, 1, 0, 0].numpy(),
         )
 
 
@@ -770,19 +740,25 @@ def test_tokenize_encode_lat_lon_encoding_values():
     pos_enc = PositionEncoder(patch_size=1, embed_dim=embed_dim)
     pos_enc.build(x.shape)
 
-    # Derive freq range from PositionEncoder.call defaults to avoid drift
-    _call_sig = inspect.signature(PositionEncoder.call)
-    minf = _call_sig.parameters['minf'].default
-    maxf = _call_sig.parameters['maxf'].default
+    min_period = pos_enc.min_period_spatial
+    max_period = pos_enc.max_period_spatial
 
-    enc = pos_enc.encode_lat_lon(x, lat, lon, minf=minf, maxf=maxf)
+    enc = pos_enc.encode_lat_lon(
+        x, lat, lon, min_period=min_period, max_period=max_period
+    )
     expected = tf.concat(
         [
             PositionEncoder._freq_encode(
-                np.pi * lat / 180, d=embed_dim // 2, minf=minf, maxf=maxf
+                lat,
+                d=embed_dim // 2,
+                min_period=min_period,
+                max_period=max_period,
             ),
             PositionEncoder._freq_encode(
-                np.pi * lon / 180, d=embed_dim // 2, minf=minf, maxf=maxf
+                lon,
+                d=embed_dim // 2,
+                min_period=min_period,
+                max_period=max_period,
             ),
         ],
         axis=-1,
@@ -808,9 +784,8 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     n_tokens = int(np.prod(x.shape[1:-1]))
     lat_lon_out = tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
     time_out = 2.0 * tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
-    depth_out = 3.0 * tf.ones((1, n_tokens, embed_dim), dtype=tf.float32)
 
-    calls = {'lat_lon': 0, 'time': 0, 'depth': 0}
+    calls = {'lat_lon': 0, 'time': 0}
 
     def _fake_lat_lon(*args, **kwargs):  # noqa: ARG001
         calls['lat_lon'] += 1
@@ -820,13 +795,8 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
         calls['time'] += 1
         return time_out
 
-    def _fake_depth(*args, **kwargs):  # noqa: ARG001
-        calls['depth'] += 1
-        return depth_out
-
     monkeypatch.setattr(pos_enc, 'encode_lat_lon', _fake_lat_lon)
     monkeypatch.setattr(pos_enc, 'encode_time', _fake_time)
-    monkeypatch.setattr(pos_enc, 'encode_depth', _fake_depth)
 
     x_enc = pos_enc(x, lat=lat, lon=lon, time=time)
     expected = lat_lon_out + time_out
@@ -834,7 +804,6 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     np.testing.assert_allclose(x_enc.numpy(), expected.numpy(), atol=1e-6)
     assert calls['lat_lon'] == 1
     assert calls['time'] == 1
-    assert calls['depth'] == 0
 
 
 def test_cross_attn_patch_size_gt1_shapes():
@@ -865,19 +834,42 @@ def test_cross_attn_patch_size_gt1_shapes():
         tokenizer_v = Tokenizer(patch_size=patch_size, embed_dim=embed_dim)
         pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
 
+        lat_pad = tf.constant(
+            np.linspace(30, 40, ph).reshape(1, ph, 1, 1)
+            * np.ones((1, 1, pw, 1)),
+            dtype=tf.float32,
+        )
+        lon_pad = tf.constant(
+            np.linspace(-100, -90, pw).reshape(1, 1, pw, 1)
+            * np.ones((1, ph, 1, 1)),
+            dtype=tf.float32,
+        )
+
         q = tokenizer_q(x_padded)
         v = tokenizer_v(y_padded)
-        q_enc = pos_enc(x_padded)
-        v_enc = pos_enc(y_padded)
+        q_enc = pos_enc(x_padded, lat=lat_pad, lon=lon_pad)
+        v_enc = pos_enc(y_padded, lat=lat_pad, lon=lon_pad)
 
+        n_spatial_tokens = ph * pw
         assert q.shape == (1, n_tokens, embed_dim)
         assert v.shape == (1, n_tokens, embed_dim)
-        assert q_enc.shape == (1, n_tokens, embed_dim)
-        assert v_enc.shape == (1, n_tokens, embed_dim)
+        assert q_enc.shape == (1, n_spatial_tokens, embed_dim)
+        assert v_enc.shape == (1, n_spatial_tokens, embed_dim)
 
         # Full Sup3rCrossAttention forward pass must return original shape
+        lat = tf.constant(
+            np.linspace(30, 40, h).reshape(1, h, 1, 1)
+            * np.ones((1, 1, w, 1)),
+            dtype=tf.float32,
+        )
+        lon = tf.constant(
+            np.linspace(-100, -90, w).reshape(1, 1, w, 1)
+            * np.ones((1, h, 1, 1)),
+            dtype=tf.float32,
+        )
+        exo_data = tf.concat([lat, lon], axis=-1)
         layer = Sup3rCrossAttention(embed_dim=embed_dim, key_dim=embed_dim)
-        out = layer(x, y)
+        out = layer(x, y, exo_data=exo_data)
         assert out.shape == x.shape
 
 
