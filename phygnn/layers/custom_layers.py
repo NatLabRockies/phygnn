@@ -383,32 +383,6 @@ class PositionEncoder(PatchLayer):
         self.rank = None
 
     @classmethod
-    def _generic_encode(cls, k, d=64, omega=1e4):
-        """Helper function to create a generic positional encoding for
-        attention blocks.
-
-        Parameters
-        ----------
-        k : tf.Tensor
-            Tensor of positions to encode. This can be the row, column, or
-            depth index. Must have 4D or 5D shape (..., 1).
-        d : int
-            Dimension of the positional encoding. This should match the
-            embed_dim of the attention block.
-        omega : float
-            Base frequency for the positional encoding. This is typically set
-            to a large number like 1e4 to ensure that the positional encoding
-            has a wide range of frequencies
-
-        """
-        assert d % 2 == 0, (
-            'Embedding dimension must be even for sin/cos encoding.'
-        )
-        i = tf.range(d // 2, dtype=k.dtype)
-        theta = k / tf.pow(omega, (2 * i / d))
-        return tf.stack([tf.sin(theta), tf.cos(theta)], axis=-1)
-
-    @classmethod
     def _freq_encode(cls, k, min_period, max_period, d=64):
         """Helper function to create a frequency specified positional encoding
         for attention blocks.
@@ -436,10 +410,35 @@ class PositionEncoder(PatchLayer):
         theta = tf.cast(freqs, k.dtype) * k
         return tf.stack([tf.sin(theta), tf.cos(theta)], axis=-1)
 
+    @staticmethod
+    def _compute_doy_soy(time):
+        """Compute day of year and second of year from unix timestamps.
+
+        Parameters
+        ----------
+        time : np.ndarray
+            Array of unix timestamps (seconds since epoch).
+
+        Returns
+        -------
+        doy : np.ndarray
+            Day of year as float32.
+        soy : np.ndarray
+            Second of year as float32.
+        """
+        dt = time.astype(np.int64).view('datetime64[s]')
+        year_start = dt.astype('datetime64[Y]')
+        doy = (
+            dt.astype('datetime64[D]') - year_start.astype('datetime64[D]')
+        )
+        soy = dt - year_start.astype('datetime64[s]')
+        return (
+            (doy / np.timedelta64(1, 'D')).astype(np.float32),
+            (soy / np.timedelta64(1, 's')).astype(np.float32),
+        )
+
     def encode_lat_lon(self, x, lat, lon, min_period, max_period):
-        """Helper function to create a positional encoding for latitude and
-        longitude. This is necessary to give the attention block information
-        about the spatial structure of the data.
+        """Sinusoidal positional encoding for latitude and longitude.
 
         Parameters
         ----------
@@ -485,9 +484,7 @@ class PositionEncoder(PatchLayer):
         return tf.reshape(out, (tf.shape(x)[0], -1, self.embed_dim))
 
     def encode_time(self, x, time, min_period, max_period):
-        """Helper function to create a positional encoding for time. This is
-        necessary to give the attention block information about the temporal
-        structure of the data.
+        """Sinusoidal positional encoding for time.
 
         Parameters
         ----------
@@ -511,14 +508,11 @@ class PositionEncoder(PatchLayer):
         assert self.embed_dim % 4 == 0, (
             'Embedding dimension must be divisible by 4 for time encoding.'
         )
-        doy = tf.cast(
-            tf.experimental.numpy.datetime_as_string(time, unit='D'),
-            tf.float32,
+        doy, soy = tf.numpy_function(
+            self._compute_doy_soy, [time], [tf.float32, tf.float32]
         )
-        soy = tf.cast(
-            tf.experimental.numpy.datetime_as_string(time, unit='s'),
-            tf.float32,
-        )
+        doy = tf.reshape(doy, tf.shape(time))
+        soy = tf.reshape(soy, tf.shape(time))
         min_period_doy = min_period / 86400  # convert seconds to days
         max_period_doy = max_period / 86400  # convert seconds to days
         doy_enc = self._freq_encode(
@@ -1082,9 +1076,10 @@ class Sup3rCrossAlibi(Sup3rCrossAttention):
 
         dlat = lat_q_rad - lat_v_rad
         dlon = lon_q_rad - lon_v_rad
-        a = tf.sin(dlat / 2) ** 2 + tf.cos(lat_q_rad) * tf.cos(
-            lat_v_rad
-        ) * tf.sin(dlon / 2) ** 2
+        a = (
+            tf.sin(dlat / 2) ** 2
+            + tf.cos(lat_q_rad) * tf.cos(lat_v_rad) * tf.sin(dlon / 2) ** 2
+        )
         distance = 2 * tf.asin(tf.sqrt(a))
         bias = -(distance**2) / (2 * self.sigma**2)
 
