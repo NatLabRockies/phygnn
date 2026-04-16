@@ -6,13 +6,13 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "NREL-phygnn"
+name = "NLR-phygnn"
 dynamic = ["version"]
 description = "Physics-Guided Neural Networks (phygnn)"
-keywords = ["phygnn", "NREL"]
+keywords = ["phygnn", "NLR"]
 readme = "README.rst"
 authors = [
-  {name = "Grant Buster", email = "grant.buster@nrel.gov"},
+  {name = "Grant Buster", email = "grant.buster@nlr.gov"},
 ]
 license = {text = "BSD-3-Clause"}
 requires-python = ">= 3.8"
@@ -28,7 +28,7 @@ classifiers=[
 ]
 dependencies = [
   "matplotlib>=3.1",
-  "NREL-rex",
+  "NLR-rex",
   "numpy>=1.16",
   "pandas>=0.25",
   "pytest>=5.2",
@@ -67,9 +67,9 @@ test = [
 ]
 
 [project.urls]
-homepage = "https://github.com/NREL/phygnn"
-documentation = "https://nrel.github.io/phygnn/"
-repository = "https://github.com/NREL/phygnn"
+homepage = "https://github.com/NatLabRockies/phygnn"
+documentation = "https://natlabrockies.github.io/phygnn/"
+repository = "https://github.com/NatLabRockies/phygnn"
 
 [tool.ruff]
 line-length = 79
@@ -259,6 +259,8 @@ packages = ["phygnn"]
 
 [tool.setuptools_scm]
 version_file = "phygnn/_version.py"
+version_scheme = "guess-next-dev"
+fallback_version = "0.0.34"
 
 [tool.pixi.project]
 channels = ["conda-forge", "anaconda", "main"]
@@ -277,7 +279,7 @@ scipy = ">=1.0.0"
 xarray = ">=2023.0"
 
 [tool.pixi.pypi-dependencies]
-NREL-phygnn = { path = ".", editable = true }
+NLR-phygnn = { path = ".", editable = true }
 
 [tool.pixi.environments]
 default = { solve-group = "default" }

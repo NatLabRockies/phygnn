@@ -2,35 +2,29 @@
 phygnn
 ######
 
-.. image:: https://github.com/NREL/phygnn/workflows/Documentation/badge.svg
-    :target: https://nrel.github.io/phygnn/
+.. image:: https://github.com/NatLabRockies/phygnn/workflows/Documentation/badge.svg
+    :target: https://natlabrockies.github.io/phygnn/
 
-.. image:: https://github.com/NREL/phygnn/workflows/pytests_tf_latest/badge.svg
-    :target: https://github.com/NREL/phygnn/actions?query=workflow%3A%22pytests_tf_latest%22
+.. image:: https://github.com/NatLabRockies/phygnn/workflows/pytests_tf_latest/badge.svg
+    :target: https://github.com/NatLabRockies/phygnn/actions?query=workflow%3A%22pytests_tf_latest%22
 
-.. image:: https://github.com/NREL/phygnn/workflows/Lint%20Code%20Base/badge.svg
-    :target: https://github.com/NREL/phygnn/actions?query=workflow%3A%22Lint+Code+Base%22
+.. image:: https://github.com/NatLabRockies/phygnn/workflows/Lint%20Code%20Base/badge.svg
+    :target: https://github.com/NatLabRockies/phygnn/actions?query=workflow%3A%22Lint+Code+Base%22
 
-.. image:: https://img.shields.io/pypi/pyversions/nrel-phygnn.svg
-    :target: https://pypi.org/project/nrel-phygnn/
+.. image:: https://img.shields.io/pypi/pyversions/nlr-phygnn.svg
+    :target: https://pypi.org/project/nlr-phygnn/
 
-.. image:: https://badge.fury.io/py/NREL-phygnn.svg
-    :target: https://badge.fury.io/py/NREL-phygnn
+.. image:: https://badge.fury.io/py/NLR-phygnn.svg
+    :target: https://badge.fury.io/py/NLR-phygnn
 
-.. image:: https://anaconda.org/nrel/nrel-phygnn/badges/version.svg
-    :target: https://anaconda.org/nrel/nrel-phygnn
-
-.. image:: https://anaconda.org/nrel/nrel-phygnn/badges/license.svg
-    :target: https://anaconda.org/nrel/nrel-phygnn
-
-.. image:: https://codecov.io/gh/nrel/phygnn/branch/master/graph/badge.svg?token=ZJFQWAAM1N
-    :target: https://codecov.io/gh/nrel/phygnn
+.. image:: https://codecov.io/gh/NatLabRockies/phygnn/branch/main/graph/badge.svg?token=ZJFQWAAM1N
+    :target: https://codecov.io/gh/NatLabRockies/phygnn
 
 .. image:: https://zenodo.org/badge/276492167.svg
    :target: https://zenodo.org/badge/latestdoi/276492167
 
 .. image:: https://mybinder.org/badge_logo.svg
-    :target: https://mybinder.org/v2/gh/NREL/PHYGNN/HEAD
+    :target: https://mybinder.org/v2/gh/NatLabRockies/phygnn/HEAD
 
 
 **phygnn** (fi-geon | \ ˈfi-jən) noun.
@@ -49,15 +43,15 @@ applications, such as when machine learning models produce physically
 inconsistent results or have trouble generalizing to out-of-sample scenarios.
 
 For details on the phygnn class framework see `the phygnn class documentation
-here. <https://nrel.github.io/phygnn/_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html>`_
+here. <https://natlabrockies.github.io/phygnn/_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html>`_
 
 For example notebooks using the phygnn architecture for regression,
 classification, and even GAN applications, see `the example notebooks here
-<https://github.com/NREL/phygnn/tree/master/examples>`_.
+<https://github.com/NatLabRockies/phygnn/tree/main/examples>`_.
 You can also run the examples using a free cloud-hosted jupyter instance via
-`Binder <https://mybinder.org/v2/gh/NREL/PHYGNN/HEAD>`_.
+`Binder <https://mybinder.org/v2/gh/NatLabRockies/phygnn/HEAD>`_.
 
-At the National Renewable Energy Lab (NREL), we are using the phygnn framework
+At NLR, we are using the phygnn framework
 to supplement traditional satellite-based cloud property prediction models. We
 use phygnn to predict cloud optical properties when the traditional mechanistic
 models fail and use a full tensor-based radiative transfer model as the
@@ -91,7 +85,7 @@ Suggested Citation
 
 Update with current version and DOI:
 
-Grant Buster, Michael Rossol, Mike Bannister, and Dylan Hettinger. Physics-Guided Neural Networks (phygnn). https://github.com/NREL/phygnn (version v0.0.9), 2021. https://doi.org/10.5281/zenodo.4498541.
+Grant Buster, Michael Rossol, Mike Bannister, and Dylan Hettinger. Physics-Guided Neural Networks (phygnn). https://github.com/NatLabRockies/phygnn (version v0.0.34), 2021. https://doi.org/10.5281/zenodo.4498541.
 
 
 Installation
@@ -103,13 +97,12 @@ Simple Install
 
 1. Use conda (anaconda or miniconda) to create a phygnn environment: ``conda create --name phygnn python=3.9``
 
-    i. Note that phygnn is tested with python >= 3.8 via pip install. Users have reported issues installing phygnn using conda install.
+    i. Note that phygnn is tested with python >= 3.8 via pip install.
 
 2. Activate your new conda env: ``conda activate phygnn``
-3. Install with pip or conda:
+3. Install with pip:
 
-    i. ``pip install NREL-phygnn``
-    ii. ``conda install -c nrel nrel-phygnn``
+    i. ``pip install NLR-phygnn``
 
 
 Developer Install
@@ -117,7 +110,7 @@ Developer Install
 
 1. Use conda (anaconda or miniconda) to create a phygnn environment: ``conda create --name phygnn python=3.9``
 2. Activate your new conda env: ``conda activate phygnn``
-3. Clone the phygnn repository: ``git clone git@github.com:NREL/phygnn.git``
+3. Clone the phygnn repository: ``git clone git@github.com:NatLabRockies/phygnn.git``
 4. Navigate to the cloned repo and checkout your desired branch: ``git checkout main`` or ``git checkout <branch>``
 5. Navigate to the phygnn directory that contains setup.py and run: ``pip install -e .`` (developer install) or ``pip install .`` (static install).
 6. Test your installation:
