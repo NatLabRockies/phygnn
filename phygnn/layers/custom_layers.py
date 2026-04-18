@@ -34,6 +34,11 @@ def _register_custom_layer_objects():
         registry[f'phygnn>{name}'] = obj
 
 
+def _dot_product_attention(*args, **kwargs):
+    """Call the Keras 3 fused dot-product attention op."""
+    return tf.keras.ops.dot_product_attention(*args, **kwargs)
+
+
 class FlexiblePadding(tf.keras.layers.Layer):
     """Class to perform padding on tensors"""
 
@@ -586,8 +591,10 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
     scaled QK^T logits before softmax and must broadcast onto
     ``(B, num_heads, T, S)``.
 
-    Flash attention is preserved when eligible: the bias is forwarded to
-    ``ops.dot_product_attention(bias=...)`` so the fused kernel is still used.
+    Flash attention is used through ``tf.keras.ops.dot_product_attention()``
+    when dropout is inactive for the current call and attention scores are not
+    requested. The bias is forwarded to the fused op so ALiBi and other
+    additive pre-softmax bias terms keep the same behavior.
 
     Example::
         layer = MultiHeadAttention(num_heads=8, key_dim=64)
@@ -642,7 +649,13 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         value = self._value_dense(value)
 
         attention_output, attention_scores = self._compute_attention(
-            query, key, value, attention_mask, training, bias
+            query,
+            key,
+            value,
+            attention_mask=attention_mask,
+            training=training,
+            bias=bias,
+            return_attention_scores=return_attention_scores,
         )
         attention_output = self._output_dense(attention_output)
 
@@ -663,7 +676,32 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         attention_mask=None,
         training=None,
         bias=None,
+        return_attention_scores=False,
     ):
+        use_fused_attention = (
+            not return_attention_scores
+            and (self._dropout == 0.0 or training is False)
+        )
+
+        if use_fused_attention:
+            if attention_mask is not None:
+                mask_expansion_axis = -len(self._attention_axes) * 2 - 1
+                target_rank = len(query.shape)
+                for _ in range(target_rank - len(attention_mask.shape)):
+                    attention_mask = tf.expand_dims(
+                        attention_mask, axis=mask_expansion_axis
+                    )
+
+            attention_output = _dot_product_attention(
+                query=query,
+                key=key,
+                value=value,
+                bias=None if bias is None else tf.cast(bias, query.dtype),
+                mask=attention_mask,
+                flash_attention=None,
+            )
+            return attention_output, None
+
         query = tf.multiply(query, 1.0 / tf.math.sqrt(float(self._key_dim)))
 
         attention_scores = tf.einsum(self._dot_product_equation, key, query)
@@ -1156,9 +1194,9 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         self.features = features or []
         self.exo_features = exo_features or []
         transformer_kwargs = dict(transformer_kwargs or {})
-        transformer_kwargs['num_heads'] = num_heads
-        transformer_kwargs['key_dim'] = key_dim
-        transformer_kwargs['embed_dim'] = embed_dim
+        transformer_kwargs.setdefault('num_heads', num_heads)
+        transformer_kwargs.setdefault('key_dim', key_dim)
+        transformer_kwargs.setdefault('embed_dim', embed_dim)
 
         transformer_cls = (
             Sup3rTransformerLayerAlibi if use_alibi else Sup3rTransformerLayer
