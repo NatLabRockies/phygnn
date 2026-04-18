@@ -721,20 +721,10 @@ def test_pos_encoding_patch_size_gt1_3d():
 
     n_tokens = n_rows * n_cols * n_times
 
-    lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1, 1) * np.ones((
-        1,
-        1,
-        n_cols,
-        n_times,
-        1,
-    ))
-    lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1, 1) * np.ones((
-        1,
-        n_rows,
-        1,
-        n_times,
-        1,
-    ))
+    lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1, 1)
+    lat *= np.ones((1, 1, n_cols, n_times, 1))
+    lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1, 1)
+    lon *= np.ones((1, n_rows, 1, n_times, 1))
     lat = tf.constant(lat, dtype=tf.float32)
     lon = tf.constant(lon, dtype=tf.float32)
 
