@@ -76,7 +76,7 @@ repository = "https://github.com/NatLabRockies/phygnn"
 line-length = 79
 indent-width = 4
 
-target-version = "py38"
+target-version = "py39"
 exclude = [
   "CSV",
   "ref.*?py"
