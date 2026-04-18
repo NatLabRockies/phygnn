@@ -1,0 +1,521 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.layers.handlers.Layers &mdash; phygnn 0.0.35.dev1+g54e97538a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=71b63c52"></script>
+      <script src="../_static/doctools.js?v=888ff710"></script>
+      <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="phygnn.model_interfaces" href="phygnn.model_interfaces.html" />
+    <link rel="prev" title="phygnn.layers.handlers.HiddenLayers" href="phygnn.layers.handlers.HiddenLayers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="phygnn.html">API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="phygnn.layers.html">phygnn.layers</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Attention.html">phygnn.layers.custom_layers.Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.AxialAttentionBlock.html">phygnn.layers.custom_layers.AxialAttentionBlock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FNO.html">phygnn.layers.custom_layers.FNO</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SparseAttention.html">phygnn.layers.custom_layers.SparseAttention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcat.html">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="reference internal" href="phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.tf_model.TfModel.html">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.utilities.html">phygnn.utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.pre_processing.PreProcess.html">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="phygnn.html">phygnn</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.layers.html">phygnn.layers</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.layers.handlers.html">phygnn.layers.handlers</a></li>
+      <li class="breadcrumb-item active">phygnn.layers.handlers.Layers</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/NatLabRockies/phygnn/blob/main/docs/source/_autosummary/phygnn.layers.handlers.Layers.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="phygnn-layers-handlers-layers">
+<h1>phygnn.layers.handlers.Layers<a class="headerlink" href="#phygnn-layers-handlers-layers" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/layers/handlers.html#Layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.layers.handlers.Layers" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="phygnn.layers.handlers.HiddenLayers.html#phygnn.layers.handlers.HiddenLayers" title="phygnn.layers.handlers.HiddenLayers"><code class="xref py py-class docutils literal notranslate"><span class="pre">HiddenLayers</span></code></a></p>
+<p>Class to handle TensorFlow layers</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>n_features</strong> (<em>int</em>) – Number of features (inputs) to train the model on</p></li>
+<li><p><strong>n_labels</strong> (<em>int, optional</em>) – Number of labels (outputs) to the model, by default 1</p></li>
+<li><p><strong>hidden_layers</strong> (<em>list | None, optional</em>) – List of dictionaries of key word arguments for each hidden
+layer in the NN. Dense linear layers can be input with their
+activations or separately for more explicit control over the layer
+ordering. For example, this is a valid input for hidden_layers that
+will yield 8 hidden layers (10 layers including input+output):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>[{‘units’: 64, ‘activation’: ‘relu’, ‘dropout’: 0.01},</dt><dd><p>{‘units’: 64},
+{‘batch_normalization’: {‘axis’: -1}},
+{‘activation’: ‘relu’},
+{‘dropout’: 0.01},
+{‘class’: ‘Flatten’},
+]</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>by default None which will lead to a single linear layer</p>
+</li>
+<li><p><strong>input_layer</strong> (<em>None | bool | dict</em>) – Input layer. specification. Can be a dictionary similar to
+hidden_layers specifying a dense / conv / lstm layer.  Will
+default to a keras InputLayer with input shape = n_features.
+Can be False if the input layer will be included in the
+hidden_layers input.</p></li>
+<li><p><strong>output_layer</strong> (<em>None | bool | list | dict</em>) – Output layer specification. Can be a list/dict similar to
+hidden_layers input specifying a dense layer with activation.
+For example, for a classfication problem with a single output,
+output_layer should be [{‘units’: 1}, {‘activation’: ‘sigmoid’}].
+This defaults to a single dense layer with no activation
+(best for regression problems).  Can be False if the output layer
+will be included in the hidden_layers input.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.add_layer" title="phygnn.layers.handlers.Layers.add_layer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_layer</span></code></a>(layer_kwargs)</p></td>
+<td><p>Add a hidden layer to the DNN.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.add_layer_by_class" title="phygnn.layers.handlers.Layers.add_layer_by_class"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_layer_by_class</span></code></a>(class_name, **kwargs)</p></td>
+<td><p>Add a new layer by the class name, either from phygnn.layers.custom_layers or tf.keras.layers</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.add_skip_layer" title="phygnn.layers.handlers.Layers.add_skip_layer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_skip_layer</span></code></a>(name[, method])</p></td>
+<td><p>Add a skip layer, looking for a prior skip connection start point if already in the layer list.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.compile" title="phygnn.layers.handlers.Layers.compile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code></a>(model, n_features[, n_labels, ...])</p></td>
+<td><p>Build all layers needed for model</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.parse_repeats" title="phygnn.layers.handlers.Layers.parse_repeats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_repeats</span></code></a>(hidden_layers)</p></td>
+<td><p>Parse repeat layers.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.bias_weights" title="phygnn.layers.handlers.Layers.bias_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bias_weights</span></code></a></p></td>
+<td><p>Get a list of the NN bias weights (tensors)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.hidden_layer_kwargs" title="phygnn.layers.handlers.Layers.hidden_layer_kwargs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hidden_layer_kwargs</span></code></a></p></td>
+<td><p>List of dictionaries of key word arguments for each hidden layer in the NN.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.input_layer_kwargs" title="phygnn.layers.handlers.Layers.input_layer_kwargs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_layer_kwargs</span></code></a></p></td>
+<td><p>Dictionary of key word arguments for the input layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.kernel_weights" title="phygnn.layers.handlers.Layers.kernel_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel_weights</span></code></a></p></td>
+<td><p>Get a list of the NN kernel weights (tensors)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.layers" title="phygnn.layers.handlers.Layers.layers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">layers</span></code></a></p></td>
+<td><p>TensorFlow keras layers</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.output_layer_kwargs" title="phygnn.layers.handlers.Layers.output_layer_kwargs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_layer_kwargs</span></code></a></p></td>
+<td><p>Dictionary of key word arguments for the output layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.skip_layers" title="phygnn.layers.handlers.Layers.skip_layers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_layers</span></code></a></p></td>
+<td><p>Get a dictionary of unique SkipConnection objects in the layers list keyed by SkipConnection name.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.handlers.Layers.weights" title="phygnn.layers.handlers.Layers.weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weights</span></code></a></p></td>
+<td><p>Get a list of layer weights for gradient calculations.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.input_layer_kwargs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_layer_kwargs</span></span><a class="headerlink" href="#phygnn.layers.handlers.Layers.input_layer_kwargs" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary of key word arguments for the input layer.
+This is a copy of the input_layer input arg
+that can be used to reconstruct the network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.add_layer">
+<span class="sig-name descname"><span class="pre">add_layer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layer_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.handlers.Layers.add_layer" title="Permalink to this definition"></a></dt>
+<dd><p>Add a hidden layer to the DNN.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>layer_kwargs</strong> (<em>dict</em>) – Dictionary of key word arguments for list layer. For example,
+any of the following are valid inputs:</p>
+<blockquote>
+<div><p>{‘units’: 64, ‘activation’: ‘relu’, ‘dropout’: 0.05}
+{‘units’: 64, ‘name’: ‘relu1’}
+{‘activation’: ‘relu’}
+{‘batch_normalization’: {‘axis’: -1}}
+{‘dropout’: 0.1}</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.add_layer_by_class">
+<span class="sig-name descname"><span class="pre">add_layer_by_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">class_name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.handlers.Layers.add_layer_by_class" title="Permalink to this definition"></a></dt>
+<dd><p>Add a new layer by the class name, either from
+phygnn.layers.custom_layers or tf.keras.layers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>class_name</strong> (<em>str</em>) – Class name from phygnn.layers.custom_layers or tf.keras.layers</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – Key word arguments to initialize the class.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.add_skip_layer">
+<span class="sig-name descname"><span class="pre">add_skip_layer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'add'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.handlers.Layers.add_skip_layer" title="Permalink to this definition"></a></dt>
+<dd><p>Add a skip layer, looking for a prior skip connection start point if
+already in the layer list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Unique string identifier of the skip connection. The skip endpoint
+should have the same name.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – Method to use for combining skip start data and skip end data.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.bias_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bias_weights</span></span><a class="headerlink" href="#phygnn.layers.handlers.Layers.bias_weights" title="Permalink to this definition"></a></dt>
+<dd><p>Get a list of the NN bias weights (tensors)</p>
+<p>(can be used for bias regularization).</p>
+<p>Does not include input layer or dropout layers.
+Does include the output layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.hidden_layer_kwargs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hidden_layer_kwargs</span></span><a class="headerlink" href="#phygnn.layers.handlers.Layers.hidden_layer_kwargs" title="Permalink to this definition"></a></dt>
+<dd><p>List of dictionaries of key word arguments for each hidden
+layer in the NN. This is a copy of the hidden_layers input arg
+that can be used to reconstruct the network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.kernel_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kernel_weights</span></span><a class="headerlink" href="#phygnn.layers.handlers.Layers.kernel_weights" title="Permalink to this definition"></a></dt>
+<dd><p>Get a list of the NN kernel weights (tensors)</p>
+<p>(can be used for kernel regularization).</p>
+<p>Does not include input layer or dropout layers.
+Does include the output layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.layers">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">layers</span></span><a class="headerlink" href="#phygnn.layers.handlers.Layers.layers" title="Permalink to this definition"></a></dt>
+<dd><p>TensorFlow keras layers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.output_layer_kwargs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_layer_kwargs</span></span><a class="headerlink" href="#phygnn.layers.handlers.Layers.output_layer_kwargs" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary of key word arguments for the output layer.
+This is a copy of the output_layer input arg
+that can be used to reconstruct the network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.parse_repeats">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_repeats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hidden_layers</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.handlers.Layers.parse_repeats" title="Permalink to this definition"></a></dt>
+<dd><p>Parse repeat layers. Must have “repeat” and “n” to repeat one
+or more layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hidden_layers</strong> (<em>list</em>) – Hidden layer kwargs including possibly entries with
+{‘n’: 2, ‘repeat’: [{…}, {…}]} that will duplicate the list sub
+entry n times.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>hidden_layers</strong> (<em>list</em>) – Hidden layer kwargs exploded for ‘repeat’ entries.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.skip_layers">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">skip_layers</span></span><a class="headerlink" href="#phygnn.layers.handlers.Layers.skip_layers" title="Permalink to this definition"></a></dt>
+<dd><p>Get a dictionary of unique SkipConnection objects in the layers list
+keyed by SkipConnection name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weights</span></span><a class="headerlink" href="#phygnn.layers.handlers.Layers.weights" title="Permalink to this definition"></a></dt>
+<dd><p>Get a list of layer weights for gradient calculations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.handlers.Layers.compile">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/layers/handlers.html#Layers.compile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.layers.handlers.Layers.compile" title="Permalink to this definition"></a></dt>
+<dd><p>Build all layers needed for model</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>model</strong> (<em>tensorflow.keras.Sequential</em>) – Model to add layers too</p></li>
+<li><p><strong>n_features</strong> (<em>int</em>) – Number of features (inputs) to train the model on</p></li>
+<li><p><strong>n_labels</strong> (<em>int, optional</em>) – Number of labels (outputs) to the model, by default 1</p></li>
+<li><p><strong>hidden_layers</strong> (<em>list | None, optional</em>) – List of dictionaries of key word arguments for each hidden
+layer in the NN. Dense linear layers can be input with their
+activations or separately for more explicit control over the layer
+ordering. For example, this is a valid input for hidden_layers that
+will yield 7 hidden layers (9 layers total):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>[{‘units’: 64, ‘activation’: ‘relu’, ‘dropout’: 0.01},</dt><dd><p>{‘units’: 64},
+{‘batch_normalization’: {‘axis’: -1}},
+{‘activation’: ‘relu’},
+{‘dropout’: 0.01}]</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>by default None which will lead to a single linear layer</p>
+</li>
+<li><p><strong>input_layer</strong> (<em>None | bool | InputLayer</em>) – Keras input layer. Will default to an InputLayer with
+input shape = n_features.
+Can be False if the input layer will be included in the
+hidden_layers input.</p></li>
+<li><p><strong>output_layer</strong> (<em>None | bool | list | dict</em>) – Output layer specification. Can be a list/dict similar to
+hidden_layers input specifying a dense layer with activation.
+For example, for a classfication problem with a single output,
+output_layer should be [{‘units’: 1}, {‘activation’: ‘sigmoid’}]
+This defaults to a single dense layer with no activation
+(best for regression problems).  Can be False if the output layer
+will be included in the hidden_layers input.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>model</strong> (<em>tensorflow.keras</em>) – Model with layers added</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="phygnn.layers.handlers.HiddenLayers.html" class="btn btn-neutral float-left" title="phygnn.layers.handlers.HiddenLayers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="phygnn.model_interfaces.html" class="btn btn-neutral float-right" title="phygnn.model_interfaces" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

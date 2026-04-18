@@ -1,0 +1,1481 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.layers.custom_layers.AxialAttentionBlock &mdash; phygnn 0.0.35.dev1+g54e97538a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=71b63c52"></script>
+      <script src="../_static/doctools.js?v=888ff710"></script>
+      <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="phygnn.layers.custom_layers.CBAM" href="phygnn.layers.custom_layers.CBAM.html" />
+    <link rel="prev" title="phygnn.layers.custom_layers.Attention" href="phygnn.layers.custom_layers.Attention.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="phygnn.html">API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="phygnn.layers.html">phygnn.layers</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Attention.html">phygnn.layers.custom_layers.Attention</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">phygnn.layers.custom_layers.AxialAttentionBlock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FNO.html">phygnn.layers.custom_layers.FNO</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SparseAttention.html">phygnn.layers.custom_layers.SparseAttention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcat.html">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.Layers.html">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.tf_model.TfModel.html">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.utilities.html">phygnn.utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.pre_processing.PreProcess.html">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="phygnn.html">phygnn</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.layers.html">phygnn.layers</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a></li>
+      <li class="breadcrumb-item active">phygnn.layers.custom_layers.AxialAttentionBlock</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/NatLabRockies/phygnn/blob/main/docs/source/_autosummary/phygnn.layers.custom_layers.AxialAttentionBlock.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="phygnn-layers-custom-layers-axialattentionblock">
+<h1>phygnn.layers.custom_layers.AxialAttentionBlock<a class="headerlink" href="#phygnn-layers-custom-layers-axialattentionblock" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AxialAttentionBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/layers/custom_layers.html#AxialAttentionBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Layer</span></code></p>
+<p>Axial Self-Attention block</p>
+<p class="rubric">References</p>
+<ol class="arabic simple">
+<li><p>Axial Attention in Multidimensional Transformers.
+<a class="reference external" href="https://arxiv.org/abs/1912.12180">https://arxiv.org/abs/1912.12180</a></p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_heads</strong> (<em>int</em>) – Number of attention heads</p></li>
+<li><p><strong>key_dim</strong> (<em>int</em>) – Size of each attention head</p></li>
+<li><p><strong>name</strong> (<em>str | None</em>) – Name of layer.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_loss" title="phygnn.layers.custom_layers.AxialAttentionBlock.add_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_loss</span></code></a>(losses, **kwargs)</p></td>
+<td><p>Add loss tensor(s), potentially dependent on layer inputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_metric" title="phygnn.layers.custom_layers.AxialAttentionBlock.add_metric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_metric</span></code></a>(value[, name])</p></td>
+<td><p>Adds metric tensor to the layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_update" title="phygnn.layers.custom_layers.AxialAttentionBlock.add_update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_update</span></code></a>(updates)</p></td>
+<td><p>Add update op(s), potentially dependent on layer inputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_variable" title="phygnn.layers.custom_layers.AxialAttentionBlock.add_variable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_variable</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Deprecated, do NOT use! Alias for <cite>add_weight</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_weight" title="phygnn.layers.custom_layers.AxialAttentionBlock.add_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_weight</span></code></a>([name, shape, dtype, ...])</p></td>
+<td><p>Adds a new variable to the layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.build" title="phygnn.layers.custom_layers.AxialAttentionBlock.build"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build</span></code></a>(input_shape)</p></td>
+<td><p>Build the AxialAttentionBlock layer based on an input shape</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.build_from_config" title="phygnn.layers.custom_layers.AxialAttentionBlock.build_from_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_from_config</span></code></a>(config)</p></td>
+<td><p>Builds the layer's states with the supplied config dict.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.call" title="phygnn.layers.custom_layers.AxialAttentionBlock.call"><code class="xref py py-obj docutils literal notranslate"><span class="pre">call</span></code></a>(x)</p></td>
+<td><p>Applies attention along each spatial and the temporal axis</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.compute_mask" title="phygnn.layers.custom_layers.AxialAttentionBlock.compute_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_mask</span></code></a>(inputs[, mask])</p></td>
+<td><p>Computes an output mask tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.compute_output_shape" title="phygnn.layers.custom_layers.AxialAttentionBlock.compute_output_shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_output_shape</span></code></a>(input_shape)</p></td>
+<td><p>Computes the output shape of the layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.compute_output_signature" title="phygnn.layers.custom_layers.AxialAttentionBlock.compute_output_signature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_output_signature</span></code></a>(input_signature)</p></td>
+<td><p>Compute the output tensor signature of the layer based on the inputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.count_params" title="phygnn.layers.custom_layers.AxialAttentionBlock.count_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count_params</span></code></a>()</p></td>
+<td><p>Count the total number of scalars composing the weights.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.finalize_state" title="phygnn.layers.custom_layers.AxialAttentionBlock.finalize_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">finalize_state</span></code></a>()</p></td>
+<td><p>Finalizes the layers state after updating layer weights.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.from_config" title="phygnn.layers.custom_layers.AxialAttentionBlock.from_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_config</span></code></a>(config)</p></td>
+<td><p>Creates a layer from its config.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_build_config" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_build_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_build_config</span></code></a>()</p></td>
+<td><p>Returns a dictionary with the layer's input shape.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_config" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_config</span></code></a>()</p></td>
+<td><p>Returns the config of the layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_input_at" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_input_at"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_input_at</span></code></a>(node_index)</p></td>
+<td><p>Retrieves the input tensor(s) of a layer at a given node.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_input_mask_at" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_input_mask_at"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_input_mask_at</span></code></a>(node_index)</p></td>
+<td><p>Retrieves the input mask tensor(s) of a layer at a given node.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_input_shape_at" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_input_shape_at"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_input_shape_at</span></code></a>(node_index)</p></td>
+<td><p>Retrieves the input shape(s) of a layer at a given node.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_output_at" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_output_at"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_output_at</span></code></a>(node_index)</p></td>
+<td><p>Retrieves the output tensor(s) of a layer at a given node.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_output_mask_at" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_output_mask_at"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_output_mask_at</span></code></a>(node_index)</p></td>
+<td><p>Retrieves the output mask tensor(s) of a layer at a given node.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_output_shape_at" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_output_shape_at"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_output_shape_at</span></code></a>(node_index)</p></td>
+<td><p>Retrieves the output shape(s) of a layer at a given node.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_weights" title="phygnn.layers.custom_layers.AxialAttentionBlock.get_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_weights</span></code></a>()</p></td>
+<td><p>Returns the current weights of the layer, as NumPy arrays.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.load_own_variables" title="phygnn.layers.custom_layers.AxialAttentionBlock.load_own_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_own_variables</span></code></a>(store)</p></td>
+<td><p>Loads the state of the layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.save_own_variables" title="phygnn.layers.custom_layers.AxialAttentionBlock.save_own_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_own_variables</span></code></a>(store)</p></td>
+<td><p>Saves the state of the layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.set_weights" title="phygnn.layers.custom_layers.AxialAttentionBlock.set_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_weights</span></code></a>(weights)</p></td>
+<td><p>Sets the weights of the layer, from NumPy arrays.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.with_name_scope" title="phygnn.layers.custom_layers.AxialAttentionBlock.with_name_scope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_name_scope</span></code></a>(method)</p></td>
+<td><p>Decorator to automatically enter the module name scope.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.activity_regularizer" title="phygnn.layers.custom_layers.AxialAttentionBlock.activity_regularizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activity_regularizer</span></code></a></p></td>
+<td><p>Optional regularizer function for the output of this layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.compute_dtype" title="phygnn.layers.custom_layers.AxialAttentionBlock.compute_dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_dtype</span></code></a></p></td>
+<td><p>The dtype of the layer's computations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.dtype" title="phygnn.layers.custom_layers.AxialAttentionBlock.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a></p></td>
+<td><p>The dtype of the layer weights.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.dtype_policy" title="phygnn.layers.custom_layers.AxialAttentionBlock.dtype_policy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype_policy</span></code></a></p></td>
+<td><p>The dtype policy associated with this layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.dynamic" title="phygnn.layers.custom_layers.AxialAttentionBlock.dynamic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dynamic</span></code></a></p></td>
+<td><p>Whether the layer is dynamic (eager-only); set in the constructor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.inbound_nodes" title="phygnn.layers.custom_layers.AxialAttentionBlock.inbound_nodes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inbound_nodes</span></code></a></p></td>
+<td><p>Return Functional API nodes upstream of this layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.input" title="phygnn.layers.custom_layers.AxialAttentionBlock.input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input</span></code></a></p></td>
+<td><p>Retrieves the input tensor(s) of a layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.input_mask" title="phygnn.layers.custom_layers.AxialAttentionBlock.input_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_mask</span></code></a></p></td>
+<td><p>Retrieves the input mask tensor(s) of a layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.input_shape" title="phygnn.layers.custom_layers.AxialAttentionBlock.input_shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_shape</span></code></a></p></td>
+<td><p>Retrieves the input shape(s) of a layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.input_spec" title="phygnn.layers.custom_layers.AxialAttentionBlock.input_spec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_spec</span></code></a></p></td>
+<td><p><cite>InputSpec</cite> instance(s) describing the input format for this layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.losses" title="phygnn.layers.custom_layers.AxialAttentionBlock.losses"><code class="xref py py-obj docutils literal notranslate"><span class="pre">losses</span></code></a></p></td>
+<td><p>List of losses added using the <cite>add_loss()</cite> API.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.metrics" title="phygnn.layers.custom_layers.AxialAttentionBlock.metrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">metrics</span></code></a></p></td>
+<td><p>List of metrics added using the <cite>add_metric()</cite> API.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.name" title="phygnn.layers.custom_layers.AxialAttentionBlock.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the layer (string), set in the constructor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.name_scope" title="phygnn.layers.custom_layers.AxialAttentionBlock.name_scope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name_scope</span></code></a></p></td>
+<td><p>Returns a <cite>tf.name_scope</cite> instance for this class.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.non_trainable_variables" title="phygnn.layers.custom_layers.AxialAttentionBlock.non_trainable_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">non_trainable_variables</span></code></a></p></td>
+<td><p>Sequence of non-trainable variables owned by this module and its submodules.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.non_trainable_weights" title="phygnn.layers.custom_layers.AxialAttentionBlock.non_trainable_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">non_trainable_weights</span></code></a></p></td>
+<td><p>List of all non-trainable weights tracked by this layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.outbound_nodes" title="phygnn.layers.custom_layers.AxialAttentionBlock.outbound_nodes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">outbound_nodes</span></code></a></p></td>
+<td><p>Return Functional API nodes downstream of this layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.output" title="phygnn.layers.custom_layers.AxialAttentionBlock.output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output</span></code></a></p></td>
+<td><p>Retrieves the output tensor(s) of a layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.output_mask" title="phygnn.layers.custom_layers.AxialAttentionBlock.output_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_mask</span></code></a></p></td>
+<td><p>Retrieves the output mask tensor(s) of a layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.output_shape" title="phygnn.layers.custom_layers.AxialAttentionBlock.output_shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_shape</span></code></a></p></td>
+<td><p>Retrieves the output shape(s) of a layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">stateful</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.submodules" title="phygnn.layers.custom_layers.AxialAttentionBlock.submodules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">submodules</span></code></a></p></td>
+<td><p>Sequence of all sub-modules.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.supports_masking" title="phygnn.layers.custom_layers.AxialAttentionBlock.supports_masking"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_masking</span></code></a></p></td>
+<td><p>Whether this layer supports computing a mask using <cite>compute_mask</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">trainable</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.trainable_variables" title="phygnn.layers.custom_layers.AxialAttentionBlock.trainable_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trainable_variables</span></code></a></p></td>
+<td><p>Sequence of trainable variables owned by this module and its submodules.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.trainable_weights" title="phygnn.layers.custom_layers.AxialAttentionBlock.trainable_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trainable_weights</span></code></a></p></td>
+<td><p>List of all trainable weights tracked by this layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">updates</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.variable_dtype" title="phygnn.layers.custom_layers.AxialAttentionBlock.variable_dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">variable_dtype</span></code></a></p></td>
+<td><p>Alias of <cite>Layer.dtype</cite>, the dtype of the weights.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.variables" title="phygnn.layers.custom_layers.AxialAttentionBlock.variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">variables</span></code></a></p></td>
+<td><p>Returns the list of all layer variables/weights.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.AxialAttentionBlock.weights" title="phygnn.layers.custom_layers.AxialAttentionBlock.weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weights</span></code></a></p></td>
+<td><p>Returns the list of all layer variables/weights.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/layers/custom_layers.html#AxialAttentionBlock.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.build" title="Permalink to this definition"></a></dt>
+<dd><p>Build the AxialAttentionBlock layer based on an input shape</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_shape</strong> (<em>tuple</em>) – Shape tuple of the input tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.call">
+<span class="sig-name descname"><span class="pre">call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/layers/custom_layers.html#AxialAttentionBlock.call"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.call" title="Permalink to this definition"></a></dt>
+<dd><p>Applies attention along each spatial and the temporal axis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>tf.Tensor</em>) – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>x</strong> (<em>tf.Tensor</em>) – Output tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Wraps <cite>call</cite>, applying pre- and post-processing steps.</p>
+<dl>
+<dt>Args:</dt><dd><p><a href="#id1"><span class="problematic" id="id2">*</span></a>args: Positional arguments to be passed to <cite>self.call</cite>.
+<a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs: Keyword arguments to be passed to <cite>self.call</cite>.</p>
+</dd>
+<dt>Returns:</dt><dd><p>Output tensor(s).</p>
+</dd>
+<dt>Note:</dt><dd><ul>
+<li><p>The following optional keyword arguments are reserved for specific
+uses:
+* <cite>training</cite>: Boolean scalar tensor of Python boolean indicating</p>
+<blockquote>
+<div><p>whether the <cite>call</cite> is meant for training or inference.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p><cite>mask</cite>: Boolean input mask.</p></li>
+</ul>
+</li>
+<li><p>If the layer’s <cite>call</cite> method takes a <cite>mask</cite> argument (as some Keras
+layers do), its default value will be set to the mask generated
+for <cite>inputs</cite> by the previous layer (if <cite>input</cite> did come from
+a layer that generated a corresponding mask, i.e. if it came from
+a Keras layer with masking support.</p></li>
+<li><p>If the layer is not built, the method will call <cite>build</cite>.</p></li>
+</ul>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>ValueError: if the layer’s <cite>call</cite> method returns None (an invalid</dt><dd><p>value).</p>
+</dd>
+<dt>RuntimeError: if <cite>super().__init__()</cite> was not called in the</dt><dd><p>constructor.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.activity_regularizer">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">activity_regularizer</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.activity_regularizer" title="Permalink to this definition"></a></dt>
+<dd><p>Optional regularizer function for the output of this layer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.add_loss">
+<span class="sig-name descname"><span class="pre">add_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">losses</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_loss" title="Permalink to this definition"></a></dt>
+<dd><p>Add loss tensor(s), potentially dependent on layer inputs.</p>
+<p>Some losses (for instance, activity regularization losses) may be
+dependent on the inputs passed when calling a layer. Hence, when reusing
+the same layer on different inputs <cite>a</cite> and <cite>b</cite>, some entries in
+<cite>layer.losses</cite> may be dependent on <cite>a</cite> and some on <cite>b</cite>. This method
+automatically keeps track of dependencies.</p>
+<p>This method can be used inside a subclassed layer or model’s <cite>call</cite>
+function, in which case <cite>losses</cite> should be a Tensor or list of Tensors.</p>
+<p>Example:</p>
+<p><a href="#id5"><span class="problematic" id="id6">``</span></a><a href="#id7"><span class="problematic" id="id8">`</span></a>python
+class MyLayer(tf.keras.layers.Layer):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>def call(self, inputs):</dt><dd><p>self.add_loss(tf.abs(tf.reduce_mean(inputs)))
+return inputs</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><a href="#id9"><span class="problematic" id="id10">``</span></a><a href="#id11"><span class="problematic" id="id12">`</span></a></p>
+<p>The same code works in distributed training: the input to <cite>add_loss()</cite>
+is treated like a regularization loss and averaged across replicas
+by the training loop (both built-in <cite>Model.fit()</cite> and compliant custom
+training loops).</p>
+<p>The <cite>add_loss</cite> method can also be called directly on a Functional Model
+during construction. In this case, any loss Tensors passed to this Model
+must be symbolic and be able to be traced back to the model’s <cite>Input`s.
+These losses become part of the model’s topology and are tracked in
+`get_config</cite>.</p>
+<p>Example:</p>
+<p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">inputs</span> <span class="pre">=</span> <span class="pre">tf.keras.Input(shape=(10,))</span>
+<span class="pre">x</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.Dense(10)(inputs)</span>
+<span class="pre">outputs</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.Dense(1)(x)</span>
+<span class="pre">model</span> <span class="pre">=</span> <span class="pre">tf.keras.Model(inputs,</span> <span class="pre">outputs)</span>
+<span class="pre">#</span> <span class="pre">Activity</span> <span class="pre">regularization.</span>
+<span class="pre">model.add_loss(tf.abs(tf.reduce_mean(x)))</span>
+<span class="pre">`</span></code></p>
+<p>If this is not the case for your loss (if, for example, your loss
+references a <cite>Variable</cite> of one of the model’s layers), you can wrap your
+loss in a zero-argument lambda. These losses are not tracked as part of
+the model’s topology since they can’t be serialized.</p>
+<p>Example:</p>
+<p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">inputs</span> <span class="pre">=</span> <span class="pre">tf.keras.Input(shape=(10,))</span>
+<span class="pre">d</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.Dense(10)</span>
+<span class="pre">x</span> <span class="pre">=</span> <span class="pre">d(inputs)</span>
+<span class="pre">outputs</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.Dense(1)(x)</span>
+<span class="pre">model</span> <span class="pre">=</span> <span class="pre">tf.keras.Model(inputs,</span> <span class="pre">outputs)</span>
+<span class="pre">#</span> <span class="pre">Weight</span> <span class="pre">regularization.</span>
+<span class="pre">model.add_loss(lambda:</span> <span class="pre">tf.reduce_mean(d.kernel))</span>
+<span class="pre">`</span></code></p>
+<dl>
+<dt>Args:</dt><dd><dl class="simple">
+<dt>losses: Loss tensor, or list/tuple of tensors. Rather than tensors,</dt><dd><p>losses may also be zero-argument callables which create a loss
+tensor.</p>
+</dd>
+</dl>
+<p><a href="#id13"><span class="problematic" id="id14">**</span></a>kwargs: Used for backwards compatibility only.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.add_metric">
+<span class="sig-name descname"><span class="pre">add_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_metric" title="Permalink to this definition"></a></dt>
+<dd><p>Adds metric tensor to the layer.</p>
+<p>This method can be used inside the <cite>call()</cite> method of a subclassed layer
+or model.</p>
+<p><a href="#id15"><span class="problematic" id="id16">``</span></a><a href="#id17"><span class="problematic" id="id18">`</span></a>python
+class MyMetricLayer(tf.keras.layers.Layer):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>def __init__(self):</dt><dd><p>super(MyMetricLayer, self).__init__(name=’my_metric_layer’)
+self.mean = tf.keras.metrics.Mean(name=’metric_1’)</p>
+</dd>
+<dt>def call(self, inputs):</dt><dd><p>self.add_metric(self.mean(inputs))
+self.add_metric(tf.reduce_sum(inputs), name=’metric_2’)
+return inputs</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><a href="#id19"><span class="problematic" id="id20">``</span></a><a href="#id21"><span class="problematic" id="id22">`</span></a></p>
+<p>This method can also be called directly on a Functional Model during
+construction. In this case, any tensor passed to this Model must
+be symbolic and be able to be traced back to the model’s <cite>Input`s. These
+metrics become part of the model’s topology and are tracked when you
+save the model via `save()</cite>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">inputs</span> <span class="pre">=</span> <span class="pre">tf.keras.Input(shape=(10,))</span>
+<span class="pre">x</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.Dense(10)(inputs)</span>
+<span class="pre">outputs</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.Dense(1)(x)</span>
+<span class="pre">model</span> <span class="pre">=</span> <span class="pre">tf.keras.Model(inputs,</span> <span class="pre">outputs)</span>
+<span class="pre">model.add_metric(math_ops.reduce_sum(x),</span> <span class="pre">name='metric_1')</span>
+<span class="pre">`</span></code></p>
+<p>Note: Calling <cite>add_metric()</cite> with the result of a metric object on a
+Functional Model, as shown in the example below, is not supported. This
+is because we cannot trace the metric result tensor back to the model’s
+inputs.</p>
+<p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">inputs</span> <span class="pre">=</span> <span class="pre">tf.keras.Input(shape=(10,))</span>
+<span class="pre">x</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.Dense(10)(inputs)</span>
+<span class="pre">outputs</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.Dense(1)(x)</span>
+<span class="pre">model</span> <span class="pre">=</span> <span class="pre">tf.keras.Model(inputs,</span> <span class="pre">outputs)</span>
+<span class="pre">model.add_metric(tf.keras.metrics.Mean()(x),</span> <span class="pre">name='metric_1')</span>
+<span class="pre">`</span></code></p>
+<dl>
+<dt>Args:</dt><dd><p>value: Metric tensor.
+name: String metric name.
+<a href="#id23"><span class="problematic" id="id24">**</span></a>kwargs: Additional keyword arguments for backward compatibility.</p>
+<blockquote>
+<div><p>Accepted values:
+<cite>aggregation</cite> - When the <cite>value</cite> tensor provided is not the result
+of calling a <cite>keras.Metric</cite> instance, it will be aggregated by
+default using a <cite>keras.Metric.Mean</cite>.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.add_update">
+<span class="sig-name descname"><span class="pre">add_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">updates</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_update" title="Permalink to this definition"></a></dt>
+<dd><p>Add update op(s), potentially dependent on layer inputs.</p>
+<p>Weight updates (for instance, the updates of the moving mean and
+variance in a BatchNormalization layer) may be dependent on the inputs
+passed when calling a layer. Hence, when reusing the same layer on
+different inputs <cite>a</cite> and <cite>b</cite>, some entries in <cite>layer.updates</cite> may be
+dependent on <cite>a</cite> and some on <cite>b</cite>. This method automatically keeps track
+of dependencies.</p>
+<p>This call is ignored when eager execution is enabled (in that case,
+variable updates are run on the fly and thus do not need to be tracked
+for later execution).</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>updates: Update op, or list/tuple of update ops, or zero-arg callable</dt><dd><p>that returns an update op. A zero-arg callable should be passed in
+order to disable running the updates by setting <cite>trainable=False</cite>
+on this Layer, when executing in Eager mode.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.add_variable">
+<span class="sig-name descname"><span class="pre">add_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_variable" title="Permalink to this definition"></a></dt>
+<dd><p>Deprecated, do NOT use! Alias for <cite>add_weight</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.add_weight">
+<span class="sig-name descname"><span class="pre">add_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initializer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_resource</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synchronization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">VariableSynchronization.AUTO</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aggregation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">VariableAggregationV2.NONE</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.add_weight" title="Permalink to this definition"></a></dt>
+<dd><p>Adds a new variable to the layer.</p>
+<dl>
+<dt>Args:</dt><dd><p>name: Variable name.
+shape: Variable shape. Defaults to scalar if unspecified.
+dtype: The type of the variable. Defaults to <cite>self.dtype</cite>.
+initializer: Initializer instance (callable).
+regularizer: Regularizer instance (callable).
+trainable: Boolean, whether the variable should be part of the layer’s</p>
+<blockquote>
+<div><p>“trainable_variables” (e.g. variables, biases)
+or “non_trainable_variables” (e.g. BatchNorm mean and variance).
+Note that <cite>trainable</cite> cannot be <cite>True</cite> if <cite>synchronization</cite>
+is set to <cite>ON_READ</cite>.</p>
+</div></blockquote>
+<p>constraint: Constraint instance (callable).
+use_resource: Whether to use a <cite>ResourceVariable</cite> or not.</p>
+<blockquote>
+<div><p>See [this guide](
+<a class="reference external" href="https://www.tensorflow.org/guide/migrate/tf1_vs_tf2#resourcevariables_instead_of_referencevariables">https://www.tensorflow.org/guide/migrate/tf1_vs_tf2#resourcevariables_instead_of_referencevariables</a>)</p>
+<blockquote>
+<div><p>for more information.</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="simple">
+<dt>synchronization: Indicates when a distributed a variable will be</dt><dd><p>aggregated. Accepted values are constants defined in the class
+<cite>tf.VariableSynchronization</cite>. By default the synchronization is set
+to <cite>AUTO</cite> and the current <cite>DistributionStrategy</cite> chooses when to
+synchronize. If <cite>synchronization</cite> is set to <cite>ON_READ</cite>, <cite>trainable</cite>
+must not be set to <cite>True</cite>.</p>
+</dd>
+<dt>aggregation: Indicates how a distributed variable will be aggregated.</dt><dd><p>Accepted values are constants defined in the class
+<cite>tf.VariableAggregation</cite>.</p>
+</dd>
+<dt><a href="#id25"><span class="problematic" id="id26">**</span></a>kwargs: Additional keyword arguments. Accepted values are <cite>getter</cite>,</dt><dd><p><cite>collections</cite>, <cite>experimental_autocast</cite> and <cite>caching_device</cite>.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>The variable created.</p>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>ValueError: When giving unsupported dtype and no initializer or when</dt><dd><p>trainable has been set to True with synchronization set as
+<cite>ON_READ</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.build_from_config">
+<span class="sig-name descname"><span class="pre">build_from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.build_from_config" title="Permalink to this definition"></a></dt>
+<dd><p>Builds the layer’s states with the supplied config dict.</p>
+<p>By default, this method calls the <cite>build(config[“input_shape”])</cite> method,
+which creates weights based on the layer’s input shape in the supplied
+config. If your config contains other information needed to load the
+layer’s state, you should override this method.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>config: Dict containing the input shape associated with this layer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.compute_dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compute_dtype</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.compute_dtype" title="Permalink to this definition"></a></dt>
+<dd><p>The dtype of the layer’s computations.</p>
+<p>This is equivalent to <cite>Layer.dtype_policy.compute_dtype</cite>. Unless
+mixed precision is used, this is the same as <cite>Layer.dtype</cite>, the dtype of
+the weights.</p>
+<p>Layers automatically cast their inputs to the compute dtype, which
+causes computations and the output to be in the compute dtype as well.
+This is done by the base Layer class in <cite>Layer.__call__</cite>, so you do not
+have to insert these casts if implementing your own layer.</p>
+<p>Layers often perform certain internal computations in higher precision
+when <cite>compute_dtype</cite> is float16 or bfloat16 for numeric stability. The
+output will still typically be float16 or bfloat16 in such cases.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>The layer’s compute dtype.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.compute_mask">
+<span class="sig-name descname"><span class="pre">compute_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.compute_mask" title="Permalink to this definition"></a></dt>
+<dd><p>Computes an output mask tensor.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>inputs: Tensor or list of tensors.
+mask: Tensor or list of tensors.</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>None or a tensor (or list of tensors,</dt><dd><p>one per output tensor of the layer).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.compute_output_shape">
+<span class="sig-name descname"><span class="pre">compute_output_shape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.compute_output_shape" title="Permalink to this definition"></a></dt>
+<dd><p>Computes the output shape of the layer.</p>
+<p>This method will cause the layer’s state to be built, if that has not
+happened before. This requires that the layer will later be used with
+inputs that match the input shape provided here.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>input_shape: Shape tuple (tuple of integers) or <cite>tf.TensorShape</cite>,</dt><dd><p>or structure of shape tuples / <cite>tf.TensorShape</cite> instances
+(one per output tensor of the layer).
+Shape tuples can include None for free dimensions,
+instead of an integer.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>A <cite>tf.TensorShape</cite> instance
+or structure of <cite>tf.TensorShape</cite> instances.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.compute_output_signature">
+<span class="sig-name descname"><span class="pre">compute_output_signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_signature</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.compute_output_signature" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the output tensor signature of the layer based on the inputs.</p>
+<p>Unlike a TensorShape object, a TensorSpec object contains both shape
+and dtype information for a tensor. This method allows layers to provide
+output dtype information if it is different from the input dtype.
+For any layer that doesn’t implement this function,
+the framework will fall back to use <cite>compute_output_shape</cite>, and will
+assume that the output dtype matches the input dtype.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>input_signature: Single TensorSpec or nested structure of TensorSpec</dt><dd><p>objects, describing a candidate input for the layer.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>Single TensorSpec or nested structure of TensorSpec objects,</dt><dd><p>describing how the layer would transform the provided input.</p>
+</dd>
+</dl>
+</dd>
+<dt>Raises:</dt><dd><p>TypeError: If input_signature contains a non-TensorSpec object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.count_params">
+<span class="sig-name descname"><span class="pre">count_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.count_params" title="Permalink to this definition"></a></dt>
+<dd><p>Count the total number of scalars composing the weights.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>An integer count.</p>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>ValueError: if the layer isn’t yet built</dt><dd><p>(in which case its weights aren’t yet defined).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.dtype" title="Permalink to this definition"></a></dt>
+<dd><p>The dtype of the layer weights.</p>
+<p>This is equivalent to <cite>Layer.dtype_policy.variable_dtype</cite>. Unless
+mixed precision is used, this is the same as <cite>Layer.compute_dtype</cite>, the
+dtype of the layer’s computations.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.dtype_policy">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype_policy</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.dtype_policy" title="Permalink to this definition"></a></dt>
+<dd><p>The dtype policy associated with this layer.</p>
+<p>This is an instance of a <cite>tf.keras.mixed_precision.Policy</cite>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.dynamic">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dynamic</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.dynamic" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the layer is dynamic (eager-only); set in the constructor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.finalize_state">
+<span class="sig-name descname"><span class="pre">finalize_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.finalize_state" title="Permalink to this definition"></a></dt>
+<dd><p>Finalizes the layers state after updating layer weights.</p>
+<p>This function can be subclassed in a layer and will be called after
+updating a layer weights. It can be overridden to finalize any
+additional layer state after a weight update.</p>
+<p>This function will be called after weights of a layer have been restored
+from a loaded model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.from_config" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a layer from its config.</p>
+<p>This method is the reverse of <cite>get_config</cite>,
+capable of instantiating the same layer from the config
+dictionary. It does not handle layer connectivity
+(handled by Network), nor weights (handled by <cite>set_weights</cite>).</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>config: A Python dictionary, typically the</dt><dd><p>output of get_config.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>A layer instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_build_config">
+<span class="sig-name descname"><span class="pre">get_build_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_build_config" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a dictionary with the layer’s input shape.</p>
+<p>This method returns a config dict that can be used by
+<cite>build_from_config(config)</cite> to create all states (e.g. Variables and
+Lookup tables) needed by the layer.</p>
+<p>By default, the config only contains the input shape that the layer
+was built with. If you’re writing a custom layer that creates state in
+an unusual way, you should override this method to make sure this state
+is already created when Keras attempts to load its value upon model
+loading.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A dict containing the input shape associated with the layer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_config" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the config of the layer.</p>
+<p>A layer config is a Python dictionary (serializable)
+containing the configuration of a layer.
+The same layer can be reinstantiated later
+(without its trained weights) from this configuration.</p>
+<p>The config of a layer does not include connectivity
+information, nor the layer class name. These are handled
+by <cite>Network</cite> (one layer of abstraction above).</p>
+<p>Note that <cite>get_config()</cite> does not guarantee to return a fresh copy of
+dict every time it is called. The callers should make a copy of the
+returned dict if they want to modify it.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Python dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_input_at">
+<span class="sig-name descname"><span class="pre">get_input_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_input_at" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the input tensor(s) of a layer at a given node.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>node_index: Integer, index of the node</dt><dd><p>from which to retrieve the attribute.
+E.g. <cite>node_index=0</cite> will correspond to the
+first input node of the layer.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>A tensor (or list of tensors if the layer has multiple inputs).</p>
+</dd>
+<dt>Raises:</dt><dd><p>RuntimeError: If called in Eager mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_input_mask_at">
+<span class="sig-name descname"><span class="pre">get_input_mask_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_input_mask_at" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the input mask tensor(s) of a layer at a given node.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>node_index: Integer, index of the node</dt><dd><p>from which to retrieve the attribute.
+E.g. <cite>node_index=0</cite> will correspond to the
+first time the layer was called.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>A mask tensor
+(or list of tensors if the layer has multiple inputs).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_input_shape_at">
+<span class="sig-name descname"><span class="pre">get_input_shape_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_input_shape_at" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the input shape(s) of a layer at a given node.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>node_index: Integer, index of the node</dt><dd><p>from which to retrieve the attribute.
+E.g. <cite>node_index=0</cite> will correspond to the
+first time the layer was called.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>A shape tuple
+(or list of shape tuples if the layer has multiple inputs).</p>
+</dd>
+<dt>Raises:</dt><dd><p>RuntimeError: If called in Eager mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_output_at">
+<span class="sig-name descname"><span class="pre">get_output_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_output_at" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the output tensor(s) of a layer at a given node.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>node_index: Integer, index of the node</dt><dd><p>from which to retrieve the attribute.
+E.g. <cite>node_index=0</cite> will correspond to the
+first output node of the layer.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>A tensor (or list of tensors if the layer has multiple outputs).</p>
+</dd>
+<dt>Raises:</dt><dd><p>RuntimeError: If called in Eager mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_output_mask_at">
+<span class="sig-name descname"><span class="pre">get_output_mask_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_output_mask_at" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the output mask tensor(s) of a layer at a given node.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>node_index: Integer, index of the node</dt><dd><p>from which to retrieve the attribute.
+E.g. <cite>node_index=0</cite> will correspond to the
+first time the layer was called.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>A mask tensor
+(or list of tensors if the layer has multiple outputs).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_output_shape_at">
+<span class="sig-name descname"><span class="pre">get_output_shape_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_output_shape_at" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the output shape(s) of a layer at a given node.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>node_index: Integer, index of the node</dt><dd><p>from which to retrieve the attribute.
+E.g. <cite>node_index=0</cite> will correspond to the
+first time the layer was called.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>A shape tuple
+(or list of shape tuples if the layer has multiple outputs).</p>
+</dd>
+<dt>Raises:</dt><dd><p>RuntimeError: If called in Eager mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.get_weights">
+<span class="sig-name descname"><span class="pre">get_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.get_weights" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the current weights of the layer, as NumPy arrays.</p>
+<p>The weights of a layer represent the state of the layer. This function
+returns both trainable and non-trainable weight values associated with
+this layer as a list of NumPy arrays, which can in turn be used to load
+state into similarly parameterized layers.</p>
+<p>For example, a <cite>Dense</cite> layer returns a list of two values: the kernel
+matrix and the bias vector. These can be used to set the weights of
+another <cite>Dense</cite> layer:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layer_a</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">kernel_initializer</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant_initializer</span><span class="p">(</span><span class="mf">1.</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_out</span> <span class="o">=</span> <span class="n">layer_a</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">([[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">]]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_a</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
+<span class="go">[array([[1.],</span>
+<span class="go">       [1.],</span>
+<span class="go">       [1.]], dtype=float32), array([0.], dtype=float32)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">kernel_initializer</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant_initializer</span><span class="p">(</span><span class="mf">2.</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b_out</span> <span class="o">=</span> <span class="n">layer_b</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">([[</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">20.</span><span class="p">,</span> <span class="mf">30.</span><span class="p">]]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_b</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
+<span class="go">[array([[2.],</span>
+<span class="go">       [2.],</span>
+<span class="go">       [2.]], dtype=float32), array([0.], dtype=float32)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_b</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">layer_a</span><span class="o">.</span><span class="n">get_weights</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_b</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
+<span class="go">[array([[1.],</span>
+<span class="go">       [1.],</span>
+<span class="go">       [1.]], dtype=float32), array([0.], dtype=float32)]</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Weights values as a list of NumPy arrays.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.inbound_nodes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inbound_nodes</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.inbound_nodes" title="Permalink to this definition"></a></dt>
+<dd><p>Return Functional API nodes upstream of this layer.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.input">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.input" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the input tensor(s) of a layer.</p>
+<p>Only applicable if the layer has exactly one input,
+i.e. if it is connected to one incoming layer.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Input tensor or list of input tensors.</p>
+</dd>
+<dt>Raises:</dt><dd><p>RuntimeError: If called in Eager mode.
+AttributeError: If no inbound nodes are found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.input_mask">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_mask</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.input_mask" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the input mask tensor(s) of a layer.</p>
+<p>Only applicable if the layer has exactly one inbound node,
+i.e. if it is connected to one incoming layer.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Input mask tensor (potentially None) or list of input
+mask tensors.</p>
+</dd>
+<dt>Raises:</dt><dd><p>AttributeError: if the layer is connected to
+more than one incoming layers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.input_shape">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_shape</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.input_shape" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the input shape(s) of a layer.</p>
+<p>Only applicable if the layer has exactly one input,
+i.e. if it is connected to one incoming layer, or if all inputs
+have the same shape.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Input shape, as an integer shape tuple
+(or list of shape tuples, one tuple per input tensor).</p>
+</dd>
+<dt>Raises:</dt><dd><p>AttributeError: if the layer has no defined input_shape.
+RuntimeError: if called in Eager mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.input_spec">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_spec</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.input_spec" title="Permalink to this definition"></a></dt>
+<dd><p><cite>InputSpec</cite> instance(s) describing the input format for this layer.</p>
+<p>When you create a layer subclass, you can set <cite>self.input_spec</cite> to
+enable the layer to run input compatibility checks when it is called.
+Consider a <cite>Conv2D</cite> layer: it can only be called on a single input
+tensor of rank 4. As such, you can set, in <cite>__init__()</cite>:</p>
+<p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">self.input_spec</span> <span class="pre">=</span> <span class="pre">tf.keras.layers.InputSpec(ndim=4)</span>
+<span class="pre">`</span></code></p>
+<p>Now, if you try to call the layer on an input that isn’t rank 4
+(for instance, an input of shape <cite>(2,)</cite>, it will raise a
+nicely-formatted error:</p>
+<p><code class="docutils literal notranslate"><span class="pre">`</span>
+<span class="pre">ValueError:</span> <span class="pre">Input</span> <span class="pre">0</span> <span class="pre">of</span> <span class="pre">layer</span> <span class="pre">conv2d</span> <span class="pre">is</span> <span class="pre">incompatible</span> <span class="pre">with</span> <span class="pre">the</span> <span class="pre">layer:</span>
+<span class="pre">expected</span> <span class="pre">ndim=4,</span> <span class="pre">found</span> <span class="pre">ndim=1.</span> <span class="pre">Full</span> <span class="pre">shape</span> <span class="pre">received:</span> <span class="pre">[2]</span>
+<span class="pre">`</span></code></p>
+<p>Input checks that can be specified via <cite>input_spec</cite> include:
+- Structure (e.g. a single input, a list of 2 inputs, etc)
+- Shape
+- Rank (ndim)
+- Dtype</p>
+<p>For more information, see <cite>tf.keras.layers.InputSpec</cite>.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A <cite>tf.keras.layers.InputSpec</cite> instance, or nested structure thereof.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.load_own_variables">
+<span class="sig-name descname"><span class="pre">load_own_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">store</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.load_own_variables" title="Permalink to this definition"></a></dt>
+<dd><p>Loads the state of the layer.</p>
+<p>You can override this method to take full control of how the state of
+the layer is loaded upon calling <cite>keras.models.load_model()</cite>.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>store: Dict from which the state of the model will be loaded.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.losses">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">losses</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.losses" title="Permalink to this definition"></a></dt>
+<dd><p>List of losses added using the <cite>add_loss()</cite> API.</p>
+<p>Variable regularization tensors are created when this property is
+accessed, so it is eager safe: accessing <cite>losses</cite> under a
+<cite>tf.GradientTape</cite> will propagate gradients back to the corresponding
+variables.</p>
+<p>Examples:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">MyLayer</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">add_loss</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">inputs</span><span class="p">)))</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">inputs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span> <span class="o">=</span> <span class="n">MyLayer</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span><span class="o">.</span><span class="n">losses</span>
+<span class="go">[1.0]</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">inputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">)(</span><span class="n">inputs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Activity regularization.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">losses</span><span class="p">)</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">add_loss</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">losses</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">inputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">kernel_initializer</span><span class="o">=</span><span class="s1">&#39;ones&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">d</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Weight regularization.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">add_loss</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">kernel</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">losses</span>
+<span class="go">[&lt;tf.Tensor: shape=(), dtype=float32, numpy=1.0&gt;]</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of tensors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.metrics">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metrics</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.metrics" title="Permalink to this definition"></a></dt>
+<dd><p>List of metrics added using the <cite>add_metric()</cite> API.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">input</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">d</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">add_metric</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">add_metric</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_min</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">metrics</span><span class="p">]</span>
+<span class="go">[&#39;max&#39;, &#39;min&#39;]</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of <cite>Metric</cite> objects.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.name" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the layer (string), set in the constructor.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.name_scope">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name_scope</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.name_scope" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a <cite>tf.name_scope</cite> instance for this class.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.non_trainable_variables">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">non_trainable_variables</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.non_trainable_variables" title="Permalink to this definition"></a></dt>
+<dd><p>Sequence of non-trainable variables owned by this module and its submodules.</p>
+<p>Note: this method uses reflection to find variables on the current instance
+and submodules. For performance reasons you may wish to cache the result
+of calling this method if you don’t expect the return value to change.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A sequence of variables for the current module (sorted by attribute
+name) followed by variables from all submodules recursively (breadth
+first).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.non_trainable_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">non_trainable_weights</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.non_trainable_weights" title="Permalink to this definition"></a></dt>
+<dd><p>List of all non-trainable weights tracked by this layer.</p>
+<p>Non-trainable weights are <em>not</em> updated during training. They are
+expected to be updated manually in <cite>call()</cite>.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of non-trainable variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.outbound_nodes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">outbound_nodes</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.outbound_nodes" title="Permalink to this definition"></a></dt>
+<dd><p>Return Functional API nodes downstream of this layer.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.output">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.output" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the output tensor(s) of a layer.</p>
+<p>Only applicable if the layer has exactly one output,
+i.e. if it is connected to one incoming layer.</p>
+<dl>
+<dt>Returns:</dt><dd><p>Output tensor or list of output tensors.</p>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>AttributeError: if the layer is connected to more than one incoming</dt><dd><p>layers.</p>
+</dd>
+</dl>
+<p>RuntimeError: if called in Eager mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.output_mask">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_mask</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.output_mask" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the output mask tensor(s) of a layer.</p>
+<p>Only applicable if the layer has exactly one inbound node,
+i.e. if it is connected to one incoming layer.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Output mask tensor (potentially None) or list of output
+mask tensors.</p>
+</dd>
+<dt>Raises:</dt><dd><p>AttributeError: if the layer is connected to
+more than one incoming layers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.output_shape">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_shape</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.output_shape" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves the output shape(s) of a layer.</p>
+<p>Only applicable if the layer has one output,
+or if all outputs have the same shape.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Output shape, as an integer shape tuple
+(or list of shape tuples, one tuple per output tensor).</p>
+</dd>
+<dt>Raises:</dt><dd><p>AttributeError: if the layer has no defined output shape.
+RuntimeError: if called in Eager mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.save_own_variables">
+<span class="sig-name descname"><span class="pre">save_own_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">store</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.save_own_variables" title="Permalink to this definition"></a></dt>
+<dd><p>Saves the state of the layer.</p>
+<p>You can override this method to take full control of how the state of
+the layer is saved upon calling <cite>model.save()</cite>.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>store: Dict where the state of the model will be saved.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.set_weights">
+<span class="sig-name descname"><span class="pre">set_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.set_weights" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the weights of the layer, from NumPy arrays.</p>
+<p>The weights of a layer represent the state of the layer. This function
+sets the weight values from numpy arrays. The weight values should be
+passed in the order they are created by the layer. Note that the layer’s
+weights must be instantiated before calling this function, by calling
+the layer.</p>
+<p>For example, a <cite>Dense</cite> layer returns a list of two values: the kernel
+matrix and the bias vector. These can be used to set the weights of
+another <cite>Dense</cite> layer:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">layer_a</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">kernel_initializer</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant_initializer</span><span class="p">(</span><span class="mf">1.</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_out</span> <span class="o">=</span> <span class="n">layer_a</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">([[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">]]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_a</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
+<span class="go">[array([[1.],</span>
+<span class="go">       [1.],</span>
+<span class="go">       [1.]], dtype=float32), array([0.], dtype=float32)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">kernel_initializer</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant_initializer</span><span class="p">(</span><span class="mf">2.</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b_out</span> <span class="o">=</span> <span class="n">layer_b</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">([[</span><span class="mf">10.</span><span class="p">,</span> <span class="mf">20.</span><span class="p">,</span> <span class="mf">30.</span><span class="p">]]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_b</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
+<span class="go">[array([[2.],</span>
+<span class="go">       [2.],</span>
+<span class="go">       [2.]], dtype=float32), array([0.], dtype=float32)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_b</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">layer_a</span><span class="o">.</span><span class="n">get_weights</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer_b</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
+<span class="go">[array([[1.],</span>
+<span class="go">       [1.],</span>
+<span class="go">       [1.]], dtype=float32), array([0.], dtype=float32)]</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>weights: a list of NumPy arrays. The number</dt><dd><p>of arrays and their shape must match
+number of the dimensions of the weights
+of the layer (i.e. it should match the
+output of <cite>get_weights</cite>).</p>
+</dd>
+</dl>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>ValueError: If the provided weights list does not match the</dt><dd><p>layer’s specifications.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.submodules">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">submodules</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.submodules" title="Permalink to this definition"></a></dt>
+<dd><p>Sequence of all sub-modules.</p>
+<p>Submodules are modules which are properties of this module, or found as
+properties of modules which are properties of this module (and so on).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Module</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Module</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Module</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">b</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">c</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">submodules</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">submodules</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="n">c</span><span class="p">]</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">submodules</span><span class="p">)</span> <span class="o">==</span> <span class="p">[]</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A sequence of all submodules.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.supports_masking">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_masking</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.supports_masking" title="Permalink to this definition"></a></dt>
+<dd><p>Whether this layer supports computing a mask using <cite>compute_mask</cite>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.trainable_variables">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trainable_variables</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.trainable_variables" title="Permalink to this definition"></a></dt>
+<dd><p>Sequence of trainable variables owned by this module and its submodules.</p>
+<p>Note: this method uses reflection to find variables on the current instance
+and submodules. For performance reasons you may wish to cache the result
+of calling this method if you don’t expect the return value to change.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A sequence of variables for the current module (sorted by attribute
+name) followed by variables from all submodules recursively (breadth
+first).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.trainable_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trainable_weights</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.trainable_weights" title="Permalink to this definition"></a></dt>
+<dd><p>List of all trainable weights tracked by this layer.</p>
+<p>Trainable weights are updated via gradient descent during training.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of trainable variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.variable_dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">variable_dtype</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.variable_dtype" title="Permalink to this definition"></a></dt>
+<dd><p>Alias of <cite>Layer.dtype</cite>, the dtype of the weights.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.variables">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">variables</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.variables" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the list of all layer variables/weights.</p>
+<p>Alias of <cite>self.weights</cite>.</p>
+<p>Note: This will not track the weights of nested <cite>tf.Modules</cite> that are
+not themselves Keras layers.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weights</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.weights" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the list of all layer variables/weights.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.AxialAttentionBlock.with_name_scope">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">with_name_scope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.AxialAttentionBlock.with_name_scope" title="Permalink to this definition"></a></dt>
+<dd><p>Decorator to automatically enter the module name scope.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">MyModule</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="nd">@tf</span><span class="o">.</span><span class="n">Module</span><span class="o">.</span><span class="n">with_name_scope</span>
+<span class="gp">... </span>  <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">):</span>
+<span class="gp">... </span>      <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">3</span><span class="p">]))</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using the above module would produce <a href="#id27"><span class="problematic" id="id28">`</span></a>tf.Variable`s and <a href="#id29"><span class="problematic" id="id30">`</span></a>tf.Tensor`s whose
+names included the module name:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mod</span> <span class="o">=</span> <span class="n">MyModule</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mod</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]))</span>
+<span class="go">&lt;tf.Tensor: shape=(1, 3), dtype=float32, numpy=..., dtype=float32)&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mod</span><span class="o">.</span><span class="n">w</span>
+<span class="go">&lt;tf.Variable &#39;my_module/Variable:0&#39; shape=(2, 3) dtype=float32,</span>
+<span class="go">numpy=..., dtype=float32)&gt;</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Args:</dt><dd><p>method: The method to wrap.</p>
+</dd>
+<dt>Returns:</dt><dd><p>The original method wrapped such that it enters the module’s name scope.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="phygnn.layers.custom_layers.Attention.html" class="btn btn-neutral float-left" title="phygnn.layers.custom_layers.Attention" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="phygnn.layers.custom_layers.CBAM.html" class="btn btn-neutral float-right" title="phygnn.layers.custom_layers.CBAM" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

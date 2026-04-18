@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.AxialAttentionBlock
+================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: AxialAttentionBlock
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~AxialAttentionBlock.add_loss
+      ~AxialAttentionBlock.add_metric
+      ~AxialAttentionBlock.add_update
+      ~AxialAttentionBlock.add_variable
+      ~AxialAttentionBlock.add_weight
+      ~AxialAttentionBlock.build
+      ~AxialAttentionBlock.build_from_config
+      ~AxialAttentionBlock.call
+      ~AxialAttentionBlock.compute_mask
+      ~AxialAttentionBlock.compute_output_shape
+      ~AxialAttentionBlock.compute_output_signature
+      ~AxialAttentionBlock.count_params
+      ~AxialAttentionBlock.finalize_state
+      ~AxialAttentionBlock.from_config
+      ~AxialAttentionBlock.get_build_config
+      ~AxialAttentionBlock.get_config
+      ~AxialAttentionBlock.get_input_at
+      ~AxialAttentionBlock.get_input_mask_at
+      ~AxialAttentionBlock.get_input_shape_at
+      ~AxialAttentionBlock.get_output_at
+      ~AxialAttentionBlock.get_output_mask_at
+      ~AxialAttentionBlock.get_output_shape_at
+      ~AxialAttentionBlock.get_weights
+      ~AxialAttentionBlock.load_own_variables
+      ~AxialAttentionBlock.save_own_variables
+      ~AxialAttentionBlock.set_weights
+      ~AxialAttentionBlock.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~AxialAttentionBlock.activity_regularizer
+      ~AxialAttentionBlock.compute_dtype
+      ~AxialAttentionBlock.dtype
+      ~AxialAttentionBlock.dtype_policy
+      ~AxialAttentionBlock.dynamic
+      ~AxialAttentionBlock.inbound_nodes
+      ~AxialAttentionBlock.input
+      ~AxialAttentionBlock.input_mask
+      ~AxialAttentionBlock.input_shape
+      ~AxialAttentionBlock.input_spec
+      ~AxialAttentionBlock.losses
+      ~AxialAttentionBlock.metrics
+      ~AxialAttentionBlock.name
+      ~AxialAttentionBlock.name_scope
+      ~AxialAttentionBlock.non_trainable_variables
+      ~AxialAttentionBlock.non_trainable_weights
+      ~AxialAttentionBlock.outbound_nodes
+      ~AxialAttentionBlock.output
+      ~AxialAttentionBlock.output_mask
+      ~AxialAttentionBlock.output_shape
+      ~AxialAttentionBlock.stateful
+      ~AxialAttentionBlock.submodules
+      ~AxialAttentionBlock.supports_masking
+      ~AxialAttentionBlock.trainable
+      ~AxialAttentionBlock.trainable_variables
+      ~AxialAttentionBlock.trainable_weights
+      ~AxialAttentionBlock.updates
+      ~AxialAttentionBlock.variable_dtype
+      ~AxialAttentionBlock.variables
+      ~AxialAttentionBlock.weights
+   
+   

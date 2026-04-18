@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.Sup3rConcat
+========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: Sup3rConcat
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Sup3rConcat.add_loss
+      ~Sup3rConcat.add_metric
+      ~Sup3rConcat.add_update
+      ~Sup3rConcat.add_variable
+      ~Sup3rConcat.add_weight
+      ~Sup3rConcat.build
+      ~Sup3rConcat.build_from_config
+      ~Sup3rConcat.call
+      ~Sup3rConcat.compute_mask
+      ~Sup3rConcat.compute_output_shape
+      ~Sup3rConcat.compute_output_signature
+      ~Sup3rConcat.count_params
+      ~Sup3rConcat.finalize_state
+      ~Sup3rConcat.from_config
+      ~Sup3rConcat.get_build_config
+      ~Sup3rConcat.get_config
+      ~Sup3rConcat.get_input_at
+      ~Sup3rConcat.get_input_mask_at
+      ~Sup3rConcat.get_input_shape_at
+      ~Sup3rConcat.get_output_at
+      ~Sup3rConcat.get_output_mask_at
+      ~Sup3rConcat.get_output_shape_at
+      ~Sup3rConcat.get_weights
+      ~Sup3rConcat.load_own_variables
+      ~Sup3rConcat.save_own_variables
+      ~Sup3rConcat.set_weights
+      ~Sup3rConcat.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Sup3rConcat.activity_regularizer
+      ~Sup3rConcat.compute_dtype
+      ~Sup3rConcat.dtype
+      ~Sup3rConcat.dtype_policy
+      ~Sup3rConcat.dynamic
+      ~Sup3rConcat.inbound_nodes
+      ~Sup3rConcat.input
+      ~Sup3rConcat.input_mask
+      ~Sup3rConcat.input_shape
+      ~Sup3rConcat.input_spec
+      ~Sup3rConcat.losses
+      ~Sup3rConcat.metrics
+      ~Sup3rConcat.name
+      ~Sup3rConcat.name_scope
+      ~Sup3rConcat.non_trainable_variables
+      ~Sup3rConcat.non_trainable_weights
+      ~Sup3rConcat.outbound_nodes
+      ~Sup3rConcat.output
+      ~Sup3rConcat.output_mask
+      ~Sup3rConcat.output_shape
+      ~Sup3rConcat.stateful
+      ~Sup3rConcat.submodules
+      ~Sup3rConcat.supports_masking
+      ~Sup3rConcat.trainable
+      ~Sup3rConcat.trainable_variables
+      ~Sup3rConcat.trainable_weights
+      ~Sup3rConcat.updates
+      ~Sup3rConcat.variable_dtype
+      ~Sup3rConcat.variables
+      ~Sup3rConcat.weights
+   
+   

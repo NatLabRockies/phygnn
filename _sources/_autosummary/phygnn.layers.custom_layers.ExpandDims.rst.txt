@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.ExpandDims
+=======================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: ExpandDims
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ExpandDims.add_loss
+      ~ExpandDims.add_metric
+      ~ExpandDims.add_update
+      ~ExpandDims.add_variable
+      ~ExpandDims.add_weight
+      ~ExpandDims.build
+      ~ExpandDims.build_from_config
+      ~ExpandDims.call
+      ~ExpandDims.compute_mask
+      ~ExpandDims.compute_output_shape
+      ~ExpandDims.compute_output_signature
+      ~ExpandDims.count_params
+      ~ExpandDims.finalize_state
+      ~ExpandDims.from_config
+      ~ExpandDims.get_build_config
+      ~ExpandDims.get_config
+      ~ExpandDims.get_input_at
+      ~ExpandDims.get_input_mask_at
+      ~ExpandDims.get_input_shape_at
+      ~ExpandDims.get_output_at
+      ~ExpandDims.get_output_mask_at
+      ~ExpandDims.get_output_shape_at
+      ~ExpandDims.get_weights
+      ~ExpandDims.load_own_variables
+      ~ExpandDims.save_own_variables
+      ~ExpandDims.set_weights
+      ~ExpandDims.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ExpandDims.activity_regularizer
+      ~ExpandDims.compute_dtype
+      ~ExpandDims.dtype
+      ~ExpandDims.dtype_policy
+      ~ExpandDims.dynamic
+      ~ExpandDims.inbound_nodes
+      ~ExpandDims.input
+      ~ExpandDims.input_mask
+      ~ExpandDims.input_shape
+      ~ExpandDims.input_spec
+      ~ExpandDims.losses
+      ~ExpandDims.metrics
+      ~ExpandDims.name
+      ~ExpandDims.name_scope
+      ~ExpandDims.non_trainable_variables
+      ~ExpandDims.non_trainable_weights
+      ~ExpandDims.outbound_nodes
+      ~ExpandDims.output
+      ~ExpandDims.output_mask
+      ~ExpandDims.output_shape
+      ~ExpandDims.stateful
+      ~ExpandDims.submodules
+      ~ExpandDims.supports_masking
+      ~ExpandDims.trainable
+      ~ExpandDims.trainable_variables
+      ~ExpandDims.trainable_weights
+      ~ExpandDims.updates
+      ~ExpandDims.variable_dtype
+      ~ExpandDims.variables
+      ~ExpandDims.weights
+   
+   

@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.FNO
+================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: FNO
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FNO.add_loss
+      ~FNO.add_metric
+      ~FNO.add_update
+      ~FNO.add_variable
+      ~FNO.add_weight
+      ~FNO.build
+      ~FNO.build_from_config
+      ~FNO.call
+      ~FNO.compute_mask
+      ~FNO.compute_output_shape
+      ~FNO.compute_output_signature
+      ~FNO.count_params
+      ~FNO.finalize_state
+      ~FNO.from_config
+      ~FNO.get_build_config
+      ~FNO.get_config
+      ~FNO.get_input_at
+      ~FNO.get_input_mask_at
+      ~FNO.get_input_shape_at
+      ~FNO.get_output_at
+      ~FNO.get_output_mask_at
+      ~FNO.get_output_shape_at
+      ~FNO.get_weights
+      ~FNO.load_own_variables
+      ~FNO.save_own_variables
+      ~FNO.set_weights
+      ~FNO.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FNO.activity_regularizer
+      ~FNO.compute_dtype
+      ~FNO.dtype
+      ~FNO.dtype_policy
+      ~FNO.dynamic
+      ~FNO.inbound_nodes
+      ~FNO.input
+      ~FNO.input_mask
+      ~FNO.input_shape
+      ~FNO.input_spec
+      ~FNO.losses
+      ~FNO.metrics
+      ~FNO.name
+      ~FNO.name_scope
+      ~FNO.non_trainable_variables
+      ~FNO.non_trainable_weights
+      ~FNO.outbound_nodes
+      ~FNO.output
+      ~FNO.output_mask
+      ~FNO.output_shape
+      ~FNO.stateful
+      ~FNO.submodules
+      ~FNO.supports_masking
+      ~FNO.trainable
+      ~FNO.trainable_variables
+      ~FNO.trainable_weights
+      ~FNO.updates
+      ~FNO.variable_dtype
+      ~FNO.variables
+      ~FNO.weights
+   
+   

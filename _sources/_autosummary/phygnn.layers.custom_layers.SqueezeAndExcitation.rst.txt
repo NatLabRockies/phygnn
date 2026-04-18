@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.SqueezeAndExcitation
+=================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SqueezeAndExcitation
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SqueezeAndExcitation.add_loss
+      ~SqueezeAndExcitation.add_metric
+      ~SqueezeAndExcitation.add_update
+      ~SqueezeAndExcitation.add_variable
+      ~SqueezeAndExcitation.add_weight
+      ~SqueezeAndExcitation.build
+      ~SqueezeAndExcitation.build_from_config
+      ~SqueezeAndExcitation.call
+      ~SqueezeAndExcitation.compute_mask
+      ~SqueezeAndExcitation.compute_output_shape
+      ~SqueezeAndExcitation.compute_output_signature
+      ~SqueezeAndExcitation.count_params
+      ~SqueezeAndExcitation.finalize_state
+      ~SqueezeAndExcitation.from_config
+      ~SqueezeAndExcitation.get_build_config
+      ~SqueezeAndExcitation.get_config
+      ~SqueezeAndExcitation.get_input_at
+      ~SqueezeAndExcitation.get_input_mask_at
+      ~SqueezeAndExcitation.get_input_shape_at
+      ~SqueezeAndExcitation.get_output_at
+      ~SqueezeAndExcitation.get_output_mask_at
+      ~SqueezeAndExcitation.get_output_shape_at
+      ~SqueezeAndExcitation.get_weights
+      ~SqueezeAndExcitation.load_own_variables
+      ~SqueezeAndExcitation.save_own_variables
+      ~SqueezeAndExcitation.set_weights
+      ~SqueezeAndExcitation.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SqueezeAndExcitation.activity_regularizer
+      ~SqueezeAndExcitation.compute_dtype
+      ~SqueezeAndExcitation.dtype
+      ~SqueezeAndExcitation.dtype_policy
+      ~SqueezeAndExcitation.dynamic
+      ~SqueezeAndExcitation.inbound_nodes
+      ~SqueezeAndExcitation.input
+      ~SqueezeAndExcitation.input_mask
+      ~SqueezeAndExcitation.input_shape
+      ~SqueezeAndExcitation.input_spec
+      ~SqueezeAndExcitation.losses
+      ~SqueezeAndExcitation.metrics
+      ~SqueezeAndExcitation.name
+      ~SqueezeAndExcitation.name_scope
+      ~SqueezeAndExcitation.non_trainable_variables
+      ~SqueezeAndExcitation.non_trainable_weights
+      ~SqueezeAndExcitation.outbound_nodes
+      ~SqueezeAndExcitation.output
+      ~SqueezeAndExcitation.output_mask
+      ~SqueezeAndExcitation.output_shape
+      ~SqueezeAndExcitation.stateful
+      ~SqueezeAndExcitation.submodules
+      ~SqueezeAndExcitation.supports_masking
+      ~SqueezeAndExcitation.trainable
+      ~SqueezeAndExcitation.trainable_variables
+      ~SqueezeAndExcitation.trainable_weights
+      ~SqueezeAndExcitation.updates
+      ~SqueezeAndExcitation.variable_dtype
+      ~SqueezeAndExcitation.variables
+      ~SqueezeAndExcitation.weights
+   
+   

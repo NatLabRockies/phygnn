@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.SpatioTemporalExpansion
+====================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SpatioTemporalExpansion
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SpatioTemporalExpansion.add_loss
+      ~SpatioTemporalExpansion.add_metric
+      ~SpatioTemporalExpansion.add_update
+      ~SpatioTemporalExpansion.add_variable
+      ~SpatioTemporalExpansion.add_weight
+      ~SpatioTemporalExpansion.build
+      ~SpatioTemporalExpansion.build_from_config
+      ~SpatioTemporalExpansion.call
+      ~SpatioTemporalExpansion.compute_mask
+      ~SpatioTemporalExpansion.compute_output_shape
+      ~SpatioTemporalExpansion.compute_output_signature
+      ~SpatioTemporalExpansion.count_params
+      ~SpatioTemporalExpansion.finalize_state
+      ~SpatioTemporalExpansion.from_config
+      ~SpatioTemporalExpansion.get_build_config
+      ~SpatioTemporalExpansion.get_config
+      ~SpatioTemporalExpansion.get_input_at
+      ~SpatioTemporalExpansion.get_input_mask_at
+      ~SpatioTemporalExpansion.get_input_shape_at
+      ~SpatioTemporalExpansion.get_output_at
+      ~SpatioTemporalExpansion.get_output_mask_at
+      ~SpatioTemporalExpansion.get_output_shape_at
+      ~SpatioTemporalExpansion.get_weights
+      ~SpatioTemporalExpansion.load_own_variables
+      ~SpatioTemporalExpansion.save_own_variables
+      ~SpatioTemporalExpansion.set_weights
+      ~SpatioTemporalExpansion.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SpatioTemporalExpansion.activity_regularizer
+      ~SpatioTemporalExpansion.compute_dtype
+      ~SpatioTemporalExpansion.dtype
+      ~SpatioTemporalExpansion.dtype_policy
+      ~SpatioTemporalExpansion.dynamic
+      ~SpatioTemporalExpansion.inbound_nodes
+      ~SpatioTemporalExpansion.input
+      ~SpatioTemporalExpansion.input_mask
+      ~SpatioTemporalExpansion.input_shape
+      ~SpatioTemporalExpansion.input_spec
+      ~SpatioTemporalExpansion.losses
+      ~SpatioTemporalExpansion.metrics
+      ~SpatioTemporalExpansion.name
+      ~SpatioTemporalExpansion.name_scope
+      ~SpatioTemporalExpansion.non_trainable_variables
+      ~SpatioTemporalExpansion.non_trainable_weights
+      ~SpatioTemporalExpansion.outbound_nodes
+      ~SpatioTemporalExpansion.output
+      ~SpatioTemporalExpansion.output_mask
+      ~SpatioTemporalExpansion.output_shape
+      ~SpatioTemporalExpansion.stateful
+      ~SpatioTemporalExpansion.submodules
+      ~SpatioTemporalExpansion.supports_masking
+      ~SpatioTemporalExpansion.trainable
+      ~SpatioTemporalExpansion.trainable_variables
+      ~SpatioTemporalExpansion.trainable_weights
+      ~SpatioTemporalExpansion.updates
+      ~SpatioTemporalExpansion.variable_dtype
+      ~SpatioTemporalExpansion.variables
+      ~SpatioTemporalExpansion.weights
+   
+   

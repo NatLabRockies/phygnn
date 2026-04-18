@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.Sup3rAdder
+=======================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: Sup3rAdder
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Sup3rAdder.add_loss
+      ~Sup3rAdder.add_metric
+      ~Sup3rAdder.add_update
+      ~Sup3rAdder.add_variable
+      ~Sup3rAdder.add_weight
+      ~Sup3rAdder.build
+      ~Sup3rAdder.build_from_config
+      ~Sup3rAdder.call
+      ~Sup3rAdder.compute_mask
+      ~Sup3rAdder.compute_output_shape
+      ~Sup3rAdder.compute_output_signature
+      ~Sup3rAdder.count_params
+      ~Sup3rAdder.finalize_state
+      ~Sup3rAdder.from_config
+      ~Sup3rAdder.get_build_config
+      ~Sup3rAdder.get_config
+      ~Sup3rAdder.get_input_at
+      ~Sup3rAdder.get_input_mask_at
+      ~Sup3rAdder.get_input_shape_at
+      ~Sup3rAdder.get_output_at
+      ~Sup3rAdder.get_output_mask_at
+      ~Sup3rAdder.get_output_shape_at
+      ~Sup3rAdder.get_weights
+      ~Sup3rAdder.load_own_variables
+      ~Sup3rAdder.save_own_variables
+      ~Sup3rAdder.set_weights
+      ~Sup3rAdder.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Sup3rAdder.activity_regularizer
+      ~Sup3rAdder.compute_dtype
+      ~Sup3rAdder.dtype
+      ~Sup3rAdder.dtype_policy
+      ~Sup3rAdder.dynamic
+      ~Sup3rAdder.inbound_nodes
+      ~Sup3rAdder.input
+      ~Sup3rAdder.input_mask
+      ~Sup3rAdder.input_shape
+      ~Sup3rAdder.input_spec
+      ~Sup3rAdder.losses
+      ~Sup3rAdder.metrics
+      ~Sup3rAdder.name
+      ~Sup3rAdder.name_scope
+      ~Sup3rAdder.non_trainable_variables
+      ~Sup3rAdder.non_trainable_weights
+      ~Sup3rAdder.outbound_nodes
+      ~Sup3rAdder.output
+      ~Sup3rAdder.output_mask
+      ~Sup3rAdder.output_shape
+      ~Sup3rAdder.stateful
+      ~Sup3rAdder.submodules
+      ~Sup3rAdder.supports_masking
+      ~Sup3rAdder.trainable
+      ~Sup3rAdder.trainable_variables
+      ~Sup3rAdder.trainable_weights
+      ~Sup3rAdder.updates
+      ~Sup3rAdder.variable_dtype
+      ~Sup3rAdder.variables
+      ~Sup3rAdder.weights
+   
+   

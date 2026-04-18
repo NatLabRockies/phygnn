@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.FunctionalLayer
+============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: FunctionalLayer
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FunctionalLayer.add_loss
+      ~FunctionalLayer.add_metric
+      ~FunctionalLayer.add_update
+      ~FunctionalLayer.add_variable
+      ~FunctionalLayer.add_weight
+      ~FunctionalLayer.build
+      ~FunctionalLayer.build_from_config
+      ~FunctionalLayer.call
+      ~FunctionalLayer.compute_mask
+      ~FunctionalLayer.compute_output_shape
+      ~FunctionalLayer.compute_output_signature
+      ~FunctionalLayer.count_params
+      ~FunctionalLayer.finalize_state
+      ~FunctionalLayer.from_config
+      ~FunctionalLayer.get_build_config
+      ~FunctionalLayer.get_config
+      ~FunctionalLayer.get_input_at
+      ~FunctionalLayer.get_input_mask_at
+      ~FunctionalLayer.get_input_shape_at
+      ~FunctionalLayer.get_output_at
+      ~FunctionalLayer.get_output_mask_at
+      ~FunctionalLayer.get_output_shape_at
+      ~FunctionalLayer.get_weights
+      ~FunctionalLayer.load_own_variables
+      ~FunctionalLayer.save_own_variables
+      ~FunctionalLayer.set_weights
+      ~FunctionalLayer.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FunctionalLayer.activity_regularizer
+      ~FunctionalLayer.compute_dtype
+      ~FunctionalLayer.dtype
+      ~FunctionalLayer.dtype_policy
+      ~FunctionalLayer.dynamic
+      ~FunctionalLayer.inbound_nodes
+      ~FunctionalLayer.input
+      ~FunctionalLayer.input_mask
+      ~FunctionalLayer.input_shape
+      ~FunctionalLayer.input_spec
+      ~FunctionalLayer.losses
+      ~FunctionalLayer.metrics
+      ~FunctionalLayer.name
+      ~FunctionalLayer.name_scope
+      ~FunctionalLayer.non_trainable_variables
+      ~FunctionalLayer.non_trainable_weights
+      ~FunctionalLayer.outbound_nodes
+      ~FunctionalLayer.output
+      ~FunctionalLayer.output_mask
+      ~FunctionalLayer.output_shape
+      ~FunctionalLayer.stateful
+      ~FunctionalLayer.submodules
+      ~FunctionalLayer.supports_masking
+      ~FunctionalLayer.trainable
+      ~FunctionalLayer.trainable_variables
+      ~FunctionalLayer.trainable_weights
+      ~FunctionalLayer.updates
+      ~FunctionalLayer.variable_dtype
+      ~FunctionalLayer.variables
+      ~FunctionalLayer.weights
+   
+   

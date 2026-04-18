@@ -1,0 +1,31 @@
+phygnn.layers
+=============
+
+.. automodule:: phygnn.layers
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. autosummary::
+   :toctree:
+   :template: custom-module-template.rst
+   :recursive:
+
+   phygnn.layers.custom_layers
+   phygnn.layers.handlers
+

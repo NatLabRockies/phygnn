@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.UnitConversion
+===========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: UnitConversion
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~UnitConversion.add_loss
+      ~UnitConversion.add_metric
+      ~UnitConversion.add_update
+      ~UnitConversion.add_variable
+      ~UnitConversion.add_weight
+      ~UnitConversion.build
+      ~UnitConversion.build_from_config
+      ~UnitConversion.call
+      ~UnitConversion.compute_mask
+      ~UnitConversion.compute_output_shape
+      ~UnitConversion.compute_output_signature
+      ~UnitConversion.count_params
+      ~UnitConversion.finalize_state
+      ~UnitConversion.from_config
+      ~UnitConversion.get_build_config
+      ~UnitConversion.get_config
+      ~UnitConversion.get_input_at
+      ~UnitConversion.get_input_mask_at
+      ~UnitConversion.get_input_shape_at
+      ~UnitConversion.get_output_at
+      ~UnitConversion.get_output_mask_at
+      ~UnitConversion.get_output_shape_at
+      ~UnitConversion.get_weights
+      ~UnitConversion.load_own_variables
+      ~UnitConversion.save_own_variables
+      ~UnitConversion.set_weights
+      ~UnitConversion.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~UnitConversion.activity_regularizer
+      ~UnitConversion.compute_dtype
+      ~UnitConversion.dtype
+      ~UnitConversion.dtype_policy
+      ~UnitConversion.dynamic
+      ~UnitConversion.inbound_nodes
+      ~UnitConversion.input
+      ~UnitConversion.input_mask
+      ~UnitConversion.input_shape
+      ~UnitConversion.input_spec
+      ~UnitConversion.losses
+      ~UnitConversion.metrics
+      ~UnitConversion.name
+      ~UnitConversion.name_scope
+      ~UnitConversion.non_trainable_variables
+      ~UnitConversion.non_trainable_weights
+      ~UnitConversion.outbound_nodes
+      ~UnitConversion.output
+      ~UnitConversion.output_mask
+      ~UnitConversion.output_shape
+      ~UnitConversion.stateful
+      ~UnitConversion.submodules
+      ~UnitConversion.supports_masking
+      ~UnitConversion.trainable
+      ~UnitConversion.trainable_variables
+      ~UnitConversion.trainable_weights
+      ~UnitConversion.updates
+      ~UnitConversion.variable_dtype
+      ~UnitConversion.variables
+      ~UnitConversion.weights
+   
+   

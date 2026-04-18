@@ -1,0 +1,702 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.utilities.pre_processing &mdash; phygnn 0.0.35.dev1+g54e97538a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=71b63c52"></script>
+      <script src="../../../_static/doctools.js?v=888ff710"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/phygnn.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.layers.html">phygnn.layers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Attention.html">phygnn.layers.custom_layers.Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.AxialAttentionBlock.html">phygnn.layers.custom_layers.AxialAttentionBlock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FNO.html">phygnn.layers.custom_layers.FNO</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SparseAttention.html">phygnn.layers.custom_layers.SparseAttention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rConcat.html">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.Layers.html">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.tf_model.TfModel.html">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.html">phygnn.utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">phygnn.utilities.pre_processing</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for phygnn.utilities.pre_processing</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Data pre-processing module.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">warn</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneHotEncoder</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PreProcess"><a class="viewcode-back" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html#phygnn.utilities.pre_processing.PreProcess">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PreProcess</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to handle the pre-processing of feature data.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">feature_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        features : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Feature data in a 2D array or DataFrame.</span>
+<span class="sd">        feature_names : str, optional</span>
+<span class="sd">            Feature names, used if features is an ndarray, by default None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span> <span class="o">=</span> <span class="n">features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pd</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pd</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_feature_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">features</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">is_unique</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;DataFrame indices must be unique&#39;</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pd</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">check</span> <span class="o">=</span> <span class="p">(</span><span class="n">feature_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                     <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">feature_names</span><span class="p">))</span> <span class="o">!=</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">check</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;The number of feature names (</span><span class="si">{}</span><span class="s1">) does not match the &#39;</span>
+                       <span class="s1">&#39;number of features (</span><span class="si">{}</span><span class="s1">)!&#39;</span>
+                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">feature_names</span><span class="p">)),</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_feature_names</span> <span class="o">=</span> <span class="n">feature_names</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_stdev</span><span class="p">(</span><span class="n">stdev</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check stdev values for 0s or near 0 values, replace with 1s</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stdev : int | ndarray</span>
+<span class="sd">            Normalization stdev value(s)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        stdev : int | ndarray</span>
+<span class="sd">            Normalization stdev values(s) with 0s replaced with 1s</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zeros</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">stdev</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">zeros</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Standard deviation is ~0 and will be set to 1&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zeros</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                <span class="n">stdev</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stdev</span><span class="p">[</span><span class="n">zeros</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">stdev</span>
+
+<div class="viewcode-block" id="PreProcess.normalize"><a class="viewcode-back" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html#phygnn.utilities.pre_processing.PreProcess.normalize">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stdev</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Normalize features with mean at 0 and stdev of 1.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        arr : ndarray | pd.DataFrame</span>
+<span class="sd">            native data, dataframes are converted to arrays.</span>
+<span class="sd">        mean : float | None</span>
+<span class="sd">            mean to use for normalization</span>
+<span class="sd">        stdev : float | None</span>
+<span class="sd">            stdev to use for normalization</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        norm_arr : ndarray</span>
+<span class="sd">            normalized data</span>
+<span class="sd">        mean : np.ndarray</span>
+<span class="sd">            1D array of mean values used for normalization with length equal to</span>
+<span class="sd">            number of features</span>
+<span class="sd">        stdev : np.ndarray</span>
+<span class="sd">            1D array of stdev values used for normalization with length equal</span>
+<span class="sd">            to number of features</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">mean</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">f</span><span class="p">])</span>
+                             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
+
+        <span class="k">if</span> <span class="n">stdev</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stdev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">f</span><span class="p">])</span>
+                              <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
+            <span class="n">stdev</span> <span class="o">=</span> <span class="n">PreProcess</span><span class="o">.</span><span class="n">_check_stdev</span><span class="p">(</span><span class="n">stdev</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">arr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">f</span><span class="p">]</span> <span class="o">-</span> <span class="n">mean</span><span class="p">[</span><span class="n">f</span><span class="p">])</span> <span class="o">/</span> <span class="n">stdev</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">arr</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">stdev</span></div>
+
+<div class="viewcode-block" id="PreProcess.unnormalize"><a class="viewcode-back" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html#phygnn.utilities.pre_processing.PreProcess.unnormalize">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unnormalize</span><span class="p">(</span><span class="n">norm_arr</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">stdev</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Unnormalize data with mean at 0 and stdev of 1.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        norm_arr : ndarray</span>
+<span class="sd">            normalized data</span>
+<span class="sd">        mean : float</span>
+<span class="sd">            mean used for normalization</span>
+<span class="sd">        stdev : float</span>
+<span class="sd">            stdev used for normalization</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        native_arr : ndarray</span>
+<span class="sd">            native un-normalized data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">native_arr</span> <span class="o">=</span> <span class="n">norm_arr</span> <span class="o">*</span> <span class="n">stdev</span>
+        <span class="n">native_arr</span> <span class="o">+=</span> <span class="n">mean</span>
+
+        <span class="k">return</span> <span class="n">native_arr</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_one_hot</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">convert_int</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if an array of data is to be transformed into a one-hot vector</span>
+<span class="sd">        by sampling the first datum and checking the type.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        arr : np.ndarray</span>
+<span class="sd">            Array (column) of data to be checked.</span>
+<span class="sd">        convert_int : bool</span>
+<span class="sd">            Flag to convert integer data to one-hot vectors.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        one_hot : bool</span>
+<span class="sd">            True if arr is to be transformed into a one-hot vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="s1">&#39;Cannot process 3D column into one hot&#39;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="n">one_hot</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">sample</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">convert_int</span><span class="p">):</span>
+            <span class="n">one_hot</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="n">one_hot</span>
+
+<div class="viewcode-block" id="PreProcess.check_one_hot_categories"><a class="viewcode-back" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html#phygnn.utilities.pre_processing.PreProcess.check_one_hot_categories">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_one_hot_categories</span><span class="p">(</span><span class="n">one_hot_categories</span><span class="p">,</span> <span class="n">feature_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check one hot features and categories for duplicate names and against</span>
+<span class="sd">        feature names if provided</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        one_hot_categories : dict, optional</span>
+<span class="sd">            Features to one-hot encode using given categories</span>
+<span class="sd">        feature_names : [type], optional</span>
+<span class="sd">            Feature names, by default None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">one_hot_features_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">sub</span> <span class="ow">in</span> <span class="n">one_hot_categories</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sub</span><span class="p">]</span>
+        <span class="n">names</span><span class="p">,</span> <span class="n">feature_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">one_hot_features_names</span><span class="p">,</span>
+                                          <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">feature_counts</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;one-hot category names have to be unique accross all &#39;</span>
+                   <span class="s1">&#39;features. The following category names were duplicated:&#39;</span>
+                   <span class="s1">&#39;</span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">names</span><span class="p">[</span><span class="n">feature_counts</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">feature_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">one_hot_features</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">one_hot_categories</span><span class="p">))</span>
+            <span class="n">check</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">one_hot_features</span><span class="p">,</span> <span class="n">feature_names</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">check</span><span class="p">):</span>
+                <span class="n">bad_names</span> <span class="o">=</span> <span class="n">one_hot_features</span><span class="p">[</span><span class="o">~</span><span class="n">check</span><span class="p">]</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;The following one-hot features do not have valid &#39;</span>
+                       <span class="s1">&#39;names!</span><span class="se">\n</span><span class="si">{}</span><span class="se">\n</span><span class="s1">Must be one of the available feature &#39;</span>
+                       <span class="s1">&#39;names:</span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bad_names</span><span class="p">,</span> <span class="n">feature_names</span><span class="p">))</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="n">final_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">feature_names</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">one_hot_categories</span><span class="p">))</span>
+            <span class="n">check</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">one_hot_features_names</span><span class="p">,</span> <span class="n">final_names</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">check</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;The following category names: </span><span class="si">{}</span><span class="s1"> conflict with &#39;</span>
+                       <span class="s1">&#39;existing feature names&#39;</span>
+                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">one_hot_features_names</span><span class="p">)[</span><span class="n">check</span><span class="p">]))</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_one_hot_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">convert_int</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get one hot data and column indexes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        convert_int : bool</span>
+<span class="sd">            Flag to convert integer data to one-hot vectors.</span>
+<span class="sd">        categories : dict | None</span>
+<span class="sd">            Categories to use for one hot encoding where a key is the original</span>
+<span class="sd">            column name in the feature dataframe and value is a list of the</span>
+<span class="sd">            possible unique values of the feature column. The value list must</span>
+<span class="sd">            have as many or more entries as unique values in the feature</span>
+<span class="sd">            column. This will name the feature column headers for the new</span>
+<span class="sd">            one-hot-encoding if features is a dataframe. Empty dict or None</span>
+<span class="sd">            results in category names being determined automatically. Format:</span>
+<span class="sd">                {&#39;col_name1&#39; : [&#39;cat1&#39;, &#39;cat2&#39;, &#39;cat3&#39;],</span>
+<span class="sd">                 &#39;col_name2&#39; : [&#39;other_cat1&#39;, &#39;other_cat2&#39;]}</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        one_hot_ind : list</span>
+<span class="sd">            List of numeric column indices in the native data that are</span>
+<span class="sd">            to-be-transformed into one-hot vectors.</span>
+<span class="sd">        one_hot_data : list</span>
+<span class="sd">            List of arrays of one hot data columns that are transformations of</span>
+<span class="sd">            the one_hot_ind columns.</span>
+<span class="sd">        numerical_ind : list</span>
+<span class="sd">            List of numeric column indices in the native data that are</span>
+<span class="sd">            continuous numerical columns that are not to-be-transformed into</span>
+<span class="sd">            one-hot vectors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">categories</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">one_hot_ind</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">one_hot_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">numerical_ind</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_names</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pd</span><span class="p">:</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_one_hot</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">convert_int</span><span class="o">=</span><span class="n">convert_int</span><span class="p">):</span>
+                <span class="n">numerical_ind</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;One hot encoding </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+                <span class="n">one_hot_ind</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">:</span>
+                    <span class="n">cats</span> <span class="o">=</span> <span class="p">[</span><span class="n">categories</span><span class="p">[</span><span class="n">name</span><span class="p">]]</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Using categories </span><span class="si">{}</span><span class="s1"> for column </span><span class="si">{}</span><span class="s1">&#39;</span>
+                                 <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cats</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+                    <span class="n">oh_obj</span> <span class="o">=</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">sparse_output</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                           <span class="n">categories</span><span class="o">=</span><span class="n">cats</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">oh_obj</span> <span class="o">=</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">sparse_output</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+                <span class="n">oh_obj</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+                <span class="n">one_hot_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">oh_obj</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">col</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">one_hot_ind</span><span class="p">,</span> <span class="n">one_hot_data</span><span class="p">,</span> <span class="n">numerical_ind</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_make_df_one_hot_cols_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">one_hot_ind</span><span class="p">,</span> <span class="n">one_hot_data</span><span class="p">,</span>
+                                     <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make unique column labels for the new one-hot data. This will use</span>
+<span class="sd">        column labels from categories if available.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        one_hot_ind : list</span>
+<span class="sd">            List of numeric column indices in the native data that are</span>
+<span class="sd">            to-be-transformed into one-hot vectors.</span>
+<span class="sd">        one_hot_data : list</span>
+<span class="sd">            List of arrays of one hot data columns that are transformations of</span>
+<span class="sd">            the one_hot_ind columns.</span>
+<span class="sd">        categories : dict | None</span>
+<span class="sd">            Categories to use for one hot encoding where a key is the original</span>
+<span class="sd">            column name in the feature dataframe and value is a list of the</span>
+<span class="sd">            possible unique values of the feature column. The value list must</span>
+<span class="sd">            have as many or more entries as unique values in the feature</span>
+<span class="sd">            column. This will name the feature column headers for the new</span>
+<span class="sd">            one-hot-encoding if features is a dataframe. Empty dict or None</span>
+<span class="sd">            results in category names being determined automatically. Format:</span>
+<span class="sd">                {&#39;col_name1&#39; : [&#39;cat1&#39;, &#39;cat2&#39;, &#39;cat3&#39;],</span>
+<span class="sd">                 &#39;col_name2&#39; : [&#39;other_cat1&#39;, &#39;other_cat2&#39;]}</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        col_labels : list</span>
+<span class="sd">            List of string labels corresponding to np.hstack(one_hot_data).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">categories</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">col_labels</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">oh_ind</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">one_hot_ind</span><span class="p">):</span>
+            <span class="n">orig_col_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">oh_ind</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">orig_col_label</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">:</span>
+                <span class="n">cat_labels</span> <span class="o">=</span> <span class="n">categories</span><span class="p">[</span><span class="n">orig_col_label</span><span class="p">]</span>
+
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Values in the categories input dict must be a &#39;</span>
+                       <span class="s1">&#39;list or tuple!&#39;</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat_labels</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)),</span> <span class="n">msg</span>
+
+                <span class="n">unique_vals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="n">orig_col_label</span><span class="p">])</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Categories for &quot;</span><span class="si">{a}</span><span class="s1">&quot; one-hot column had fewer unique &#39;</span>
+                       <span class="s1">&#39;entries than one-hot encodings! You input these &#39;</span>
+                       <span class="s1">&#39;categories: </span><span class="si">{b}</span><span class="s1"> but &quot;</span><span class="si">{a}</span><span class="s1">&quot; has these values: </span><span class="si">{c}</span><span class="s1">&#39;</span>
+                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">orig_col_label</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">cat_labels</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">unique_vals</span><span class="p">))</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_labels</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_vals</span><span class="p">),</span> <span class="n">msg</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat_labels</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                    <span class="n">cat_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cat_labels</span><span class="p">)</span>
+
+                <span class="n">col_labels</span> <span class="o">+=</span> <span class="n">cat_labels</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">def_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">orig_col_label</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                              <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">one_hot_data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="n">col_labels</span> <span class="o">+=</span> <span class="n">def_labels</span>
+
+        <span class="k">return</span> <span class="n">col_labels</span>
+
+<div class="viewcode-block" id="PreProcess.update_names"><a class="viewcode-back" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html#phygnn.utilities.pre_processing.PreProcess.update_names">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_names</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">categories</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update feature names with the OHE categories.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        names : list | None</span>
+<span class="sd">            Feature or label names</span>
+<span class="sd">        categories : dict</span>
+<span class="sd">            Categories to use for one hot encoding where a key is the original</span>
+<span class="sd">            column name in the feature dataframe and value is a list of the</span>
+<span class="sd">            possible unique values of the feature column. The value list must</span>
+<span class="sd">            have as many or more entries as unique values in the feature</span>
+<span class="sd">            column. This will name the feature column headers for the new</span>
+<span class="sd">            one-hot-encoding if features is a dataframe. Empty dict or None</span>
+<span class="sd">            results in category names being determined automatically. Format:</span>
+<span class="sd">                {&#39;col_name1&#39; : [&#39;cat1&#39;, &#39;cat2&#39;, &#39;cat3&#39;],</span>
+<span class="sd">                 &#39;col_name2&#39; : [&#39;other_cat1&#39;, &#39;other_cat2&#39;]}</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        names : list | None</span>
+<span class="sd">            Names updated with categories</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">replacements</span> <span class="ow">in</span> <span class="n">categories</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+                    <span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">replacements</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">sublist</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">names</span></div>
+
+<div class="viewcode-block" id="PreProcess.process_one_hot"><a class="viewcode-back" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html#phygnn.utilities.pre_processing.PreProcess.process_one_hot">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">process_one_hot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">convert_int</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">return_ind</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process str and int columns in the feature data to one-hot vectors.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        convert_int : bool, optional</span>
+<span class="sd">            Flag to convert integer data to one-hot vectors, by default False</span>
+<span class="sd">        categories : dict | None, optional</span>
+<span class="sd">            Categories to use for one hot encoding where a key is the original</span>
+<span class="sd">            column name in the feature dataframe and value is a list of the</span>
+<span class="sd">            possible unique values of the feature column. The value list must</span>
+<span class="sd">            have as many or more entries as unique values in the feature</span>
+<span class="sd">            column. This will name the feature column headers for the new</span>
+<span class="sd">            one-hot-encoding if features is a dataframe. Empty dict or None</span>
+<span class="sd">            results in category names being determined automatically. Format:</span>
+<span class="sd">                {&#39;col_name1&#39; : [&#39;cat1&#39;, &#39;cat2&#39;, &#39;cat3&#39;],</span>
+<span class="sd">                 &#39;col_name2&#39; : [&#39;other_cat1&#39;, &#39;other_cat2&#39;]}</span>
+<span class="sd">            by default None</span>
+<span class="sd">        return_ind : bool, optional</span>
+<span class="sd">            Return one hot column indices, by default False</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        processed : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Feature data with str and int columns removed and one-hot boolean</span>
+<span class="sd">            vectors appended as new columns. If features is a dataframe and</span>
+<span class="sd">            categories is input, the new one-hot columns will be named</span>
+<span class="sd">            according to categories.</span>
+<span class="sd">        one_hot_ind : list, optional</span>
+<span class="sd">            List of numeric column indices in the native data that are</span>
+<span class="sd">            to-be-transformed into one-hot vectors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">categories</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_one_hot_categories</span><span class="p">(</span><span class="n">categories</span><span class="p">,</span>
+                                          <span class="n">feature_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_feature_names</span><span class="p">)</span>
+
+        <span class="n">one_hot_ind</span><span class="p">,</span> <span class="n">one_hot_data</span><span class="p">,</span> <span class="n">numerical_ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_one_hot_data</span><span class="p">(</span>
+            <span class="n">convert_int</span><span class="o">=</span><span class="n">convert_int</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">one_hot_ind</span><span class="p">:</span>
+            <span class="n">processed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pd</span><span class="p">:</span>
+                <span class="n">num_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="n">numerical_ind</span><span class="p">]</span>
+                <span class="n">col_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_df_one_hot_cols_labels</span><span class="p">(</span><span class="n">one_hot_ind</span><span class="p">,</span>
+                                                               <span class="n">one_hot_data</span><span class="p">,</span>
+                                                               <span class="n">categories</span><span class="p">)</span>
+                <span class="n">one_hot_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span><span class="n">one_hot_data</span><span class="p">),</span>
+                                          <span class="n">columns</span><span class="o">=</span><span class="n">col_labels</span><span class="p">,</span>
+                                          <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                <span class="n">processed</span> <span class="o">=</span> <span class="n">num_df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">one_hot_df</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">processed</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">num_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> \
+                    <span class="n">one_hot_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">processed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[:,</span> <span class="n">numerical_ind</span><span class="p">],</span>
+                                       <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span><span class="n">one_hot_data</span><span class="p">)))</span>
+                <span class="k">assert</span> <span class="n">processed</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">processed</span> <span class="o">=</span> <span class="n">processed</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">return_ind</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">processed</span><span class="p">,</span> <span class="n">one_hot_ind</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">processed</span></div>
+
+<div class="viewcode-block" id="PreProcess.one_hot"><a class="viewcode-back" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html#phygnn.utilities.pre_processing.PreProcess.one_hot">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">one_hot</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">feature_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">convert_int</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_ind</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process str and int columns in the feature data to one-hot vectors.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        features : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Feature data in a 2D array or DataFrame.</span>
+<span class="sd">        feature_names : str, optional</span>
+<span class="sd">            Feature names, used if features is an ndarray, by default None</span>
+<span class="sd">        convert_int : bool, optional</span>
+<span class="sd">            Flag to convert integer data to one-hot vectors, by default False</span>
+<span class="sd">        categories : dict | None, optional</span>
+<span class="sd">            Categories to use for one hot encoding where a key is the original</span>
+<span class="sd">            column name in the feature dataframe and value is a list of the</span>
+<span class="sd">            possible unique values of the feature column. The value list must</span>
+<span class="sd">            have as many or more entries as unique values in the feature</span>
+<span class="sd">            column. This will name the feature column headers for the new</span>
+<span class="sd">            one-hot-encoding if features is a dataframe. Empty dict or None</span>
+<span class="sd">            results in category names being determined automatically. Format:</span>
+<span class="sd">                {&#39;col_name1&#39; : [&#39;cat1&#39;, &#39;cat2&#39;, &#39;cat3&#39;],</span>
+<span class="sd">                 &#39;col_name2&#39; : [&#39;other_cat1&#39;, &#39;other_cat2&#39;]}</span>
+<span class="sd">            by default None</span>
+<span class="sd">        return_ind : bool, optional</span>
+<span class="sd">            Return one hot column indices, by default False</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        processed : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Feature data with str and int columns removed and one-hot boolean</span>
+<span class="sd">            vectors appended as new columns. If features is a dataframe and</span>
+<span class="sd">            categories is input, the new one-hot columns will be named</span>
+<span class="sd">            according to categories.</span>
+<span class="sd">        one_hot_ind : list, optional</span>
+<span class="sd">            List of numeric column indices in the native data that are</span>
+<span class="sd">            to-be-transformed into one-hot vectors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Checking for one-hot items and converting them &#39;</span>
+                     <span class="s1">&#39;to binary values&#39;</span><span class="p">)</span>
+        <span class="n">pp</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">feature_names</span><span class="o">=</span><span class="n">feature_names</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">process_one_hot</span><span class="p">(</span><span class="n">convert_int</span><span class="o">=</span><span class="n">convert_int</span><span class="p">,</span>
+                                 <span class="n">categories</span><span class="o">=</span><span class="n">categories</span><span class="p">,</span>
+                                 <span class="n">return_ind</span><span class="o">=</span><span class="n">return_ind</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">out</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

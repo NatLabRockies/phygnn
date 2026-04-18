@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.SigLin
+===================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SigLin
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SigLin.add_loss
+      ~SigLin.add_metric
+      ~SigLin.add_update
+      ~SigLin.add_variable
+      ~SigLin.add_weight
+      ~SigLin.build
+      ~SigLin.build_from_config
+      ~SigLin.call
+      ~SigLin.compute_mask
+      ~SigLin.compute_output_shape
+      ~SigLin.compute_output_signature
+      ~SigLin.count_params
+      ~SigLin.finalize_state
+      ~SigLin.from_config
+      ~SigLin.get_build_config
+      ~SigLin.get_config
+      ~SigLin.get_input_at
+      ~SigLin.get_input_mask_at
+      ~SigLin.get_input_shape_at
+      ~SigLin.get_output_at
+      ~SigLin.get_output_mask_at
+      ~SigLin.get_output_shape_at
+      ~SigLin.get_weights
+      ~SigLin.load_own_variables
+      ~SigLin.save_own_variables
+      ~SigLin.set_weights
+      ~SigLin.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SigLin.activity_regularizer
+      ~SigLin.compute_dtype
+      ~SigLin.dtype
+      ~SigLin.dtype_policy
+      ~SigLin.dynamic
+      ~SigLin.inbound_nodes
+      ~SigLin.input
+      ~SigLin.input_mask
+      ~SigLin.input_shape
+      ~SigLin.input_spec
+      ~SigLin.losses
+      ~SigLin.metrics
+      ~SigLin.name
+      ~SigLin.name_scope
+      ~SigLin.non_trainable_variables
+      ~SigLin.non_trainable_weights
+      ~SigLin.outbound_nodes
+      ~SigLin.output
+      ~SigLin.output_mask
+      ~SigLin.output_shape
+      ~SigLin.stateful
+      ~SigLin.submodules
+      ~SigLin.supports_masking
+      ~SigLin.trainable
+      ~SigLin.trainable_variables
+      ~SigLin.trainable_weights
+      ~SigLin.updates
+      ~SigLin.variable_dtype
+      ~SigLin.variables
+      ~SigLin.weights
+   
+   

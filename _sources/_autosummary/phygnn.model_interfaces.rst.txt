@@ -1,0 +1,32 @@
+phygnn.model\_interfaces
+========================
+
+.. automodule:: phygnn.model_interfaces
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. autosummary::
+   :toctree:
+   :template: custom-module-template.rst
+   :recursive:
+
+   phygnn.model_interfaces.base_model
+   phygnn.model_interfaces.phygnn_model
+   phygnn.model_interfaces.tf_model
+

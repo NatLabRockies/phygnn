@@ -1,0 +1,26 @@
+phygnn.base.GradientUtils
+=========================
+
+.. currentmodule:: phygnn.base
+
+.. autoclass:: GradientUtils
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GradientUtils.calc_loss
+      ~GradientUtils.predict
+      ~GradientUtils.run_gradient_descent
+   
+   
+
+   
+   
+   

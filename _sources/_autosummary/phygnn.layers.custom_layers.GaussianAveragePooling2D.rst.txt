@@ -1,0 +1,86 @@
+phygnn.layers.custom\_layers.GaussianAveragePooling2D
+=====================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: GaussianAveragePooling2D
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GaussianAveragePooling2D.add_loss
+      ~GaussianAveragePooling2D.add_metric
+      ~GaussianAveragePooling2D.add_update
+      ~GaussianAveragePooling2D.add_variable
+      ~GaussianAveragePooling2D.add_weight
+      ~GaussianAveragePooling2D.build
+      ~GaussianAveragePooling2D.build_from_config
+      ~GaussianAveragePooling2D.call
+      ~GaussianAveragePooling2D.compute_mask
+      ~GaussianAveragePooling2D.compute_output_shape
+      ~GaussianAveragePooling2D.compute_output_signature
+      ~GaussianAveragePooling2D.count_params
+      ~GaussianAveragePooling2D.finalize_state
+      ~GaussianAveragePooling2D.from_config
+      ~GaussianAveragePooling2D.get_build_config
+      ~GaussianAveragePooling2D.get_config
+      ~GaussianAveragePooling2D.get_input_at
+      ~GaussianAveragePooling2D.get_input_mask_at
+      ~GaussianAveragePooling2D.get_input_shape_at
+      ~GaussianAveragePooling2D.get_output_at
+      ~GaussianAveragePooling2D.get_output_mask_at
+      ~GaussianAveragePooling2D.get_output_shape_at
+      ~GaussianAveragePooling2D.get_weights
+      ~GaussianAveragePooling2D.load_own_variables
+      ~GaussianAveragePooling2D.make_kernel
+      ~GaussianAveragePooling2D.save_own_variables
+      ~GaussianAveragePooling2D.set_weights
+      ~GaussianAveragePooling2D.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~GaussianAveragePooling2D.activity_regularizer
+      ~GaussianAveragePooling2D.compute_dtype
+      ~GaussianAveragePooling2D.dtype
+      ~GaussianAveragePooling2D.dtype_policy
+      ~GaussianAveragePooling2D.dynamic
+      ~GaussianAveragePooling2D.inbound_nodes
+      ~GaussianAveragePooling2D.input
+      ~GaussianAveragePooling2D.input_mask
+      ~GaussianAveragePooling2D.input_shape
+      ~GaussianAveragePooling2D.input_spec
+      ~GaussianAveragePooling2D.losses
+      ~GaussianAveragePooling2D.metrics
+      ~GaussianAveragePooling2D.name
+      ~GaussianAveragePooling2D.name_scope
+      ~GaussianAveragePooling2D.non_trainable_variables
+      ~GaussianAveragePooling2D.non_trainable_weights
+      ~GaussianAveragePooling2D.outbound_nodes
+      ~GaussianAveragePooling2D.output
+      ~GaussianAveragePooling2D.output_mask
+      ~GaussianAveragePooling2D.output_shape
+      ~GaussianAveragePooling2D.stateful
+      ~GaussianAveragePooling2D.submodules
+      ~GaussianAveragePooling2D.supports_masking
+      ~GaussianAveragePooling2D.trainable
+      ~GaussianAveragePooling2D.trainable_variables
+      ~GaussianAveragePooling2D.trainable_weights
+      ~GaussianAveragePooling2D.updates
+      ~GaussianAveragePooling2D.variable_dtype
+      ~GaussianAveragePooling2D.variables
+      ~GaussianAveragePooling2D.weights
+   
+   

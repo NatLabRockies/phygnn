@@ -1,0 +1,34 @@
+﻿phygnn
+======
+
+.. automodule:: phygnn
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. autosummary::
+   :toctree:
+   :template: custom-module-template.rst
+   :recursive:
+
+   phygnn.base
+   phygnn.layers
+   phygnn.model_interfaces
+   phygnn.phygnn
+   phygnn.utilities
+

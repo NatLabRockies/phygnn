@@ -1,0 +1,889 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.model_interfaces.phygnn_model &mdash; phygnn 0.0.35.dev1+g54e97538a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=71b63c52"></script>
+      <script src="../../../_static/doctools.js?v=888ff710"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/phygnn.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.layers.html">phygnn.layers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Attention.html">phygnn.layers.custom_layers.Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.AxialAttentionBlock.html">phygnn.layers.custom_layers.AxialAttentionBlock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FNO.html">phygnn.layers.custom_layers.FNO</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SparseAttention.html">phygnn.layers.custom_layers.SparseAttention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rConcat.html">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.Layers.html">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.tf_model.TfModel.html">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.html">phygnn.utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">phygnn.model_interfaces.phygnn_model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for phygnn.model_interfaces.phygnn_model</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">TensorFlow Model</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pprint</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">phygnn.model_interfaces.base_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">phygnn.phygnn</span><span class="w"> </span><span class="kn">import</span> <span class="n">PhysicsGuidedNeuralNetwork</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">phygnn.utilities.pre_processing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreProcess</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PhygnnModel"><a class="viewcode-back" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html#phygnn.model_interfaces.phygnn_model.PhygnnModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PhygnnModel</span><span class="p">(</span><span class="n">ModelBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Phygnn Model interface</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Underlying model interface class. Used for loading models from disk</span>
+    <span class="n">MODEL_CLASS</span> <span class="o">=</span> <span class="n">PhysicsGuidedNeuralNetwork</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">feature_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">label_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">norm_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+                 <span class="n">one_hot_categories</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : PhysicsGuidedNeuralNetwork</span>
+<span class="sd">            PhysicsGuidedNeuralNetwork Model instance</span>
+<span class="sd">        feature_names : list</span>
+<span class="sd">            Ordered list of feature names.</span>
+<span class="sd">        label_names : list</span>
+<span class="sd">            Ordered list of label (output) names.</span>
+<span class="sd">        norm_params : dict, optional</span>
+<span class="sd">            Dictionary mapping feature and label names (keys) to normalization</span>
+<span class="sd">            parameters (mean, stdev), by default None</span>
+<span class="sd">        normalize : bool | tuple, optional</span>
+<span class="sd">            Boolean flag(s) as to whether features and labels should be</span>
+<span class="sd">            normalized. Possible values:</span>
+<span class="sd">            - True means normalize both</span>
+<span class="sd">            - False means don&#39;t normalize either</span>
+<span class="sd">            - Tuple of flags (normalize_feature, normalize_label)</span>
+<span class="sd">            by default True</span>
+<span class="sd">        one_hot_categories : dict, optional</span>
+<span class="sd">            Features to one-hot encode using given categories, if None do</span>
+<span class="sd">            not run one-hot encoding, by default None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">feature_names</span><span class="o">=</span><span class="n">feature_names</span><span class="p">,</span>
+                         <span class="n">label_names</span><span class="o">=</span><span class="n">label_names</span><span class="p">,</span> <span class="n">norm_params</span><span class="o">=</span><span class="n">norm_params</span><span class="p">,</span>
+                         <span class="n">normalize</span><span class="o">=</span><span class="n">normalize</span><span class="p">,</span>
+                         <span class="n">one_hot_categories</span><span class="o">=</span><span class="n">one_hot_categories</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">layers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Model layers</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a list of layer weights for gradient calculations.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">weights</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kernel_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a list of the NN kernel weights (tensors)</span>
+
+<span class="sd">        (can be used for kernel regularization).</span>
+
+<span class="sd">        Does not include input layer or dropout layers.</span>
+<span class="sd">        Does include the output layer.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">kernel_weights</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bias_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a list of the NN bias weights (tensors)</span>
+
+<span class="sd">        (can be used for bias regularization).</span>
+
+<span class="sd">        Does not include input layer or dropout layers.</span>
+<span class="sd">        Does include the output layer.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_weights</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Model training history DataFrame (None if not yet trained)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame | None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">history</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">version_record</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A record of important versions that this model was built with.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">version_record</span>
+
+<div class="viewcode-block" id="PhygnnModel.train_model"><a class="viewcode-back" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html#phygnn.model_interfaces.phygnn_model.PhygnnModel.train_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span>
+                    <span class="n">n_batch</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_epoch</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">run_preflight</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">return_diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">p_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">parse_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Train the model with the provided features and label</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        features : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Feature data in a &gt;=2D array or DataFrame. If this is a DataFrame,</span>
+<span class="sd">            the index is ignored, the columns are used with self.feature_names,</span>
+<span class="sd">            and the df is converted into a numpy array for batching and passing</span>
+<span class="sd">            to the training algorithm. A 2D input should have the shape:</span>
+<span class="sd">            (n_observations, n_features). A 3D input should have the shape:</span>
+<span class="sd">            (n_observations, n_timesteps, n_features). 4D inputs have not been</span>
+<span class="sd">            tested and should be used with caution.</span>
+<span class="sd">        labels : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Known output data in a 2D array or DataFrame.</span>
+<span class="sd">            Same dimension rules as features.</span>
+<span class="sd">        p : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Supplemental feature data for the physics loss function in 2D array</span>
+<span class="sd">            or DataFrame. Same dimension rules as features.</span>
+<span class="sd">        n_batch : int</span>
+<span class="sd">            Number of times to update the NN weights per epoch (number of</span>
+<span class="sd">            mini-batches). The training data will be split into this many</span>
+<span class="sd">            mini-batches and the NN will train on each mini-batch, update</span>
+<span class="sd">            weights, then move onto the next mini-batch.</span>
+<span class="sd">        batch_size : int | None</span>
+<span class="sd">            Number of training samples per batch. This input is redundant to</span>
+<span class="sd">            n_batch and will not be used if n_batch is not None.</span>
+<span class="sd">        n_epoch : int</span>
+<span class="sd">            Number of times to iterate on the training data.</span>
+<span class="sd">        shuffle : bool</span>
+<span class="sd">            Flag to randomly subset the validation data and batch selection</span>
+<span class="sd">            from features, labels, and p.</span>
+<span class="sd">        validation_split : float</span>
+<span class="sd">            Fraction of features and labels to use for validation.</span>
+<span class="sd">        p_kwargs : None | dict</span>
+<span class="sd">            Optional kwargs for the physical loss function p_fun.</span>
+<span class="sd">        run_preflight : bool</span>
+<span class="sd">            Flag to run preflight checks.</span>
+<span class="sd">        return_diagnostics : bool</span>
+<span class="sd">            Flag to return training diagnostics dictionary.</span>
+<span class="sd">        parse_kwargs : dict</span>
+<span class="sd">            kwargs for cls.parse_features</span>
+<span class="sd">        norm_labels : bool, optional</span>
+<span class="sd">            Flag to normalize label, by default True</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        diagnostics : dict, optional</span>
+<span class="sd">            Namespace of training parameters that can be used for diagnostics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">parse_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parse_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_dims</span><span class="p">):</span>
+            <span class="n">parse_kwargs</span><span class="p">[</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_names</span>
+
+        <span class="n">label_names</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_dims</span><span class="p">):</span>
+            <span class="n">label_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_features</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="o">**</span><span class="n">parse_kwargs</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">label_names</span><span class="p">)</span>
+
+        <span class="n">diagnostics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span>
+                                     <span class="n">n_batch</span><span class="o">=</span><span class="n">n_batch</span><span class="p">,</span>
+                                     <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                                     <span class="n">n_epoch</span><span class="o">=</span><span class="n">n_epoch</span><span class="p">,</span>
+                                     <span class="n">shuffle</span><span class="o">=</span><span class="n">shuffle</span><span class="p">,</span>
+                                     <span class="n">validation_split</span><span class="o">=</span><span class="n">validation_split</span><span class="p">,</span>
+                                     <span class="n">p_kwargs</span><span class="o">=</span><span class="n">p_kwargs</span><span class="p">,</span>
+                                     <span class="n">run_preflight</span><span class="o">=</span><span class="n">run_preflight</span><span class="p">,</span>
+                                     <span class="n">return_diagnostics</span><span class="o">=</span><span class="n">return_diagnostics</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">diagnostics</span></div>
+
+<div class="viewcode-block" id="PhygnnModel.save_model"><a class="viewcode-back" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html#phygnn.model_interfaces.phygnn_model.PhygnnModel.save_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save phygnn model to path.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">            Target model save path. Can be a target .json, .pkl, or a directory</span>
+<span class="sd">            that will be created+populated with a pkl model file and json</span>
+<span class="sd">            parameters file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">json_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">json_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s1">&#39;.json&#39;</span><span class="p">,</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">)):</span>
+            <span class="n">dir_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">json_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">json_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.pkl&#39;</span><span class="p">):</span>
+                <span class="n">json_path</span> <span class="o">=</span> <span class="n">json_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dir_path</span> <span class="o">=</span> <span class="n">json_path</span>
+            <span class="n">fn</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">json_path</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span>
+            <span class="n">json_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+
+        <span class="n">pkl_path</span> <span class="o">=</span> <span class="n">json_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.json&#39;</span><span class="p">,</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+
+        <span class="n">model_params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;feature_names&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_names</span><span class="p">,</span>
+                        <span class="s1">&#39;label_names&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span><span class="p">,</span>
+                        <span class="s1">&#39;norm_params&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalization_parameters</span><span class="p">,</span>
+                        <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">normalize_features</span><span class="p">,</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">normalize_labels</span><span class="p">),</span>
+                        <span class="s1">&#39;version_record&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">version_record</span><span class="p">,</span>
+                        <span class="s1">&#39;one_hot_categories&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">one_hot_categories</span><span class="p">,</span>
+                        <span class="p">}</span>
+
+        <span class="n">model_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_json_convert</span><span class="p">(</span><span class="n">model_params</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">pkl_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PhygnnModel.set_loss_weights"><a class="viewcode-back" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html#phygnn.model_interfaces.phygnn_model.PhygnnModel.set_loss_weights">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_loss_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_weights</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set new loss weights</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        loss_weights : tuple</span>
+<span class="sd">            Loss weights for the neural network y_true vs y_predicted</span>
+<span class="sd">            and for the p_fun loss, respectively. For example,</span>
+<span class="sd">            loss_weights=(0.0, 1.0) would simplify the phygnn loss function</span>
+<span class="sd">            to just the p_fun output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_loss_weights</span> <span class="o">=</span> <span class="n">loss_weights</span></div>
+
+<div class="viewcode-block" id="PhygnnModel.build"><a class="viewcode-back" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html#phygnn.model_interfaces.phygnn_model.PhygnnModel.build">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">p_fun</span><span class="p">,</span> <span class="n">feature_names</span><span class="p">,</span> <span class="n">label_names</span><span class="p">,</span>
+              <span class="n">normalize</span><span class="o">=</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+              <span class="n">one_hot_categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">loss_weights</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+              <span class="n">hidden_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">input_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">output_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">layers_obj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;mae&#39;</span><span class="p">,</span>
+              <span class="n">optimizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+              <span class="n">history</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">kernel_reg_rate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+              <span class="n">kernel_reg_power</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+              <span class="n">bias_reg_rate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+              <span class="n">bias_reg_power</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+              <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build phygnn model from given features, layers and kwargs</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        p_fun : function</span>
+<span class="sd">            Physics function to guide the neural network loss function.</span>
+<span class="sd">            This fun must take (phygnn, y_true, y_predicted, p, **p_kwargs)</span>
+<span class="sd">            as arguments with datatypes (PhysicsGuidedNeuralNetwork, tf.Tensor,</span>
+<span class="sd">            np.ndarray, np.ndarray). The function must return a tf.Tensor</span>
+<span class="sd">            object with a single numeric loss value (output.ndim == 0).</span>
+<span class="sd">        feature_names : list</span>
+<span class="sd">            Ordered list of feature names.</span>
+<span class="sd">        label_names : list</span>
+<span class="sd">            Ordered list of label (output) names.</span>
+<span class="sd">        normalize : bool | tuple, optional</span>
+<span class="sd">            Boolean flag(s) as to whether features and labels should be</span>
+<span class="sd">            normalized. Possible values:</span>
+<span class="sd">            - True means normalize both</span>
+<span class="sd">            - False means don&#39;t normalize either</span>
+<span class="sd">            - Tuple of flags (normalize_feature, normalize_label)</span>
+<span class="sd">            by default True</span>
+<span class="sd">        one_hot_categories : dict, optional</span>
+<span class="sd">            Features to one-hot encode using given categories, if None do</span>
+<span class="sd">            not run one-hot encoding, by default None</span>
+<span class="sd">        loss_weights : tuple, optional</span>
+<span class="sd">            Loss weights for the neural network y_true vs y_predicted</span>
+<span class="sd">            and for the p_fun loss, respectively. For example,</span>
+<span class="sd">            loss_weights=(0.0, 1.0) would simplify the phygnn loss function</span>
+<span class="sd">            to just the p_fun output.</span>
+<span class="sd">        hidden_layers : list, optional</span>
+<span class="sd">            List of dictionaries of key word arguments for each hidden</span>
+<span class="sd">            layer in the NN. Dense linear layers can be input with their</span>
+<span class="sd">            activations or separately for more explicit control over the layer</span>
+<span class="sd">            ordering. For example, this is a valid input for hidden_layers that</span>
+<span class="sd">            will yield 8 hidden layers (10 layers including input+output):</span>
+<span class="sd">                [{&#39;units&#39;: 64, &#39;activation&#39;: &#39;relu&#39;, &#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;units&#39;: 64},</span>
+<span class="sd">                 {&#39;batch_normalization&#39;: {&#39;axis&#39;: -1}},</span>
+<span class="sd">                 {&#39;activation&#39;: &#39;relu&#39;},</span>
+<span class="sd">                 {&#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;class&#39;: &#39;Flatten&#39;},</span>
+<span class="sd">                 ]</span>
+<span class="sd">        input_layer : None | bool | dict</span>
+<span class="sd">            Input layer. specification. Can be a dictionary similar to</span>
+<span class="sd">            hidden_layers specifying a dense / conv / lstm layer.  Will</span>
+<span class="sd">            default to a keras InputLayer with input shape = n_features.</span>
+<span class="sd">            Can be False if the input layer will be included in the</span>
+<span class="sd">            hidden_layers input.</span>
+<span class="sd">        output_layer : None | bool | list | dict</span>
+<span class="sd">            Output layer specification. Can be a list/dict similar to</span>
+<span class="sd">            hidden_layers input specifying a dense layer with activation.</span>
+<span class="sd">            For example, for a classfication problem with a single output,</span>
+<span class="sd">            output_layer should be [{&#39;units&#39;: 1}, {&#39;activation&#39;: &#39;sigmoid&#39;}].</span>
+<span class="sd">            This defaults to a single dense layer with no activation</span>
+<span class="sd">            (best for regression problems).  Can be False if the output layer</span>
+<span class="sd">            will be included in the hidden_layers input.</span>
+<span class="sd">        layers_obj : None | phygnn.utilities.tf_layers.Layers</span>
+<span class="sd">            Optional initialized Layers object to set as the model layers</span>
+<span class="sd">            including pre-set weights. This option will override the</span>
+<span class="sd">            hidden_layers, input_layer, and output_layer arguments.</span>
+<span class="sd">        metric : str, optional</span>
+<span class="sd">            Loss metric option for the NN loss function (not the physical</span>
+<span class="sd">            loss function). Must be a valid key in phygnn.loss_metrics.METRICS</span>
+<span class="sd">        optimizer : tensorflow.keras.optimizers | dict | None</span>
+<span class="sd">            Instantiated tf.keras.optimizers object or a dict optimizer config</span>
+<span class="sd">            from tf.keras.optimizers.get_config(). None defaults to Adam.</span>
+<span class="sd">        learning_rate : float, optional</span>
+<span class="sd">            Optimizer learning rate. Not used if optimizer input arg is a</span>
+<span class="sd">            pre-initialized object or if optimizer input arg is a config dict.</span>
+<span class="sd">        history : None | pd.DataFrame, optional</span>
+<span class="sd">            Learning history if continuing a training session.</span>
+<span class="sd">        kernel_reg_rate : float, optional</span>
+<span class="sd">            Kernel regularization rate. Increasing this value above zero will</span>
+<span class="sd">            add a structural loss term to the loss function that</span>
+<span class="sd">            disincentivizes large hidden layer weights and should reduce</span>
+<span class="sd">            model complexity. Setting this to 0.0 will disable kernel</span>
+<span class="sd">            regularization.</span>
+<span class="sd">        kernel_reg_power : int, optional</span>
+<span class="sd">            Kernel regularization power. kernel_reg_power=1 is L1</span>
+<span class="sd">            regularization (lasso regression), and kernel_reg_power=2 is L2</span>
+<span class="sd">            regularization (ridge regression).</span>
+<span class="sd">        bias_reg_rate : float, optional</span>
+<span class="sd">            Bias regularization rate. Increasing this value above zero will</span>
+<span class="sd">            add a structural loss term to the loss function that</span>
+<span class="sd">            disincentivizes large hidden layer biases and should reduce</span>
+<span class="sd">            model complexity. Setting this to 0.0 will disable bias</span>
+<span class="sd">            regularization.</span>
+<span class="sd">        bias_reg_power : int, optional</span>
+<span class="sd">            Bias regularization power. bias_reg_power=1 is L1</span>
+<span class="sd">            regularization (lasso regression), and bias_reg_power=2 is L2</span>
+<span class="sd">            regularization (ridge regression).</span>
+<span class="sd">        name : None | str</span>
+<span class="sd">            Optional model name for debugging.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model : PhygnnModel</span>
+<span class="sd">            Initialized PhygnnModel instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">label_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">label_names</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">one_hot_categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">check_names</span> <span class="o">=</span> <span class="n">feature_names</span> <span class="o">+</span> <span class="n">label_names</span>
+            <span class="n">PreProcess</span><span class="o">.</span><span class="n">check_one_hot_categories</span><span class="p">(</span><span class="n">one_hot_categories</span><span class="p">,</span>
+                                                <span class="n">feature_names</span><span class="o">=</span><span class="n">check_names</span><span class="p">)</span>
+            <span class="n">feature_names</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">make_one_hot_feature_names</span><span class="p">(</span><span class="n">feature_names</span><span class="p">,</span>
+                                                           <span class="n">one_hot_categories</span><span class="p">)</span>
+
+        <span class="n">n_features</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">feature_names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">feature_names</span><span class="p">)</span>
+        <span class="n">n_labels</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">label_names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_names</span><span class="p">)</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PhysicsGuidedNeuralNetwork</span><span class="p">(</span><span class="n">p_fun</span><span class="p">,</span>
+                                           <span class="n">loss_weights</span><span class="o">=</span><span class="n">loss_weights</span><span class="p">,</span>
+                                           <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
+                                           <span class="n">n_labels</span><span class="o">=</span><span class="n">n_labels</span><span class="p">,</span>
+                                           <span class="n">hidden_layers</span><span class="o">=</span><span class="n">hidden_layers</span><span class="p">,</span>
+                                           <span class="n">input_layer</span><span class="o">=</span><span class="n">input_layer</span><span class="p">,</span>
+                                           <span class="n">output_layer</span><span class="o">=</span><span class="n">output_layer</span><span class="p">,</span>
+                                           <span class="n">layers_obj</span><span class="o">=</span><span class="n">layers_obj</span><span class="p">,</span>
+                                           <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+                                           <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+                                           <span class="n">learning_rate</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">,</span>
+                                           <span class="n">history</span><span class="o">=</span><span class="n">history</span><span class="p">,</span>
+                                           <span class="n">kernel_reg_rate</span><span class="o">=</span><span class="n">kernel_reg_rate</span><span class="p">,</span>
+                                           <span class="n">kernel_reg_power</span><span class="o">=</span><span class="n">kernel_reg_power</span><span class="p">,</span>
+                                           <span class="n">bias_reg_rate</span><span class="o">=</span><span class="n">bias_reg_rate</span><span class="p">,</span>
+                                           <span class="n">bias_reg_power</span><span class="o">=</span><span class="n">bias_reg_power</span><span class="p">,</span>
+                                           <span class="n">feature_names</span><span class="o">=</span><span class="n">feature_names</span><span class="p">,</span>
+                                           <span class="n">output_names</span><span class="o">=</span><span class="n">label_names</span><span class="p">,</span>
+                                           <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">feature_names</span><span class="o">=</span><span class="n">feature_names</span><span class="p">,</span>
+                    <span class="n">label_names</span><span class="o">=</span><span class="n">label_names</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="n">normalize</span><span class="p">,</span>
+                    <span class="n">one_hot_categories</span><span class="o">=</span><span class="n">one_hot_categories</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">model</span></div>
+
+<div class="viewcode-block" id="PhygnnModel.build_trained"><a class="viewcode-back" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html#phygnn.model_interfaces.phygnn_model.PhygnnModel.build_trained">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_trained</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">p_fun</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span>
+                      <span class="n">normalize</span><span class="o">=</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+                      <span class="n">one_hot_categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">loss_weights</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+                      <span class="n">hidden_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">input_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">output_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">layers_obj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;mae&#39;</span><span class="p">,</span>
+                      <span class="n">optimizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+                      <span class="n">history</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">kernel_reg_rate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                      <span class="n">kernel_reg_power</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                      <span class="n">bias_reg_rate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                      <span class="n">bias_reg_power</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                      <span class="n">n_batch</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+                      <span class="n">batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">n_epoch</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                      <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                      <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+                      <span class="n">run_preflight</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                      <span class="n">return_diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">p_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">parse_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build phygnn model from given features, layers and</span>
+<span class="sd">        kwargs and then train with given labels and kwargs</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        p_fun : function</span>
+<span class="sd">            Physics function to guide the neural network loss function.</span>
+<span class="sd">            This fun must take (phygnn, y_true, y_predicted, p, **p_kwargs)</span>
+<span class="sd">            as arguments with datatypes (PhysicsGuidedNeuralNetwork, tf.Tensor,</span>
+<span class="sd">            np.ndarray, np.ndarray). The function must return a tf.Tensor</span>
+<span class="sd">            object with a single numeric loss value (output.ndim == 0).</span>
+<span class="sd">        features : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Feature data in a &gt;=2D array or DataFrame. If this is a DataFrame,</span>
+<span class="sd">            the index is ignored, the columns are used with self.feature_names,</span>
+<span class="sd">            and the df is converted into a numpy array for batching and passing</span>
+<span class="sd">            to the training algorithm. A 2D input should have the shape:</span>
+<span class="sd">            (n_observations, n_features). A 3D input should have the shape:</span>
+<span class="sd">            (n_observations, n_timesteps, n_features). 4D inputs have not been</span>
+<span class="sd">            tested and should be used with caution.</span>
+<span class="sd">        labels : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Known output data in a 2D array or DataFrame.</span>
+<span class="sd">            Same dimension rules as features.</span>
+<span class="sd">        p : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Supplemental feature data for the physics loss function in 2D array</span>
+<span class="sd">            or DataFrame. Same dimension rules as features.</span>
+<span class="sd">        normalize : bool | tuple, optional</span>
+<span class="sd">            Boolean flag(s) as to whether features and labels should be</span>
+<span class="sd">            normalized. Possible values:</span>
+<span class="sd">            - True means normalize both</span>
+<span class="sd">            - False means don&#39;t normalize either</span>
+<span class="sd">            - Tuple of flags (normalize_feature, normalize_label)</span>
+<span class="sd">            by default True</span>
+<span class="sd">        one_hot_categories : dict, optional</span>
+<span class="sd">            Features to one-hot encode using given categories, if None do</span>
+<span class="sd">            not run one-hot encoding, by default None</span>
+<span class="sd">        loss_weights : tuple, optional</span>
+<span class="sd">            Loss weights for the neural network y_true vs y_predicted</span>
+<span class="sd">            and for the p_fun loss, respectively. For example,</span>
+<span class="sd">            loss_weights=(0.0, 1.0) would simplify the phygnn loss function</span>
+<span class="sd">            to just the p_fun output.</span>
+<span class="sd">        hidden_layers : list, optional</span>
+<span class="sd">            List of dictionaries of key word arguments for each hidden</span>
+<span class="sd">            layer in the NN. Dense linear layers can be input with their</span>
+<span class="sd">            activations or separately for more explicit control over the layer</span>
+<span class="sd">            ordering. For example, this is a valid input for hidden_layers that</span>
+<span class="sd">            will yield 8 hidden layers (10 layers including input+output):</span>
+<span class="sd">                [{&#39;units&#39;: 64, &#39;activation&#39;: &#39;relu&#39;, &#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;units&#39;: 64},</span>
+<span class="sd">                 {&#39;batch_normalization&#39;: {&#39;axis&#39;: -1}},</span>
+<span class="sd">                 {&#39;activation&#39;: &#39;relu&#39;},</span>
+<span class="sd">                 {&#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;class&#39;: &#39;Flatten&#39;},</span>
+<span class="sd">                 ]</span>
+<span class="sd">        input_layer : None | bool | dict</span>
+<span class="sd">            Input layer. specification. Can be a dictionary similar to</span>
+<span class="sd">            hidden_layers specifying a dense / conv / lstm layer.  Will</span>
+<span class="sd">            default to a keras InputLayer with input shape = n_features.</span>
+<span class="sd">            Can be False if the input layer will be included in the</span>
+<span class="sd">            hidden_layers input.</span>
+<span class="sd">        output_layer : None } bool | list | dict</span>
+<span class="sd">            Output layer specification. Can be a list/dict similar to</span>
+<span class="sd">            hidden_layers input specifying a dense layer with activation.</span>
+<span class="sd">            For example, for a classfication problem with a single output,</span>
+<span class="sd">            output_layer should be [{&#39;units&#39;: 1}, {&#39;activation&#39;: &#39;sigmoid&#39;}].</span>
+<span class="sd">            This defaults to a single dense layer with no activation</span>
+<span class="sd">            (best for regression problems).  Can be False if the output layer</span>
+<span class="sd">            will be included in the hidden_layers input.</span>
+<span class="sd">        layers_obj : None | phygnn.utilities.tf_layers.Layers</span>
+<span class="sd">            Optional initialized Layers object to set as the model layers</span>
+<span class="sd">            including pre-set weights. This option will override the</span>
+<span class="sd">            hidden_layers, input_layer, and output_layer arguments.</span>
+<span class="sd">        metric : str, optional</span>
+<span class="sd">            Loss metric option for the NN loss function (not the physical</span>
+<span class="sd">            loss function). Must be a valid key in phygnn.loss_metrics.METRICS</span>
+<span class="sd">        optimizer : tensorflow.keras.optimizers | dict | None</span>
+<span class="sd">            Instantiated tf.keras.optimizers object or a dict optimizer config</span>
+<span class="sd">            from tf.keras.optimizers.get_config(). None defaults to Adam.</span>
+<span class="sd">        learning_rate : float, optional</span>
+<span class="sd">            Optimizer learning rate. Not used if optimizer input arg is a</span>
+<span class="sd">            pre-initialized object or if optimizer input arg is a config dict.</span>
+<span class="sd">        history : None | pd.DataFrame, optional</span>
+<span class="sd">            Learning history if continuing a training session.</span>
+<span class="sd">        kernel_reg_rate : float, optional</span>
+<span class="sd">            Kernel regularization rate. Increasing this value above zero will</span>
+<span class="sd">            add a structural loss term to the loss function that</span>
+<span class="sd">            disincentivizes large hidden layer weights and should reduce</span>
+<span class="sd">            model complexity. Setting this to 0.0 will disable kernel</span>
+<span class="sd">            regularization.</span>
+<span class="sd">        kernel_reg_power : int, optional</span>
+<span class="sd">            Kernel regularization power. kernel_reg_power=1 is L1</span>
+<span class="sd">            regularization (lasso regression), and kernel_reg_power=2 is L2</span>
+<span class="sd">            regularization (ridge regression).</span>
+<span class="sd">        bias_reg_rate : float, optional</span>
+<span class="sd">            Bias regularization rate. Increasing this value above zero will</span>
+<span class="sd">            add a structural loss term to the loss function that</span>
+<span class="sd">            disincentivizes large hidden layer biases and should reduce</span>
+<span class="sd">            model complexity. Setting this to 0.0 will disable bias</span>
+<span class="sd">            regularization.</span>
+<span class="sd">        bias_reg_power : int, optional</span>
+<span class="sd">            Bias regularization power. bias_reg_power=1 is L1</span>
+<span class="sd">            regularization (lasso regression), and bias_reg_power=2 is L2</span>
+<span class="sd">            regularization (ridge regression).</span>
+<span class="sd">        n_batch : int</span>
+<span class="sd">            Number of times to update the NN weights per epoch (number of</span>
+<span class="sd">            mini-batches). The training data will be split into this many</span>
+<span class="sd">            mini-batches and the NN will train on each mini-batch, update</span>
+<span class="sd">            weights, then move onto the next mini-batch.</span>
+<span class="sd">        batch_size : int | None</span>
+<span class="sd">            Number of training samples per batch. This input is redundant to</span>
+<span class="sd">            n_batch and will not be used if n_batch is not None.</span>
+<span class="sd">        n_epoch : int</span>
+<span class="sd">            Number of times to iterate on the training data.</span>
+<span class="sd">        shuffle : bool</span>
+<span class="sd">            Flag to randomly subset the validation data and batch selection</span>
+<span class="sd">            from features and labels.</span>
+<span class="sd">        validation_split : float</span>
+<span class="sd">        run_preflight : bool</span>
+<span class="sd">            Flag to run preflight checks.</span>
+<span class="sd">        return_diagnostics : bool</span>
+<span class="sd">            Flag to return training diagnostics dictionary.</span>
+<span class="sd">            Fraction of features and labels to use for validation.</span>
+<span class="sd">        p_kwargs : None | dict</span>
+<span class="sd">            Optional kwargs for the physical loss function p_fun.</span>
+<span class="sd">        parse_kwargs : dict</span>
+<span class="sd">            kwargs for cls.parse_features</span>
+<span class="sd">        norm_labels : bool, optional</span>
+<span class="sd">            Flag to normalize label, by default True</span>
+<span class="sd">        save_path : str, optional</span>
+<span class="sd">            Directory path to save model to. The tensorflow model will be</span>
+<span class="sd">            saved to the directory while the framework parameters will be</span>
+<span class="sd">            saved in json, by default None</span>
+<span class="sd">        name : None | str</span>
+<span class="sd">            Optional model name for debugging.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model : TfModel</span>
+<span class="sd">            Initialized and trained TfModel obj</span>
+<span class="sd">        diagnostics : dict, optional</span>
+<span class="sd">            Namespace of training parameters that can be used for diagnostics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">feature_names</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_parse_data_names</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">fallback_prefix</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">label_names</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_parse_data_names</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">fallback_prefix</span><span class="o">=</span><span class="s1">&#39;L&#39;</span><span class="p">)</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">p_fun</span><span class="p">,</span> <span class="n">feature_names</span><span class="p">,</span> <span class="n">label_names</span><span class="p">,</span>
+                          <span class="n">normalize</span><span class="o">=</span><span class="n">normalize</span><span class="p">,</span>
+                          <span class="n">one_hot_categories</span><span class="o">=</span><span class="n">one_hot_categories</span><span class="p">,</span>
+                          <span class="n">loss_weights</span><span class="o">=</span><span class="n">loss_weights</span><span class="p">,</span>
+                          <span class="n">hidden_layers</span><span class="o">=</span><span class="n">hidden_layers</span><span class="p">,</span>
+                          <span class="n">input_layer</span><span class="o">=</span><span class="n">input_layer</span><span class="p">,</span>
+                          <span class="n">output_layer</span><span class="o">=</span><span class="n">output_layer</span><span class="p">,</span>
+                          <span class="n">layers_obj</span><span class="o">=</span><span class="n">layers_obj</span><span class="p">,</span>
+                          <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+                          <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+                          <span class="n">learning_rate</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">,</span>
+                          <span class="n">history</span><span class="o">=</span><span class="n">history</span><span class="p">,</span>
+                          <span class="n">kernel_reg_rate</span><span class="o">=</span><span class="n">kernel_reg_rate</span><span class="p">,</span>
+                          <span class="n">kernel_reg_power</span><span class="o">=</span><span class="n">kernel_reg_power</span><span class="p">,</span>
+                          <span class="n">bias_reg_rate</span><span class="o">=</span><span class="n">bias_reg_rate</span><span class="p">,</span>
+                          <span class="n">bias_reg_power</span><span class="o">=</span><span class="n">bias_reg_power</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">diagnostics</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">train_model</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span>
+                                        <span class="n">n_batch</span><span class="o">=</span><span class="n">n_batch</span><span class="p">,</span>
+                                        <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                                        <span class="n">n_epoch</span><span class="o">=</span><span class="n">n_epoch</span><span class="p">,</span>
+                                        <span class="n">shuffle</span><span class="o">=</span><span class="n">shuffle</span><span class="p">,</span>
+                                        <span class="n">validation_split</span><span class="o">=</span><span class="n">validation_split</span><span class="p">,</span>
+                                        <span class="n">run_preflight</span><span class="o">=</span><span class="n">run_preflight</span><span class="p">,</span>
+                                        <span class="n">return_diagnostics</span><span class="o">=</span><span class="n">return_diagnostics</span><span class="p">,</span>
+                                        <span class="n">p_kwargs</span><span class="o">=</span><span class="n">p_kwargs</span><span class="p">,</span>
+                                        <span class="n">parse_kwargs</span><span class="o">=</span><span class="n">parse_kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">save_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">save_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">diagnostics</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">diagnostics</span>
+        <span class="k">return</span> <span class="n">model</span></div>
+
+<div class="viewcode-block" id="PhygnnModel.load"><a class="viewcode-back" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html#phygnn.model_interfaces.phygnn_model.PhygnnModel.load">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load model from model path.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">            Directory path for PhygnnModel to load model from. There should be</span>
+<span class="sd">            a saved model directory with json and pickle files for the</span>
+<span class="sd">            PhygnnModel framework.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model : PhygnnModel</span>
+<span class="sd">            Loaded PhygnnModel from disk.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s1">&#39;.json&#39;</span><span class="p">,</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">)):</span>
+            <span class="n">pkl_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.json&#39;</span><span class="p">):</span>
+            <span class="n">pkl_path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.pkl&#39;</span><span class="p">):</span>
+            <span class="n">pkl_path</span> <span class="o">=</span> <span class="n">path</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pkl_path</span><span class="p">):</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> does not exist&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pkl_path</span><span class="p">))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="n">loaded</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">MODEL_CLASS</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pkl_path</span><span class="p">)</span>
+
+        <span class="n">json_path</span> <span class="o">=</span> <span class="n">pkl_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">json_path</span><span class="p">):</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> does not exist&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">model_params</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;version_record&#39;</span> <span class="ow">in</span> <span class="n">model_params</span><span class="p">:</span>
+            <span class="n">version_record</span> <span class="o">=</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;version_record&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Loading model from disk that was created with the &#39;</span>
+                        <span class="s1">&#39;following package versions: </span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span>
+                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pprint</span><span class="o">.</span><span class="n">pformat</span><span class="p">(</span><span class="n">version_record</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)))</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">loaded</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">model</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.LogTransform
+=========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: LogTransform
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LogTransform.add_loss
+      ~LogTransform.add_metric
+      ~LogTransform.add_update
+      ~LogTransform.add_variable
+      ~LogTransform.add_weight
+      ~LogTransform.build
+      ~LogTransform.build_from_config
+      ~LogTransform.call
+      ~LogTransform.compute_mask
+      ~LogTransform.compute_output_shape
+      ~LogTransform.compute_output_signature
+      ~LogTransform.count_params
+      ~LogTransform.finalize_state
+      ~LogTransform.from_config
+      ~LogTransform.get_build_config
+      ~LogTransform.get_config
+      ~LogTransform.get_input_at
+      ~LogTransform.get_input_mask_at
+      ~LogTransform.get_input_shape_at
+      ~LogTransform.get_output_at
+      ~LogTransform.get_output_mask_at
+      ~LogTransform.get_output_shape_at
+      ~LogTransform.get_weights
+      ~LogTransform.load_own_variables
+      ~LogTransform.save_own_variables
+      ~LogTransform.set_weights
+      ~LogTransform.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LogTransform.activity_regularizer
+      ~LogTransform.compute_dtype
+      ~LogTransform.dtype
+      ~LogTransform.dtype_policy
+      ~LogTransform.dynamic
+      ~LogTransform.inbound_nodes
+      ~LogTransform.input
+      ~LogTransform.input_mask
+      ~LogTransform.input_shape
+      ~LogTransform.input_spec
+      ~LogTransform.losses
+      ~LogTransform.metrics
+      ~LogTransform.name
+      ~LogTransform.name_scope
+      ~LogTransform.non_trainable_variables
+      ~LogTransform.non_trainable_weights
+      ~LogTransform.outbound_nodes
+      ~LogTransform.output
+      ~LogTransform.output_mask
+      ~LogTransform.output_shape
+      ~LogTransform.stateful
+      ~LogTransform.submodules
+      ~LogTransform.supports_masking
+      ~LogTransform.trainable
+      ~LogTransform.trainable_variables
+      ~LogTransform.trainable_weights
+      ~LogTransform.updates
+      ~LogTransform.variable_dtype
+      ~LogTransform.variables
+      ~LogTransform.weights
+   
+   

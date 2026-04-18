@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.FlattenAxis
+========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: FlattenAxis
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FlattenAxis.add_loss
+      ~FlattenAxis.add_metric
+      ~FlattenAxis.add_update
+      ~FlattenAxis.add_variable
+      ~FlattenAxis.add_weight
+      ~FlattenAxis.build
+      ~FlattenAxis.build_from_config
+      ~FlattenAxis.call
+      ~FlattenAxis.compute_mask
+      ~FlattenAxis.compute_output_shape
+      ~FlattenAxis.compute_output_signature
+      ~FlattenAxis.count_params
+      ~FlattenAxis.finalize_state
+      ~FlattenAxis.from_config
+      ~FlattenAxis.get_build_config
+      ~FlattenAxis.get_config
+      ~FlattenAxis.get_input_at
+      ~FlattenAxis.get_input_mask_at
+      ~FlattenAxis.get_input_shape_at
+      ~FlattenAxis.get_output_at
+      ~FlattenAxis.get_output_mask_at
+      ~FlattenAxis.get_output_shape_at
+      ~FlattenAxis.get_weights
+      ~FlattenAxis.load_own_variables
+      ~FlattenAxis.save_own_variables
+      ~FlattenAxis.set_weights
+      ~FlattenAxis.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FlattenAxis.activity_regularizer
+      ~FlattenAxis.compute_dtype
+      ~FlattenAxis.dtype
+      ~FlattenAxis.dtype_policy
+      ~FlattenAxis.dynamic
+      ~FlattenAxis.inbound_nodes
+      ~FlattenAxis.input
+      ~FlattenAxis.input_mask
+      ~FlattenAxis.input_shape
+      ~FlattenAxis.input_spec
+      ~FlattenAxis.losses
+      ~FlattenAxis.metrics
+      ~FlattenAxis.name
+      ~FlattenAxis.name_scope
+      ~FlattenAxis.non_trainable_variables
+      ~FlattenAxis.non_trainable_weights
+      ~FlattenAxis.outbound_nodes
+      ~FlattenAxis.output
+      ~FlattenAxis.output_mask
+      ~FlattenAxis.output_shape
+      ~FlattenAxis.stateful
+      ~FlattenAxis.submodules
+      ~FlattenAxis.supports_masking
+      ~FlattenAxis.trainable
+      ~FlattenAxis.trainable_variables
+      ~FlattenAxis.trainable_weights
+      ~FlattenAxis.updates
+      ~FlattenAxis.variable_dtype
+      ~FlattenAxis.variables
+      ~FlattenAxis.weights
+   
+   

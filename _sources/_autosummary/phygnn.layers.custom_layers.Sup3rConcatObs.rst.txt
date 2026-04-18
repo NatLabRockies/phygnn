@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.Sup3rConcatObs
+===========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: Sup3rConcatObs
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Sup3rConcatObs.add_loss
+      ~Sup3rConcatObs.add_metric
+      ~Sup3rConcatObs.add_update
+      ~Sup3rConcatObs.add_variable
+      ~Sup3rConcatObs.add_weight
+      ~Sup3rConcatObs.build
+      ~Sup3rConcatObs.build_from_config
+      ~Sup3rConcatObs.call
+      ~Sup3rConcatObs.compute_mask
+      ~Sup3rConcatObs.compute_output_shape
+      ~Sup3rConcatObs.compute_output_signature
+      ~Sup3rConcatObs.count_params
+      ~Sup3rConcatObs.finalize_state
+      ~Sup3rConcatObs.from_config
+      ~Sup3rConcatObs.get_build_config
+      ~Sup3rConcatObs.get_config
+      ~Sup3rConcatObs.get_input_at
+      ~Sup3rConcatObs.get_input_mask_at
+      ~Sup3rConcatObs.get_input_shape_at
+      ~Sup3rConcatObs.get_output_at
+      ~Sup3rConcatObs.get_output_mask_at
+      ~Sup3rConcatObs.get_output_shape_at
+      ~Sup3rConcatObs.get_weights
+      ~Sup3rConcatObs.load_own_variables
+      ~Sup3rConcatObs.save_own_variables
+      ~Sup3rConcatObs.set_weights
+      ~Sup3rConcatObs.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Sup3rConcatObs.activity_regularizer
+      ~Sup3rConcatObs.compute_dtype
+      ~Sup3rConcatObs.dtype
+      ~Sup3rConcatObs.dtype_policy
+      ~Sup3rConcatObs.dynamic
+      ~Sup3rConcatObs.inbound_nodes
+      ~Sup3rConcatObs.input
+      ~Sup3rConcatObs.input_mask
+      ~Sup3rConcatObs.input_shape
+      ~Sup3rConcatObs.input_spec
+      ~Sup3rConcatObs.losses
+      ~Sup3rConcatObs.metrics
+      ~Sup3rConcatObs.name
+      ~Sup3rConcatObs.name_scope
+      ~Sup3rConcatObs.non_trainable_variables
+      ~Sup3rConcatObs.non_trainable_weights
+      ~Sup3rConcatObs.outbound_nodes
+      ~Sup3rConcatObs.output
+      ~Sup3rConcatObs.output_mask
+      ~Sup3rConcatObs.output_shape
+      ~Sup3rConcatObs.stateful
+      ~Sup3rConcatObs.submodules
+      ~Sup3rConcatObs.supports_masking
+      ~Sup3rConcatObs.trainable
+      ~Sup3rConcatObs.trainable_variables
+      ~Sup3rConcatObs.trainable_weights
+      ~Sup3rConcatObs.updates
+      ~Sup3rConcatObs.variable_dtype
+      ~Sup3rConcatObs.variables
+      ~Sup3rConcatObs.weights
+   
+   

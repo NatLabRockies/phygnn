@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.SparseAttention
+============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SparseAttention
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SparseAttention.add_loss
+      ~SparseAttention.add_metric
+      ~SparseAttention.add_update
+      ~SparseAttention.add_variable
+      ~SparseAttention.add_weight
+      ~SparseAttention.build
+      ~SparseAttention.build_from_config
+      ~SparseAttention.call
+      ~SparseAttention.compute_mask
+      ~SparseAttention.compute_output_shape
+      ~SparseAttention.compute_output_signature
+      ~SparseAttention.count_params
+      ~SparseAttention.finalize_state
+      ~SparseAttention.from_config
+      ~SparseAttention.get_build_config
+      ~SparseAttention.get_config
+      ~SparseAttention.get_input_at
+      ~SparseAttention.get_input_mask_at
+      ~SparseAttention.get_input_shape_at
+      ~SparseAttention.get_output_at
+      ~SparseAttention.get_output_mask_at
+      ~SparseAttention.get_output_shape_at
+      ~SparseAttention.get_weights
+      ~SparseAttention.load_own_variables
+      ~SparseAttention.save_own_variables
+      ~SparseAttention.set_weights
+      ~SparseAttention.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SparseAttention.activity_regularizer
+      ~SparseAttention.compute_dtype
+      ~SparseAttention.dtype
+      ~SparseAttention.dtype_policy
+      ~SparseAttention.dynamic
+      ~SparseAttention.inbound_nodes
+      ~SparseAttention.input
+      ~SparseAttention.input_mask
+      ~SparseAttention.input_shape
+      ~SparseAttention.input_spec
+      ~SparseAttention.losses
+      ~SparseAttention.metrics
+      ~SparseAttention.name
+      ~SparseAttention.name_scope
+      ~SparseAttention.non_trainable_variables
+      ~SparseAttention.non_trainable_weights
+      ~SparseAttention.outbound_nodes
+      ~SparseAttention.output
+      ~SparseAttention.output_mask
+      ~SparseAttention.output_shape
+      ~SparseAttention.stateful
+      ~SparseAttention.submodules
+      ~SparseAttention.supports_masking
+      ~SparseAttention.trainable
+      ~SparseAttention.trainable_variables
+      ~SparseAttention.trainable_weights
+      ~SparseAttention.updates
+      ~SparseAttention.variable_dtype
+      ~SparseAttention.variables
+      ~SparseAttention.weights
+   
+   

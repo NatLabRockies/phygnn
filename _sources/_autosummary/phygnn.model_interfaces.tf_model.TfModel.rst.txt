@@ -1,0 +1,70 @@
+phygnn.model\_interfaces.tf\_model.TfModel
+==========================================
+
+.. currentmodule:: phygnn.model_interfaces.tf_model
+
+.. autoclass:: TfModel
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TfModel.build
+      ~TfModel.build_trained
+      ~TfModel.compile_model
+      ~TfModel.dict_json_convert
+      ~TfModel.get_mean
+      ~TfModel.get_norm_params
+      ~TfModel.get_stdev
+      ~TfModel.load
+      ~TfModel.make_one_hot_feature_names
+      ~TfModel.normalize
+      ~TfModel.parse_features
+      ~TfModel.parse_labels
+      ~TfModel.predict
+      ~TfModel.save_model
+      ~TfModel.seed
+      ~TfModel.train_model
+      ~TfModel.unnormalize
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TfModel.bias_weights
+      ~TfModel.feature_dims
+      ~TfModel.feature_means
+      ~TfModel.feature_names
+      ~TfModel.feature_stdevs
+      ~TfModel.history
+      ~TfModel.input_feature_names
+      ~TfModel.kernel_weights
+      ~TfModel.label_dims
+      ~TfModel.label_means
+      ~TfModel.label_names
+      ~TfModel.label_stdevs
+      ~TfModel.layers
+      ~TfModel.means
+      ~TfModel.model
+      ~TfModel.model_summary
+      ~TfModel.normalization_parameters
+      ~TfModel.normalize_features
+      ~TfModel.normalize_labels
+      ~TfModel.one_hot_categories
+      ~TfModel.one_hot_feature_names
+      ~TfModel.one_hot_input_feature_names
+      ~TfModel.stdevs
+      ~TfModel.version_record
+      ~TfModel.weights
+   
+   

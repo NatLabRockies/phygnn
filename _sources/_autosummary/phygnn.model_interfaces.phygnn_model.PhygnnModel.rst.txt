@@ -1,0 +1,70 @@
+phygnn.model\_interfaces.phygnn\_model.PhygnnModel
+==================================================
+
+.. currentmodule:: phygnn.model_interfaces.phygnn_model
+
+.. autoclass:: PhygnnModel
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PhygnnModel.build
+      ~PhygnnModel.build_trained
+      ~PhygnnModel.dict_json_convert
+      ~PhygnnModel.get_mean
+      ~PhygnnModel.get_norm_params
+      ~PhygnnModel.get_stdev
+      ~PhygnnModel.load
+      ~PhygnnModel.make_one_hot_feature_names
+      ~PhygnnModel.normalize
+      ~PhygnnModel.parse_features
+      ~PhygnnModel.parse_labels
+      ~PhygnnModel.predict
+      ~PhygnnModel.save_model
+      ~PhygnnModel.seed
+      ~PhygnnModel.set_loss_weights
+      ~PhygnnModel.train_model
+      ~PhygnnModel.unnormalize
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhygnnModel.bias_weights
+      ~PhygnnModel.feature_dims
+      ~PhygnnModel.feature_means
+      ~PhygnnModel.feature_names
+      ~PhygnnModel.feature_stdevs
+      ~PhygnnModel.history
+      ~PhygnnModel.input_feature_names
+      ~PhygnnModel.kernel_weights
+      ~PhygnnModel.label_dims
+      ~PhygnnModel.label_means
+      ~PhygnnModel.label_names
+      ~PhygnnModel.label_stdevs
+      ~PhygnnModel.layers
+      ~PhygnnModel.means
+      ~PhygnnModel.model
+      ~PhygnnModel.model_summary
+      ~PhygnnModel.normalization_parameters
+      ~PhygnnModel.normalize_features
+      ~PhygnnModel.normalize_labels
+      ~PhygnnModel.one_hot_categories
+      ~PhygnnModel.one_hot_feature_names
+      ~PhygnnModel.one_hot_input_feature_names
+      ~PhygnnModel.stdevs
+      ~PhygnnModel.version_record
+      ~PhygnnModel.weights
+   
+   

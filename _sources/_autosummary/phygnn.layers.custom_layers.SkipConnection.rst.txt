@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.SkipConnection
+===========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SkipConnection
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SkipConnection.add_loss
+      ~SkipConnection.add_metric
+      ~SkipConnection.add_update
+      ~SkipConnection.add_variable
+      ~SkipConnection.add_weight
+      ~SkipConnection.build
+      ~SkipConnection.build_from_config
+      ~SkipConnection.call
+      ~SkipConnection.compute_mask
+      ~SkipConnection.compute_output_shape
+      ~SkipConnection.compute_output_signature
+      ~SkipConnection.count_params
+      ~SkipConnection.finalize_state
+      ~SkipConnection.from_config
+      ~SkipConnection.get_build_config
+      ~SkipConnection.get_config
+      ~SkipConnection.get_input_at
+      ~SkipConnection.get_input_mask_at
+      ~SkipConnection.get_input_shape_at
+      ~SkipConnection.get_output_at
+      ~SkipConnection.get_output_mask_at
+      ~SkipConnection.get_output_shape_at
+      ~SkipConnection.get_weights
+      ~SkipConnection.load_own_variables
+      ~SkipConnection.save_own_variables
+      ~SkipConnection.set_weights
+      ~SkipConnection.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SkipConnection.activity_regularizer
+      ~SkipConnection.compute_dtype
+      ~SkipConnection.dtype
+      ~SkipConnection.dtype_policy
+      ~SkipConnection.dynamic
+      ~SkipConnection.inbound_nodes
+      ~SkipConnection.input
+      ~SkipConnection.input_mask
+      ~SkipConnection.input_shape
+      ~SkipConnection.input_spec
+      ~SkipConnection.losses
+      ~SkipConnection.metrics
+      ~SkipConnection.name
+      ~SkipConnection.name_scope
+      ~SkipConnection.non_trainable_variables
+      ~SkipConnection.non_trainable_weights
+      ~SkipConnection.outbound_nodes
+      ~SkipConnection.output
+      ~SkipConnection.output_mask
+      ~SkipConnection.output_shape
+      ~SkipConnection.stateful
+      ~SkipConnection.submodules
+      ~SkipConnection.supports_masking
+      ~SkipConnection.trainable
+      ~SkipConnection.trainable_variables
+      ~SkipConnection.trainable_weights
+      ~SkipConnection.updates
+      ~SkipConnection.variable_dtype
+      ~SkipConnection.variables
+      ~SkipConnection.weights
+   
+   

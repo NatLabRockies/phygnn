@@ -1,0 +1,6 @@
+phygnn.utilities.loss\_metrics.mae
+==================================
+
+.. currentmodule:: phygnn.utilities.loss_metrics
+
+.. autofunction:: mae

@@ -1,0 +1,54 @@
+phygnn.layers.custom\_layers
+============================
+
+.. automodule:: phygnn.layers.custom_layers
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      Attention
+      AxialAttentionBlock
+      CBAM
+      ExpandDims
+      FNO
+      FlattenAxis
+      FlexiblePadding
+      FunctionalLayer
+      GaussianAveragePooling2D
+      GaussianNoiseAxis
+      LogTransform
+      MaskedSqueezeAndExcitation
+      SigLin
+      SkipConnection
+      SparseAttention
+      SpatialExpansion
+      SpatioTemporalExpansion
+      SqueezeAndExcitation
+      Sup3rAdder
+      Sup3rConcat
+      Sup3rConcatObs
+      Sup3rObsModel
+      TileLayer
+      UnitConversion
+   
+   
+
+   
+   
+   
+
+
+

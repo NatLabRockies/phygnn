@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.Sup3rObsModel
+==========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: Sup3rObsModel
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Sup3rObsModel.add_loss
+      ~Sup3rObsModel.add_metric
+      ~Sup3rObsModel.add_update
+      ~Sup3rObsModel.add_variable
+      ~Sup3rObsModel.add_weight
+      ~Sup3rObsModel.build
+      ~Sup3rObsModel.build_from_config
+      ~Sup3rObsModel.call
+      ~Sup3rObsModel.compute_mask
+      ~Sup3rObsModel.compute_output_shape
+      ~Sup3rObsModel.compute_output_signature
+      ~Sup3rObsModel.count_params
+      ~Sup3rObsModel.finalize_state
+      ~Sup3rObsModel.from_config
+      ~Sup3rObsModel.get_build_config
+      ~Sup3rObsModel.get_config
+      ~Sup3rObsModel.get_input_at
+      ~Sup3rObsModel.get_input_mask_at
+      ~Sup3rObsModel.get_input_shape_at
+      ~Sup3rObsModel.get_output_at
+      ~Sup3rObsModel.get_output_mask_at
+      ~Sup3rObsModel.get_output_shape_at
+      ~Sup3rObsModel.get_weights
+      ~Sup3rObsModel.load_own_variables
+      ~Sup3rObsModel.save_own_variables
+      ~Sup3rObsModel.set_weights
+      ~Sup3rObsModel.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Sup3rObsModel.activity_regularizer
+      ~Sup3rObsModel.compute_dtype
+      ~Sup3rObsModel.dtype
+      ~Sup3rObsModel.dtype_policy
+      ~Sup3rObsModel.dynamic
+      ~Sup3rObsModel.inbound_nodes
+      ~Sup3rObsModel.input
+      ~Sup3rObsModel.input_mask
+      ~Sup3rObsModel.input_shape
+      ~Sup3rObsModel.input_spec
+      ~Sup3rObsModel.losses
+      ~Sup3rObsModel.metrics
+      ~Sup3rObsModel.name
+      ~Sup3rObsModel.name_scope
+      ~Sup3rObsModel.non_trainable_variables
+      ~Sup3rObsModel.non_trainable_weights
+      ~Sup3rObsModel.outbound_nodes
+      ~Sup3rObsModel.output
+      ~Sup3rObsModel.output_mask
+      ~Sup3rObsModel.output_shape
+      ~Sup3rObsModel.stateful
+      ~Sup3rObsModel.submodules
+      ~Sup3rObsModel.supports_masking
+      ~Sup3rObsModel.trainable
+      ~Sup3rObsModel.trainable_variables
+      ~Sup3rObsModel.trainable_weights
+      ~Sup3rObsModel.updates
+      ~Sup3rObsModel.variable_dtype
+      ~Sup3rObsModel.variables
+      ~Sup3rObsModel.weights
+   
+   

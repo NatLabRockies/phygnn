@@ -1,0 +1,87 @@
+phygnn.layers.custom\_layers.CBAM
+=================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: CBAM
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CBAM.add_loss
+      ~CBAM.add_metric
+      ~CBAM.add_update
+      ~CBAM.add_variable
+      ~CBAM.add_weight
+      ~CBAM.build
+      ~CBAM.build_from_config
+      ~CBAM.call
+      ~CBAM.channel_attention
+      ~CBAM.compute_mask
+      ~CBAM.compute_output_shape
+      ~CBAM.compute_output_signature
+      ~CBAM.count_params
+      ~CBAM.finalize_state
+      ~CBAM.from_config
+      ~CBAM.get_build_config
+      ~CBAM.get_config
+      ~CBAM.get_input_at
+      ~CBAM.get_input_mask_at
+      ~CBAM.get_input_shape_at
+      ~CBAM.get_output_at
+      ~CBAM.get_output_mask_at
+      ~CBAM.get_output_shape_at
+      ~CBAM.get_weights
+      ~CBAM.load_own_variables
+      ~CBAM.save_own_variables
+      ~CBAM.set_weights
+      ~CBAM.spatiotemporal_attention
+      ~CBAM.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~CBAM.activity_regularizer
+      ~CBAM.compute_dtype
+      ~CBAM.dtype
+      ~CBAM.dtype_policy
+      ~CBAM.dynamic
+      ~CBAM.inbound_nodes
+      ~CBAM.input
+      ~CBAM.input_mask
+      ~CBAM.input_shape
+      ~CBAM.input_spec
+      ~CBAM.losses
+      ~CBAM.metrics
+      ~CBAM.name
+      ~CBAM.name_scope
+      ~CBAM.non_trainable_variables
+      ~CBAM.non_trainable_weights
+      ~CBAM.outbound_nodes
+      ~CBAM.output
+      ~CBAM.output_mask
+      ~CBAM.output_shape
+      ~CBAM.stateful
+      ~CBAM.submodules
+      ~CBAM.supports_masking
+      ~CBAM.trainable
+      ~CBAM.trainable_variables
+      ~CBAM.trainable_weights
+      ~CBAM.updates
+      ~CBAM.variable_dtype
+      ~CBAM.variables
+      ~CBAM.weights
+   
+   

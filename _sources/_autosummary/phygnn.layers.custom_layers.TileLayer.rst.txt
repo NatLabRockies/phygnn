@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.TileLayer
+======================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: TileLayer
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TileLayer.add_loss
+      ~TileLayer.add_metric
+      ~TileLayer.add_update
+      ~TileLayer.add_variable
+      ~TileLayer.add_weight
+      ~TileLayer.build
+      ~TileLayer.build_from_config
+      ~TileLayer.call
+      ~TileLayer.compute_mask
+      ~TileLayer.compute_output_shape
+      ~TileLayer.compute_output_signature
+      ~TileLayer.count_params
+      ~TileLayer.finalize_state
+      ~TileLayer.from_config
+      ~TileLayer.get_build_config
+      ~TileLayer.get_config
+      ~TileLayer.get_input_at
+      ~TileLayer.get_input_mask_at
+      ~TileLayer.get_input_shape_at
+      ~TileLayer.get_output_at
+      ~TileLayer.get_output_mask_at
+      ~TileLayer.get_output_shape_at
+      ~TileLayer.get_weights
+      ~TileLayer.load_own_variables
+      ~TileLayer.save_own_variables
+      ~TileLayer.set_weights
+      ~TileLayer.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TileLayer.activity_regularizer
+      ~TileLayer.compute_dtype
+      ~TileLayer.dtype
+      ~TileLayer.dtype_policy
+      ~TileLayer.dynamic
+      ~TileLayer.inbound_nodes
+      ~TileLayer.input
+      ~TileLayer.input_mask
+      ~TileLayer.input_shape
+      ~TileLayer.input_spec
+      ~TileLayer.losses
+      ~TileLayer.metrics
+      ~TileLayer.name
+      ~TileLayer.name_scope
+      ~TileLayer.non_trainable_variables
+      ~TileLayer.non_trainable_weights
+      ~TileLayer.outbound_nodes
+      ~TileLayer.output
+      ~TileLayer.output_mask
+      ~TileLayer.output_shape
+      ~TileLayer.stateful
+      ~TileLayer.submodules
+      ~TileLayer.supports_masking
+      ~TileLayer.trainable
+      ~TileLayer.trainable_variables
+      ~TileLayer.trainable_weights
+      ~TileLayer.updates
+      ~TileLayer.variable_dtype
+      ~TileLayer.variables
+      ~TileLayer.weights
+   
+   

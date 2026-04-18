@@ -1,0 +1,1083 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.model_interfaces.tf_model.TfModel &mdash; phygnn 0.0.35.dev1+g54e97538a documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=71b63c52"></script>
+      <script src="../_static/doctools.js?v=888ff710"></script>
+      <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="phygnn.phygnn" href="phygnn.phygnn.html" />
+    <link rel="prev" title="phygnn.model_interfaces.tf_model" href="phygnn.model_interfaces.tf_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="phygnn.html">API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.layers.html">phygnn.layers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Attention.html">phygnn.layers.custom_layers.Attention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.AxialAttentionBlock.html">phygnn.layers.custom_layers.AxialAttentionBlock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FNO.html">phygnn.layers.custom_layers.FNO</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SparseAttention.html">phygnn.layers.custom_layers.SparseAttention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcat.html">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.Layers.html">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="reference internal" href="phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.utilities.html">phygnn.utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.pre_processing.PreProcess.html">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="phygnn.html">phygnn</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.model_interfaces.html">phygnn.model_interfaces</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a></li>
+      <li class="breadcrumb-item active">phygnn.model_interfaces.tf_model.TfModel</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/NatLabRockies/phygnn/blob/main/docs/source/_autosummary/phygnn.model_interfaces.tf_model.TfModel.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="phygnn-model-interfaces-tf-model-tfmodel">
+<h1>phygnn.model_interfaces.tf_model.TfModel<a class="headerlink" href="#phygnn-model-interfaces-tf-model-tfmodel" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TfModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(True,</span> <span class="pre">False)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot_categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/model_interfaces/tf_model.html#TfModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="phygnn.model_interfaces.base_model.ModelBase.html#phygnn.model_interfaces.base_model.ModelBase" title="phygnn.model_interfaces.base_model.ModelBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelBase</span></code></a></p>
+<p>TensorFlow Keras Sequential Model interface</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>tensorflow.keras.models.Sequential</em>) – Tensorflow Keras Model</p></li>
+<li><p><strong>feature_names</strong> (<em>list</em>) – Ordered list of feature names.</p></li>
+<li><p><strong>label_names</strong> (<em>list</em>) – Ordered list of label (output) names.</p></li>
+<li><p><strong>norm_params</strong> (<em>dict, optional</em>) – Dictionary mapping feature and label names (keys) to normalization
+parameters (mean, stdev), by default None</p></li>
+<li><p><strong>normalize</strong> (<em>bool | tuple, optional</em>) – Boolean flag(s) as to whether features and labels should be
+normalized. Possible values:
+- True means normalize both
+- False means don’t normalize either
+- Tuple of flags (normalize_feature, normalize_label)
+by default True</p></li>
+<li><p><strong>one_hot_categories</strong> (<em>dict, optional</em>) – Features to one-hot encode using given categories, if None do
+not run one-hot encoding, by default None</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.build" title="phygnn.model_interfaces.tf_model.TfModel.build"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build</span></code></a>(feature_names, label_names[, ...])</p></td>
+<td><p>Build tensorflow sequential model from given features, layers and kwargs</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.build_trained" title="phygnn.model_interfaces.tf_model.TfModel.build_trained"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_trained</span></code></a>(features, labels[, normalize, ...])</p></td>
+<td><p>Build tensorflow sequential model from given features, layers and kwargs and then train with given label and kwargs</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.compile_model" title="phygnn.model_interfaces.tf_model.TfModel.compile_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile_model</span></code></a>(n_features[, n_labels, ...])</p></td>
+<td><p>Build tensorflow sequential model from given layers and kwargs</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.dict_json_convert" title="phygnn.model_interfaces.tf_model.TfModel.dict_json_convert"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict_json_convert</span></code></a>(inp)</p></td>
+<td><p>Recursively convert numeric values in dict to work with json dump</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.get_mean" title="phygnn.model_interfaces.tf_model.TfModel.get_mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mean</span></code></a>(name)</p></td>
+<td><p>Get feature | label mean</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.get_norm_params" title="phygnn.model_interfaces.tf_model.TfModel.get_norm_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_norm_params</span></code></a>(names)</p></td>
+<td><p>Get means and stdevs for given feature/label names</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.get_stdev" title="phygnn.model_interfaces.tf_model.TfModel.get_stdev"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_stdev</span></code></a>(name)</p></td>
+<td><p>Get feature | label stdev</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.load" title="phygnn.model_interfaces.tf_model.TfModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<td><p>Load model from model path.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.make_one_hot_feature_names" title="phygnn.model_interfaces.tf_model.TfModel.make_one_hot_feature_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_one_hot_feature_names</span></code></a>(feature_names, ...)</p></td>
+<td><p>Update feature_names after one-hot encoding</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.normalize" title="phygnn.model_interfaces.tf_model.TfModel.normalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize</span></code></a>(data[, names])</p></td>
+<td><p>Normalize given data</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.parse_features" title="phygnn.model_interfaces.tf_model.TfModel.parse_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_features</span></code></a>(features[, names])</p></td>
+<td><p>Parse features - preprocessing of feature data before training or prediction.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.parse_labels" title="phygnn.model_interfaces.tf_model.TfModel.parse_labels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_labels</span></code></a>(labels[, names])</p></td>
+<td><p>Parse labels and normalize if desired</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.predict" title="phygnn.model_interfaces.tf_model.TfModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(features[, table, parse_kwargs, ...])</p></td>
+<td><p>Use model to predict label from given features</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.save_model" title="phygnn.model_interfaces.tf_model.TfModel.save_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_model</span></code></a>(path)</p></td>
+<td><p>Save TfModel to path.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.seed" title="phygnn.model_interfaces.tf_model.TfModel.seed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">seed</span></code></a>([s])</p></td>
+<td><p>Set the random seed for reproducible results.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.train_model" title="phygnn.model_interfaces.tf_model.TfModel.train_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_model</span></code></a>(features, labels[, epochs, ...])</p></td>
+<td><p>Train the model with the provided features and label</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.unnormalize" title="phygnn.model_interfaces.tf_model.TfModel.unnormalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unnormalize</span></code></a>(data[, names])</p></td>
+<td><p>Un-normalize given data</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.bias_weights" title="phygnn.model_interfaces.tf_model.TfModel.bias_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bias_weights</span></code></a></p></td>
+<td><p>Get a list of the NN bias weights (tensors)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.feature_dims" title="phygnn.model_interfaces.tf_model.TfModel.feature_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_dims</span></code></a></p></td>
+<td><p>Number of features</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.feature_means" title="phygnn.model_interfaces.tf_model.TfModel.feature_means"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_means</span></code></a></p></td>
+<td><p>Feature means, used for (un)normalization</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.feature_names" title="phygnn.model_interfaces.tf_model.TfModel.feature_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_names</span></code></a></p></td>
+<td><p>List of the feature variable names.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.feature_stdevs" title="phygnn.model_interfaces.tf_model.TfModel.feature_stdevs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_stdevs</span></code></a></p></td>
+<td><p>Feature stdevs, used for (un)normalization</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.history" title="phygnn.model_interfaces.tf_model.TfModel.history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">history</span></code></a></p></td>
+<td><p>Model training history DataFrame (None if not yet trained)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.input_feature_names" title="phygnn.model_interfaces.tf_model.TfModel.input_feature_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_feature_names</span></code></a></p></td>
+<td><p>Input feature names</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.kernel_weights" title="phygnn.model_interfaces.tf_model.TfModel.kernel_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel_weights</span></code></a></p></td>
+<td><p>Get a list of the NN kernel weights (tensors)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.label_dims" title="phygnn.model_interfaces.tf_model.TfModel.label_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label_dims</span></code></a></p></td>
+<td><p>Number of labels</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.label_means" title="phygnn.model_interfaces.tf_model.TfModel.label_means"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label_means</span></code></a></p></td>
+<td><p>label means, used for (un)normalization</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.label_names" title="phygnn.model_interfaces.tf_model.TfModel.label_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label_names</span></code></a></p></td>
+<td><p>label variable names</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.label_stdevs" title="phygnn.model_interfaces.tf_model.TfModel.label_stdevs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label_stdevs</span></code></a></p></td>
+<td><p>label stdevs, used for (un)normalization</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.layers" title="phygnn.model_interfaces.tf_model.TfModel.layers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">layers</span></code></a></p></td>
+<td><p>Model layers</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.means" title="phygnn.model_interfaces.tf_model.TfModel.means"><code class="xref py py-obj docutils literal notranslate"><span class="pre">means</span></code></a></p></td>
+<td><p>Mapping feature/label names to the mean values for (un)normalization</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.model" title="phygnn.model_interfaces.tf_model.TfModel.model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model</span></code></a></p></td>
+<td><p>Trained model</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.model_summary" title="phygnn.model_interfaces.tf_model.TfModel.model_summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_summary</span></code></a></p></td>
+<td><p>Tensorflow model summary</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.normalization_parameters" title="phygnn.model_interfaces.tf_model.TfModel.normalization_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalization_parameters</span></code></a></p></td>
+<td><p>Features and label (un)normalization parameters</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.normalize_features" title="phygnn.model_interfaces.tf_model.TfModel.normalize_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_features</span></code></a></p></td>
+<td><p>Flag to normalize features</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.normalize_labels" title="phygnn.model_interfaces.tf_model.TfModel.normalize_labels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_labels</span></code></a></p></td>
+<td><p>Flag to normalize labels</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.one_hot_categories" title="phygnn.model_interfaces.tf_model.TfModel.one_hot_categories"><code class="xref py py-obj docutils literal notranslate"><span class="pre">one_hot_categories</span></code></a></p></td>
+<td><p>categories to use for one-hot encoding</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.one_hot_feature_names" title="phygnn.model_interfaces.tf_model.TfModel.one_hot_feature_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">one_hot_feature_names</span></code></a></p></td>
+<td><p>One-hot encoded feature names</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.one_hot_input_feature_names" title="phygnn.model_interfaces.tf_model.TfModel.one_hot_input_feature_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">one_hot_input_feature_names</span></code></a></p></td>
+<td><p>Input feature names to be one-hot encoded</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.stdevs" title="phygnn.model_interfaces.tf_model.TfModel.stdevs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stdevs</span></code></a></p></td>
+<td><p>Mapping feature/label names to the stdev values for (un)normalization</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.version_record" title="phygnn.model_interfaces.tf_model.TfModel.version_record"><code class="xref py py-obj docutils literal notranslate"><span class="pre">version_record</span></code></a></p></td>
+<td><p>A record of important versions that this model was built with.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.model_interfaces.tf_model.TfModel.weights" title="phygnn.model_interfaces.tf_model.TfModel.weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weights</span></code></a></p></td>
+<td><p>Get a list of layer weights for gradient calculations.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.layers">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">layers</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.layers" title="Permalink to this definition"></a></dt>
+<dd><p>Model layers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weights</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.weights" title="Permalink to this definition"></a></dt>
+<dd><p>Get a list of layer weights for gradient calculations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.kernel_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kernel_weights</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.kernel_weights" title="Permalink to this definition"></a></dt>
+<dd><p>Get a list of the NN kernel weights (tensors)</p>
+<p>(can be used for kernel regularization).</p>
+<p>Does not include input layer or dropout layers.
+Does include the output layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.bias_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bias_weights</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.bias_weights" title="Permalink to this definition"></a></dt>
+<dd><p>Get a list of the NN bias weights (tensors)</p>
+<p>(can be used for bias regularization).</p>
+<p>Does not include input layer or dropout layers.
+Does include the output layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.history">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">history</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.history" title="Permalink to this definition"></a></dt>
+<dd><p>Model training history DataFrame (None if not yet trained)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>pandas.DataFrame | None</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.compile_model">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compile_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_labels=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_layers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_layer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_layer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate=0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss='mean_squared_error'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics=('mae'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'mse')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_class=&lt;class</span> <span class="pre">'keras.src.optimizers.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/model_interfaces/tf_model.html#TfModel.compile_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.compile_model" title="Permalink to this definition"></a></dt>
+<dd><p>Build tensorflow sequential model from given layers and kwargs</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>n_features</strong> (<em>int</em>) – Number of features (inputs) to train the model on</p></li>
+<li><p><strong>n_labels</strong> (<em>int, optional</em>) – Number of labels (outputs) to the model, by default 1</p></li>
+<li><p><strong>hidden_layers</strong> (<em>list | None, optional</em>) – List of dictionaries of key word arguments for each hidden
+layer in the NN. Dense linear layers can be input with their
+activations or separately for more explicit control over the layer
+ordering. For example, this is a valid input for hidden_layers that
+will yield 7 hidden layers (9 layers total):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>[{‘units’: 64, ‘activation’: ‘relu’, ‘dropout’: 0.01},</dt><dd><p>{‘units’: 64},
+{‘batch_normalization’: {‘axis’: -1}},
+{‘activation’: ‘relu’},
+{‘dropout’: 0.01}]</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>by default None which will lead to a single linear layer</p>
+</li>
+<li><p><strong>input_layer</strong> (<em>None | bool | InputLayer</em>) – Keras input layer. Will default to an InputLayer with
+input shape = n_features.
+Can be False if the input layer will be included in the
+hidden_layers input.</p></li>
+<li><p><strong>output_layer</strong> (<em>None | bool | list | dict</em>) – Output layer specification. Can be a list/dict similar to
+hidden_layers input specifying a dense layer with activation.
+For example, for a classfication problem with a single output,
+output_layer should be [{‘units’: 1}, {‘activation’: ‘sigmoid’}]
+This defaults to a single dense layer with no activation
+(best for regression problems).  Can be False if the output layer
+will be included in the hidden_layers input.</p></li>
+<li><p><strong>learning_rate</strong> (<em>float, optional</em>) – tensorflow optimizer learning rate, by default 0.001</p></li>
+<li><p><strong>loss</strong> (<em>str, optional</em>) – name of objective function, by default “mean_squared_error”</p></li>
+<li><p><strong>metrics</strong> (<em>list, optional</em>) – List of metrics to be evaluated by the model during training and
+testing, by default (‘mae’, ‘mse’)</p></li>
+<li><p><strong>optimizer_class</strong> (<em>tf.keras.optimizers, optional</em>) – Optional explicit request of optimizer. This should be a class
+that will be instantated in the TfModel.compile_model() method
+The default is the Adam optimizer</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – kwargs for tensorflow.keras.models.compile</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>tensorflow.keras.models.Sequential</em> – Compiled tensorflow Sequential model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.train_model">
+<span class="sig-name descname"><span class="pre">train_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">early_stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parse_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/model_interfaces/tf_model.html#TfModel.train_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.train_model" title="Permalink to this definition"></a></dt>
+<dd><p>Train the model with the provided features and label</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>features</strong> (<em>dict | pandas.DataFrame</em>) – Input features to train on</p></li>
+<li><p><strong>labels</strong> (<em>dict | pandas.DataFrame</em>) – label to train on</p></li>
+<li><p><strong>norm_labels</strong> (<em>bool, optional</em>) – Flag to normalize label, by default True</p></li>
+<li><p><strong>epochs</strong> (<em>int, optional</em>) – Number of epochs to train the model, by default 100</p></li>
+<li><p><strong>shuffle</strong> (<em>bool</em>) – Flag to randomly subset the validation data and batch selection
+from features and labels.</p></li>
+<li><p><strong>validation_split</strong> (<em>float, optional</em>) – Fraction of the training data to be used as validation data,
+by default 0.2</p></li>
+<li><p><strong>early_stop</strong> (<em>bool</em>) – Flag to stop training when it stops improving</p></li>
+<li><p><strong>stop_kwargs</strong> (<em>dict | None</em>) – kwargs for tf.keras.callbacks.EarlyStopping() if early_stop
+default is: {‘monitor’: ‘val_loss’, ‘patience’: 10}</p></li>
+<li><p><strong>parse_kwargs</strong> (<em>dict | None</em>) – kwargs for cls.parse_features</p></li>
+<li><p><strong>fit_kwargs</strong> (<em>dict | None</em>) – kwargs for tensorflow.keras.models.fit</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.save_model">
+<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/model_interfaces/tf_model.html#TfModel.save_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.save_model" title="Permalink to this definition"></a></dt>
+<dd><p>Save TfModel to path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Directory path to save model to. The tensorflow model will be
+saved to the directory while the framework parameters will be
+saved in json.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/model_interfaces/tf_model.html#TfModel.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.load" title="Permalink to this definition"></a></dt>
+<dd><p>Load model from model path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Directory path for TfModel to load model from. There should be a
+saved model directory with json and pickle files for the TfModel
+framework.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>model</strong> (<em>TfModel</em>) – Loaded TfModel from disk.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.build">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize=(True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">False)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot_categories=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_layers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_layer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_layer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate=0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss='mean_squared_error'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics=('mae'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'mse')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_class=&lt;class</span> <span class="pre">'keras.src.optimizers.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/model_interfaces/tf_model.html#TfModel.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.build" title="Permalink to this definition"></a></dt>
+<dd><p>Build tensorflow sequential model from given features, layers and
+kwargs</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>feature_names</strong> (<em>list</em>) – Ordered list of feature names.</p></li>
+<li><p><strong>label_names</strong> (<em>list</em>) – Ordered list of label (output) names.</p></li>
+<li><p><strong>normalize</strong> (<em>bool | tuple, optional</em>) – Boolean flag(s) as to whether features and labels should be
+normalized. Possible values:
+- True means normalize both
+- False means don’t normalize either
+- Tuple of flags (normalize_feature, normalize_label)
+by default True</p></li>
+<li><p><strong>one_hot_categories</strong> (<em>dict, optional</em>) – Features to one-hot encode using given categories, if None do
+not run one-hot encoding, by default None</p></li>
+<li><p><strong>hidden_layers</strong> (<em>list | None, optional</em>) – List of dictionaries of key word arguments for each hidden
+layer in the NN. Dense linear layers can be input with their
+activations or separately for more explicit control over the layer
+ordering. For example, this is a valid input for hidden_layers that
+will yield 7 hidden layers (9 layers total):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>[{‘units’: 64, ‘activation’: ‘relu’, ‘dropout’: 0.01},</dt><dd><p>{‘units’: 64},
+{‘batch_normalization’: {‘axis’: -1}},
+{‘activation’: ‘relu’},
+{‘dropout’: 0.01}]</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>by default None which will lead to a single linear layer</p>
+</li>
+<li><p><strong>input_layer</strong> (<em>None | bool | InputLayer</em>) – Keras input layer. Will default to an InputLayer with
+input shape = n_features.
+Can be False if the input layer will be included in the
+hidden_layers input.</p></li>
+<li><p><strong>output_layer</strong> (<em>None | bool | list | dict</em>) – Output layer specification. Can be a list/dict similar to
+hidden_layers input specifying a dense layer with activation.
+For example, for a classfication problem with a single output,
+output_layer should be [{‘units’: 1}, {‘activation’: ‘sigmoid’}]
+This defaults to a single dense layer with no activation
+(best for regression problems).  Can be False if the output layer
+will be included in the hidden_layers input.</p></li>
+<li><p><strong>learning_rate</strong> (<em>float, optional</em>) – tensorflow optimizer learning rate, by default 0.001</p></li>
+<li><p><strong>loss</strong> (<em>str, optional</em>) – name of objective function, by default “mean_squared_error”</p></li>
+<li><p><strong>metrics</strong> (<em>list, optional</em>) – List of metrics to be evaluated by the model during training and
+testing, by default (‘mae’, ‘mse’)</p></li>
+<li><p><strong>optimizer_class</strong> (<em>tf.keras.optimizers, optional</em>) – Optional explicit request of optimizer. This should be a class
+that will be instantated in the TfModel.compile_model() method
+The default is the Adam optimizer</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – kwargs for tensorflow.keras.models.compile</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>model</strong> (<em>TfModel</em>) – Initialized TfModel obj</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.build_trained">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build_trained</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize=(True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">False)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot_categories=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_layers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_layer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_layer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate=0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss='mean_squared_error'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics=('mae'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'mse')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_class=&lt;class</span> <span class="pre">'keras.src.optimizers.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs=100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_split=0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">early_stop=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compile_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parse_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/model_interfaces/tf_model.html#TfModel.build_trained"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.build_trained" title="Permalink to this definition"></a></dt>
+<dd><p>Build tensorflow sequential model from given features, layers and
+kwargs and then train with given label and kwargs</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>features</strong> (<em>dict | pandas.DataFrame</em>) – Model features</p></li>
+<li><p><strong>labels</strong> (<em>dict | pandas.DataFrame</em>) – label to train on</p></li>
+<li><p><strong>normalize</strong> (<em>bool | tuple, optional</em>) – Boolean flag(s) as to whether features and labels should be
+normalized. Possible values:
+- True means normalize both
+- False means don’t normalize either
+- Tuple of flags (normalize_feature, normalize_label)
+by default True</p></li>
+<li><p><strong>one_hot_categories</strong> (<em>dict, optional</em>) – Features to one-hot encode using given categories, if None do
+not run one-hot encoding, by default None</p></li>
+<li><p><strong>hidden_layers</strong> (<em>list | None, optional</em>) – List of dictionaries of key word arguments for each hidden
+layer in the NN. Dense linear layers can be input with their
+activations or separately for more explicit control over the layer
+ordering. For example, this is a valid input for hidden_layers that
+will yield 7 hidden layers (9 layers total):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>[{‘units’: 64, ‘activation’: ‘relu’, ‘dropout’: 0.01},</dt><dd><p>{‘units’: 64},
+{‘batch_normalization’: {‘axis’: -1}},
+{‘activation’: ‘relu’},
+{‘dropout’: 0.01}]</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>by default None which will lead to a single linear layer</p>
+</li>
+<li><p><strong>input_layer</strong> (<em>None | bool | InputLayer</em>) – Keras input layer. Will default to an InputLayer with
+input shape = n_features.
+Can be False if the input layer will be included in the
+hidden_layers input.</p></li>
+<li><p><strong>output_layer</strong> (<em>None | bool | list | dict</em>) – Output layer specification. Can be a list/dict similar to
+hidden_layers input specifying a dense layer with activation.
+For example, for a classfication problem with a single output,
+output_layer should be [{‘units’: 1}, {‘activation’: ‘sigmoid’}]
+This defaults to a single dense layer with no activation
+(best for regression problems).  Can be False if the output layer
+will be included in the hidden_layers input.</p></li>
+<li><p><strong>learning_rate</strong> (<em>float, optional</em>) – tensorflow optimizer learning rate, by default 0.001</p></li>
+<li><p><strong>loss</strong> (<em>str, optional</em>) – name of objective function, by default “mean_squared_error”</p></li>
+<li><p><strong>metrics</strong> (<em>list, optional</em>) – List of metrics to be evaluated by the model during training and
+testing, by default (‘mae’, ‘mse’)</p></li>
+<li><p><strong>optimizer_class</strong> (<em>tf.keras.optimizers, optional</em>) – Optional explicit request of optimizer. This should be a class
+that will be instantated in the TfModel.compile_model() method
+The default is the Adam optimizer</p></li>
+<li><p><strong>epochs</strong> (<em>int, optional</em>) – Number of epochs to train the model, by default 100</p></li>
+<li><p><strong>shuffle</strong> (<em>bool</em>) – Flag to randomly subset the validation data and batch selection
+from features and labels.</p></li>
+<li><p><strong>validation_split</strong> (<em>float, optional</em>) – Fraction of the training data to be used as validation data,
+by default 0.2</p></li>
+<li><p><strong>early_stop</strong> (<em>bool</em>) – Flag to stop training when it stops improving</p></li>
+<li><p><strong>stop_kwargs</strong> (<em>dict | None</em>) – kwargs for tf.keras.callbacks.EarlyStopping() if early_stop
+default is: {‘monitor’: ‘val_loss’, ‘patience’: 10}</p></li>
+<li><p><strong>save_path</strong> (<em>str</em>) – Directory path to save model to. The tensorflow model will be
+saved to the directory while the framework parameters will be
+saved in json.</p></li>
+<li><p><strong>compile_kwargs</strong> (<em>dict</em>) – kwargs for tensorflow.keras.models.compile</p></li>
+<li><p><strong>parse_kwargs</strong> (<em>dict</em>) – kwargs for cls.parse_features</p></li>
+<li><p><strong>fit_kwargs</strong> (<em>dict</em>) – kwargs for tensorflow.keras.models.fit</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>model</strong> (<em>TfModel</em>) – Initialized and trained TfModel obj</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.dict_json_convert">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dict_json_convert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.dict_json_convert" title="Permalink to this definition"></a></dt>
+<dd><p>Recursively convert numeric values in dict to work with json dump</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>inp</strong> (<em>dict</em>) – Dictionary to convert.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>out</strong> (<em>dict</em>) – Copy of dict input with all nested numeric values converted to
+base python int or float and all arrays converted to lists.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.feature_dims">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">feature_dims</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.feature_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Number of features</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>int</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.feature_means">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">feature_means</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.feature_means" title="Permalink to this definition"></a></dt>
+<dd><p>Feature means, used for (un)normalization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.feature_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">feature_names</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.feature_names" title="Permalink to this definition"></a></dt>
+<dd><p>List of the feature variable names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.feature_stdevs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">feature_stdevs</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.feature_stdevs" title="Permalink to this definition"></a></dt>
+<dd><p>Feature stdevs, used for (un)normalization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.get_mean">
+<span class="sig-name descname"><span class="pre">get_mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.get_mean" title="Permalink to this definition"></a></dt>
+<dd><p>Get feature | label mean</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – feature | label name</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>mean</strong> (<em>float</em>) – Mean value used for normalization</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.get_norm_params">
+<span class="sig-name descname"><span class="pre">get_norm_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.get_norm_params" title="Permalink to this definition"></a></dt>
+<dd><p>Get means and stdevs for given feature/label names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>names</strong> (<em>list</em>) – list of feature/label names to get normalization params for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>means</strong> (<em>list</em>) – List of means to use for (un)normalization</p></li>
+<li><p><strong>stdevs</strong> (<em>list</em>) – List of stdevs to use for (un)normalization</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.get_stdev">
+<span class="sig-name descname"><span class="pre">get_stdev</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.get_stdev" title="Permalink to this definition"></a></dt>
+<dd><p>Get feature | label stdev</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – feature | label name</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>stdev</strong> (<em>float</em>) – Stdev value used for normalization</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.input_feature_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_feature_names</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.input_feature_names" title="Permalink to this definition"></a></dt>
+<dd><p>Input feature names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.label_dims">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">label_dims</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.label_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Number of labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>int</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.label_means">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">label_means</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.label_means" title="Permalink to this definition"></a></dt>
+<dd><p>label means, used for (un)normalization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.label_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">label_names</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.label_names" title="Permalink to this definition"></a></dt>
+<dd><p>label variable names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.label_stdevs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">label_stdevs</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.label_stdevs" title="Permalink to this definition"></a></dt>
+<dd><p>label stdevs, used for (un)normalization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.make_one_hot_feature_names">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">make_one_hot_feature_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot_categories</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.make_one_hot_feature_names" title="Permalink to this definition"></a></dt>
+<dd><p>Update feature_names after one-hot encoding</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_names</strong> (<em>list</em>) – Input feature names</p></li>
+<li><p><strong>one_hot_categories</strong> (<em>dict</em>) – Features to one-hot encode using given categories</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>one_hot_feature_names</strong> (<em>list</em>) – Updated list of feature names with one_hot categories</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.means">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">means</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.means" title="Permalink to this definition"></a></dt>
+<dd><p>Mapping feature/label names to the mean values for
+(un)normalization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>dict</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.model" title="Permalink to this definition"></a></dt>
+<dd><p>Trained model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>tensorflow.keras.models</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.model_summary">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_summary</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.model_summary" title="Permalink to this definition"></a></dt>
+<dd><p>Tensorflow model summary</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>str</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.normalization_parameters">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalization_parameters</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.normalization_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Features and label (un)normalization parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>dict</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.normalize" title="Permalink to this definition"></a></dt>
+<dd><p>Normalize given data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>dict | pandas.DataFrame | ndarray</em>) – Data to normalize</p></li>
+<li><p><strong>names</strong> (<em>list, optional</em>) – List of data item names, needed to normalized ndarrays,
+by default None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>data</strong> (<em>dict | pandas.DataFrame | ndarray</em>) – Normalized data in same format as input</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.normalize_features">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalize_features</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.normalize_features" title="Permalink to this definition"></a></dt>
+<dd><p>Flag to normalize features</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>bool</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.normalize_labels">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalize_labels</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.normalize_labels" title="Permalink to this definition"></a></dt>
+<dd><p>Flag to normalize labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>bool</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.one_hot_categories">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">one_hot_categories</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.one_hot_categories" title="Permalink to this definition"></a></dt>
+<dd><p>categories to use for one-hot encoding</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>dict</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.one_hot_feature_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">one_hot_feature_names</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.one_hot_feature_names" title="Permalink to this definition"></a></dt>
+<dd><p>One-hot encoded feature names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.one_hot_input_feature_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">one_hot_input_feature_names</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.one_hot_input_feature_names" title="Permalink to this definition"></a></dt>
+<dd><p>Input feature names to be one-hot encoded</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.parse_features">
+<span class="sig-name descname"><span class="pre">parse_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.parse_features" title="Permalink to this definition"></a></dt>
+<dd><p>Parse features - preprocessing of feature data before training or
+prediction. This will do one-hot encoding based on
+self.one_hot_categories, and feature normalization based on
+self.normalize_features</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>features</strong> (<em>pandas.DataFrame | dict | ndarray</em>) – Features to train on or predict from</p></li>
+<li><p><strong>names</strong> (<em>list, optional</em>) – List of feature names, by default None</p></li>
+<li><p><strong>kwargs</strong> (<em>dict, optional</em>) – kwargs for PreProcess.one_hot</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>features</strong> (<em>ndarray</em>) – Parsed features array normalized and with str columns converted
+to one hot vectors if desired</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.parse_labels">
+<span class="sig-name descname"><span class="pre">parse_labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.parse_labels" title="Permalink to this definition"></a></dt>
+<dd><p>Parse labels and normalize if desired</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>labels</strong> (<em>pandas.DataFrame | dict | ndarray</em>) – Features to train on or predict from</p></li>
+<li><p><strong>names</strong> (<em>list, optional</em>) – List of label names, by default None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>labels</strong> (<em>ndarray</em>) – Parsed labels array, normalized if desired</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parse_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.predict" title="Permalink to this definition"></a></dt>
+<dd><p>Use model to predict label from given features</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>features</strong> (<em>dict | pandas.DataFrame</em>) – features to predict from</p></li>
+<li><p><strong>table</strong> (<em>bool, optional</em>) – Return pandas DataFrame</p></li>
+<li><p><strong>parse_kwargs</strong> (<em>dict</em>) – kwargs for cls.parse_features</p></li>
+<li><p><strong>predict_kwargs</strong> (<em>dict</em>) – kwargs for tensorflow.*.predict</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>prediction</strong> (<em>ndarray | pandas.DataFrame</em>) – label prediction</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.seed">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.seed" title="Permalink to this definition"></a></dt>
+<dd><p>Set the random seed for reproducible results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>s</strong> (<em>int</em>) – Random number generator seed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.stdevs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stdevs</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.stdevs" title="Permalink to this definition"></a></dt>
+<dd><p>Mapping feature/label names to the stdev values for
+(un)normalization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>dict</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.unnormalize">
+<span class="sig-name descname"><span class="pre">unnormalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.unnormalize" title="Permalink to this definition"></a></dt>
+<dd><p>Un-normalize given data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>dict | pandas.DataFrame | ndarray</em>) – Data to un-normalize</p></li>
+<li><p><strong>names</strong> (<em>list, optional</em>) – List of data item names, needed to un-normalized ndarrays,
+by default None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>data</strong> (<em>dict | pandas.DataFrame | ndarray</em>) – Native data in same format as input</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.model_interfaces.tf_model.TfModel.version_record">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">version_record</span></span><a class="headerlink" href="#phygnn.model_interfaces.tf_model.TfModel.version_record" title="Permalink to this definition"></a></dt>
+<dd><p>A record of important versions that this model was built with.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>dict</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="phygnn.model_interfaces.tf_model.html" class="btn btn-neutral float-left" title="phygnn.model_interfaces.tf_model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="phygnn.phygnn.html" class="btn btn-neutral float-right" title="phygnn.phygnn" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

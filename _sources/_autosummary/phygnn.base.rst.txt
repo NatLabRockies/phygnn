@@ -1,0 +1,32 @@
+phygnn.base
+===========
+
+.. automodule:: phygnn.base
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      CustomNetwork
+      GradientUtils
+   
+   
+
+   
+   
+   
+
+
+

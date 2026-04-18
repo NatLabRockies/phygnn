@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.Attention
+======================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: Attention
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Attention.add_loss
+      ~Attention.add_metric
+      ~Attention.add_update
+      ~Attention.add_variable
+      ~Attention.add_weight
+      ~Attention.build
+      ~Attention.build_from_config
+      ~Attention.call
+      ~Attention.compute_mask
+      ~Attention.compute_output_shape
+      ~Attention.compute_output_signature
+      ~Attention.count_params
+      ~Attention.finalize_state
+      ~Attention.from_config
+      ~Attention.get_build_config
+      ~Attention.get_config
+      ~Attention.get_input_at
+      ~Attention.get_input_mask_at
+      ~Attention.get_input_shape_at
+      ~Attention.get_output_at
+      ~Attention.get_output_mask_at
+      ~Attention.get_output_shape_at
+      ~Attention.get_weights
+      ~Attention.load_own_variables
+      ~Attention.save_own_variables
+      ~Attention.set_weights
+      ~Attention.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Attention.activity_regularizer
+      ~Attention.compute_dtype
+      ~Attention.dtype
+      ~Attention.dtype_policy
+      ~Attention.dynamic
+      ~Attention.inbound_nodes
+      ~Attention.input
+      ~Attention.input_mask
+      ~Attention.input_shape
+      ~Attention.input_spec
+      ~Attention.losses
+      ~Attention.metrics
+      ~Attention.name
+      ~Attention.name_scope
+      ~Attention.non_trainable_variables
+      ~Attention.non_trainable_weights
+      ~Attention.outbound_nodes
+      ~Attention.output
+      ~Attention.output_mask
+      ~Attention.output_shape
+      ~Attention.stateful
+      ~Attention.submodules
+      ~Attention.supports_masking
+      ~Attention.trainable
+      ~Attention.trainable_variables
+      ~Attention.trainable_weights
+      ~Attention.updates
+      ~Attention.variable_dtype
+      ~Attention.variables
+      ~Attention.weights
+   
+   

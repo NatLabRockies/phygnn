@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.MaskedSqueezeAndExcitation
+=======================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: MaskedSqueezeAndExcitation
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MaskedSqueezeAndExcitation.add_loss
+      ~MaskedSqueezeAndExcitation.add_metric
+      ~MaskedSqueezeAndExcitation.add_update
+      ~MaskedSqueezeAndExcitation.add_variable
+      ~MaskedSqueezeAndExcitation.add_weight
+      ~MaskedSqueezeAndExcitation.build
+      ~MaskedSqueezeAndExcitation.build_from_config
+      ~MaskedSqueezeAndExcitation.call
+      ~MaskedSqueezeAndExcitation.compute_mask
+      ~MaskedSqueezeAndExcitation.compute_output_shape
+      ~MaskedSqueezeAndExcitation.compute_output_signature
+      ~MaskedSqueezeAndExcitation.count_params
+      ~MaskedSqueezeAndExcitation.finalize_state
+      ~MaskedSqueezeAndExcitation.from_config
+      ~MaskedSqueezeAndExcitation.get_build_config
+      ~MaskedSqueezeAndExcitation.get_config
+      ~MaskedSqueezeAndExcitation.get_input_at
+      ~MaskedSqueezeAndExcitation.get_input_mask_at
+      ~MaskedSqueezeAndExcitation.get_input_shape_at
+      ~MaskedSqueezeAndExcitation.get_output_at
+      ~MaskedSqueezeAndExcitation.get_output_mask_at
+      ~MaskedSqueezeAndExcitation.get_output_shape_at
+      ~MaskedSqueezeAndExcitation.get_weights
+      ~MaskedSqueezeAndExcitation.load_own_variables
+      ~MaskedSqueezeAndExcitation.save_own_variables
+      ~MaskedSqueezeAndExcitation.set_weights
+      ~MaskedSqueezeAndExcitation.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MaskedSqueezeAndExcitation.activity_regularizer
+      ~MaskedSqueezeAndExcitation.compute_dtype
+      ~MaskedSqueezeAndExcitation.dtype
+      ~MaskedSqueezeAndExcitation.dtype_policy
+      ~MaskedSqueezeAndExcitation.dynamic
+      ~MaskedSqueezeAndExcitation.inbound_nodes
+      ~MaskedSqueezeAndExcitation.input
+      ~MaskedSqueezeAndExcitation.input_mask
+      ~MaskedSqueezeAndExcitation.input_shape
+      ~MaskedSqueezeAndExcitation.input_spec
+      ~MaskedSqueezeAndExcitation.losses
+      ~MaskedSqueezeAndExcitation.metrics
+      ~MaskedSqueezeAndExcitation.name
+      ~MaskedSqueezeAndExcitation.name_scope
+      ~MaskedSqueezeAndExcitation.non_trainable_variables
+      ~MaskedSqueezeAndExcitation.non_trainable_weights
+      ~MaskedSqueezeAndExcitation.outbound_nodes
+      ~MaskedSqueezeAndExcitation.output
+      ~MaskedSqueezeAndExcitation.output_mask
+      ~MaskedSqueezeAndExcitation.output_shape
+      ~MaskedSqueezeAndExcitation.stateful
+      ~MaskedSqueezeAndExcitation.submodules
+      ~MaskedSqueezeAndExcitation.supports_masking
+      ~MaskedSqueezeAndExcitation.trainable
+      ~MaskedSqueezeAndExcitation.trainable_variables
+      ~MaskedSqueezeAndExcitation.trainable_weights
+      ~MaskedSqueezeAndExcitation.updates
+      ~MaskedSqueezeAndExcitation.variable_dtype
+      ~MaskedSqueezeAndExcitation.variables
+      ~MaskedSqueezeAndExcitation.weights
+   
+   

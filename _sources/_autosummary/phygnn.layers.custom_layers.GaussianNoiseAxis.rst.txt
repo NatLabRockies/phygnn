@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.GaussianNoiseAxis
+==============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: GaussianNoiseAxis
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GaussianNoiseAxis.add_loss
+      ~GaussianNoiseAxis.add_metric
+      ~GaussianNoiseAxis.add_update
+      ~GaussianNoiseAxis.add_variable
+      ~GaussianNoiseAxis.add_weight
+      ~GaussianNoiseAxis.build
+      ~GaussianNoiseAxis.build_from_config
+      ~GaussianNoiseAxis.call
+      ~GaussianNoiseAxis.compute_mask
+      ~GaussianNoiseAxis.compute_output_shape
+      ~GaussianNoiseAxis.compute_output_signature
+      ~GaussianNoiseAxis.count_params
+      ~GaussianNoiseAxis.finalize_state
+      ~GaussianNoiseAxis.from_config
+      ~GaussianNoiseAxis.get_build_config
+      ~GaussianNoiseAxis.get_config
+      ~GaussianNoiseAxis.get_input_at
+      ~GaussianNoiseAxis.get_input_mask_at
+      ~GaussianNoiseAxis.get_input_shape_at
+      ~GaussianNoiseAxis.get_output_at
+      ~GaussianNoiseAxis.get_output_mask_at
+      ~GaussianNoiseAxis.get_output_shape_at
+      ~GaussianNoiseAxis.get_weights
+      ~GaussianNoiseAxis.load_own_variables
+      ~GaussianNoiseAxis.save_own_variables
+      ~GaussianNoiseAxis.set_weights
+      ~GaussianNoiseAxis.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~GaussianNoiseAxis.activity_regularizer
+      ~GaussianNoiseAxis.compute_dtype
+      ~GaussianNoiseAxis.dtype
+      ~GaussianNoiseAxis.dtype_policy
+      ~GaussianNoiseAxis.dynamic
+      ~GaussianNoiseAxis.inbound_nodes
+      ~GaussianNoiseAxis.input
+      ~GaussianNoiseAxis.input_mask
+      ~GaussianNoiseAxis.input_shape
+      ~GaussianNoiseAxis.input_spec
+      ~GaussianNoiseAxis.losses
+      ~GaussianNoiseAxis.metrics
+      ~GaussianNoiseAxis.name
+      ~GaussianNoiseAxis.name_scope
+      ~GaussianNoiseAxis.non_trainable_variables
+      ~GaussianNoiseAxis.non_trainable_weights
+      ~GaussianNoiseAxis.outbound_nodes
+      ~GaussianNoiseAxis.output
+      ~GaussianNoiseAxis.output_mask
+      ~GaussianNoiseAxis.output_shape
+      ~GaussianNoiseAxis.stateful
+      ~GaussianNoiseAxis.submodules
+      ~GaussianNoiseAxis.supports_masking
+      ~GaussianNoiseAxis.trainable
+      ~GaussianNoiseAxis.trainable_variables
+      ~GaussianNoiseAxis.trainable_weights
+      ~GaussianNoiseAxis.updates
+      ~GaussianNoiseAxis.variable_dtype
+      ~GaussianNoiseAxis.variables
+      ~GaussianNoiseAxis.weights
+   
+   

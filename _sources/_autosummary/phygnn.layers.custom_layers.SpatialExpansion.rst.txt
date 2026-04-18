@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.SpatialExpansion
+=============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SpatialExpansion
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SpatialExpansion.add_loss
+      ~SpatialExpansion.add_metric
+      ~SpatialExpansion.add_update
+      ~SpatialExpansion.add_variable
+      ~SpatialExpansion.add_weight
+      ~SpatialExpansion.build
+      ~SpatialExpansion.build_from_config
+      ~SpatialExpansion.call
+      ~SpatialExpansion.compute_mask
+      ~SpatialExpansion.compute_output_shape
+      ~SpatialExpansion.compute_output_signature
+      ~SpatialExpansion.count_params
+      ~SpatialExpansion.finalize_state
+      ~SpatialExpansion.from_config
+      ~SpatialExpansion.get_build_config
+      ~SpatialExpansion.get_config
+      ~SpatialExpansion.get_input_at
+      ~SpatialExpansion.get_input_mask_at
+      ~SpatialExpansion.get_input_shape_at
+      ~SpatialExpansion.get_output_at
+      ~SpatialExpansion.get_output_mask_at
+      ~SpatialExpansion.get_output_shape_at
+      ~SpatialExpansion.get_weights
+      ~SpatialExpansion.load_own_variables
+      ~SpatialExpansion.save_own_variables
+      ~SpatialExpansion.set_weights
+      ~SpatialExpansion.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SpatialExpansion.activity_regularizer
+      ~SpatialExpansion.compute_dtype
+      ~SpatialExpansion.dtype
+      ~SpatialExpansion.dtype_policy
+      ~SpatialExpansion.dynamic
+      ~SpatialExpansion.inbound_nodes
+      ~SpatialExpansion.input
+      ~SpatialExpansion.input_mask
+      ~SpatialExpansion.input_shape
+      ~SpatialExpansion.input_spec
+      ~SpatialExpansion.losses
+      ~SpatialExpansion.metrics
+      ~SpatialExpansion.name
+      ~SpatialExpansion.name_scope
+      ~SpatialExpansion.non_trainable_variables
+      ~SpatialExpansion.non_trainable_weights
+      ~SpatialExpansion.outbound_nodes
+      ~SpatialExpansion.output
+      ~SpatialExpansion.output_mask
+      ~SpatialExpansion.output_shape
+      ~SpatialExpansion.stateful
+      ~SpatialExpansion.submodules
+      ~SpatialExpansion.supports_masking
+      ~SpatialExpansion.trainable
+      ~SpatialExpansion.trainable_variables
+      ~SpatialExpansion.trainable_weights
+      ~SpatialExpansion.updates
+      ~SpatialExpansion.variable_dtype
+      ~SpatialExpansion.variables
+      ~SpatialExpansion.weights
+   
+   

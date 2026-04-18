@@ -1,0 +1,6 @@
+phygnn.utilities.tf\_utilities.tf\_log10
+========================================
+
+.. currentmodule:: phygnn.utilities.tf_utilities
+
+.. autofunction:: tf_log10

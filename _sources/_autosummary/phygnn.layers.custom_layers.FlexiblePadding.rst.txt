@@ -1,0 +1,85 @@
+phygnn.layers.custom\_layers.FlexiblePadding
+============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: FlexiblePadding
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FlexiblePadding.add_loss
+      ~FlexiblePadding.add_metric
+      ~FlexiblePadding.add_update
+      ~FlexiblePadding.add_variable
+      ~FlexiblePadding.add_weight
+      ~FlexiblePadding.build
+      ~FlexiblePadding.build_from_config
+      ~FlexiblePadding.call
+      ~FlexiblePadding.compute_mask
+      ~FlexiblePadding.compute_output_shape
+      ~FlexiblePadding.compute_output_signature
+      ~FlexiblePadding.count_params
+      ~FlexiblePadding.finalize_state
+      ~FlexiblePadding.from_config
+      ~FlexiblePadding.get_build_config
+      ~FlexiblePadding.get_config
+      ~FlexiblePadding.get_input_at
+      ~FlexiblePadding.get_input_mask_at
+      ~FlexiblePadding.get_input_shape_at
+      ~FlexiblePadding.get_output_at
+      ~FlexiblePadding.get_output_mask_at
+      ~FlexiblePadding.get_output_shape_at
+      ~FlexiblePadding.get_weights
+      ~FlexiblePadding.load_own_variables
+      ~FlexiblePadding.save_own_variables
+      ~FlexiblePadding.set_weights
+      ~FlexiblePadding.with_name_scope
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FlexiblePadding.activity_regularizer
+      ~FlexiblePadding.compute_dtype
+      ~FlexiblePadding.dtype
+      ~FlexiblePadding.dtype_policy
+      ~FlexiblePadding.dynamic
+      ~FlexiblePadding.inbound_nodes
+      ~FlexiblePadding.input
+      ~FlexiblePadding.input_mask
+      ~FlexiblePadding.input_shape
+      ~FlexiblePadding.input_spec
+      ~FlexiblePadding.losses
+      ~FlexiblePadding.metrics
+      ~FlexiblePadding.name
+      ~FlexiblePadding.name_scope
+      ~FlexiblePadding.non_trainable_variables
+      ~FlexiblePadding.non_trainable_weights
+      ~FlexiblePadding.outbound_nodes
+      ~FlexiblePadding.output
+      ~FlexiblePadding.output_mask
+      ~FlexiblePadding.output_shape
+      ~FlexiblePadding.stateful
+      ~FlexiblePadding.submodules
+      ~FlexiblePadding.supports_masking
+      ~FlexiblePadding.trainable
+      ~FlexiblePadding.trainable_variables
+      ~FlexiblePadding.trainable_weights
+      ~FlexiblePadding.updates
+      ~FlexiblePadding.variable_dtype
+      ~FlexiblePadding.variables
+      ~FlexiblePadding.weights
+   
+   
