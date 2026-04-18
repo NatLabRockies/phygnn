@@ -259,11 +259,11 @@ class PatchLayer(tf.keras.layers.Layer):
         return tf.slice(out, begin, size)
 
 
-class Tokenizer(PatchLayer):
-    """Tokenizer layer."""
+class Embedder(PatchLayer):
+    """Embedding layer."""
 
     def __init__(self, name=None, patch_size=1, embed_dim=64):
-        """Initialize the Tokenizer layer.
+        """Initialize the Embedding layer.
 
         Parameters
         ----------
@@ -277,12 +277,12 @@ class Tokenizer(PatchLayer):
             tokens after tokenization. Default is 64.
         """
         super().__init__(name=name, patch_size=patch_size)
-        self._tok_layer = None
+        self.embed_layer = None
         self.embed_dim = embed_dim
         self.rank = None
 
     def build(self, input_shape):
-        """Build the Tokenizer layer based on an input shape
+        """Build the Embedding layer based on an input shape
 
         Parameters
         ----------
@@ -297,18 +297,18 @@ class Tokenizer(PatchLayer):
                 'filters': self.embed_dim,
                 'padding': 'valid',
             }
-            self._tok_layer = (
+            self.embed_layer = (
                 tf.keras.layers.Conv2D(**kwargs)
                 if self.rank == 4
                 else tf.keras.layers.Conv3D(**kwargs)
             )
         else:
-            self._tok_layer = tf.keras.layers.Dense(
+            self.embed_layer = tf.keras.layers.Dense(
                 self.embed_dim, use_bias=False
             )
 
     def call(self, x):
-        """Tokenize inputs for attention blocks.
+        """Embed inputs for attention blocks.
 
         Parameters
         ----------
@@ -318,15 +318,15 @@ class Tokenizer(PatchLayer):
 
         Returns
         -------
-        x_tok : tf.Tensor
-            Tokenized tensor with shape (batch_size, n_tokens, embed_dim)
+        x_emb : tf.Tensor
+            Embedded tensor with shape (batch_size, n_tokens, embed_dim)
         """
-        x_tok = self._mask(x, x)
-        x_tok = self._tok_layer(x_tok)
+        x_emb = self._mask(x, x)
+        x_emb = self.embed_layer(x_emb)
 
         # batch members can have different NaN patterns in general so this
         # reshape could fail if batch_size > 1
-        return tf.reshape(x_tok, (tf.shape(x)[0], -1, self.embed_dim))
+        return tf.reshape(x_emb, (tf.shape(x)[0], -1, self.embed_dim))
 
 
 class PositionEncoder(PatchLayer):
@@ -428,9 +428,7 @@ class PositionEncoder(PatchLayer):
         """
         dt = time.astype(np.int64).view('datetime64[s]')
         year_start = dt.astype('datetime64[Y]')
-        doy = (
-            dt.astype('datetime64[D]') - year_start.astype('datetime64[D]')
-        )
+        doy = dt.astype('datetime64[D]') - year_start.astype('datetime64[D]')
         soy = dt - year_start.astype('datetime64[s]')
         return (
             (doy / np.timedelta64(1, 'D')).astype(np.float32),
@@ -579,100 +577,156 @@ class PositionEncoder(PatchLayer):
         return x_enc
 
 
-class MultiHeadAttention(tf.keras.layers.Layer):
-    """Custom multi-head attention layer that allows for separate positional
-    encoding bias and masking."""
+class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
+    """MultiHeadAttention that accepts an additive pre-softmax bias.
 
-    def __init__(self, key_dim, num_heads, **kwargs):
-        super().__init__(**kwargs)
-        self.num_heads = num_heads
-        self.key_dim = key_dim
+    This layer uses the same constructor arguments as
+    ``keras.layers.MultiHeadAttention``. The only API extension is that
+    ``call()`` accepts a ``bias`` keyword argument. The bias is added to the
+    scaled QK^T logits before softmax and must broadcast onto
+    ``(B, num_heads, T, S)``.
 
-        assert key_dim % self.num_heads == 0 and key_dim % 2 == 0, (
-            'key_dim must be divisible by num_heads and 2 for this '
-            'implementation.'
+    Flash attention is preserved when eligible: the bias is forwarded to
+    ``ops.dot_product_attention(bias=...)`` so the fused kernel is still used.
+
+    Example::
+        layer = MultiHeadAttention(num_heads=8, key_dim=64)
+        output = layer(query, value, bias=my_bias)
+    """
+
+    def call(
+        self,
+        query,
+        value,
+        key=None,
+        attention_mask=None,
+        return_attention_scores=False,
+        training=None,
+        use_causal_mask=False,
+        bias=None,
+    ):
+        """Call multi-head attention with optional bias."""
+        if not self._built_from_signature:
+            self._build_from_signature(query=query, value=value, key=key)
+        if key is None:
+            key = value
+
+        # RaggedTensor handling (unchanged from base class)
+        query_is_ragged = isinstance(query, tf.RaggedTensor)
+        if query_is_ragged:
+            query_lengths = query.nested_row_lengths()
+            query = query.to_tensor()
+        key_is_ragged = isinstance(key, tf.RaggedTensor)
+        value_is_ragged = isinstance(value, tf.RaggedTensor)
+        if key_is_ragged and value_is_ragged:
+            bounding_shape = tf.math.maximum(
+                key.bounding_shape(), value.bounding_shape()
+            )
+            key = key.to_tensor(shape=bounding_shape)
+            value = value.to_tensor(shape=bounding_shape)
+        elif key_is_ragged:
+            key = key.to_tensor(shape=tf.shape(value))
+        elif value_is_ragged:
+            value = value.to_tensor(shape=tf.shape(key))
+
+        attention_mask = self._compute_attention_mask(
+            query,
+            value,
+            key=key,
+            attention_mask=attention_mask,
+            use_causal_mask=use_causal_mask,
         )
 
-        self.depth = key_dim // self.num_heads
+        query = self._query_dense(query)
+        key = self._key_dense(key)
+        value = self._value_dense(value)
 
-        self.wq = tf.keras.layers.Dense(key_dim)
-        self.wk = tf.keras.layers.Dense(key_dim)
-        self.wv = tf.keras.layers.Dense(key_dim)
+        attention_output, attention_scores = self._compute_attention(
+            query, key, value, attention_mask, training, bias
+        )
+        attention_output = self._output_dense(attention_output)
 
+        if query_is_ragged:
+            attention_output = tf.RaggedTensor.from_tensor(
+                attention_output, lengths=query_lengths
+            )
+
+        if return_attention_scores:
+            return attention_output, attention_scores
+        return attention_output
+
+    def _compute_attention(
+        self,
+        query,
+        key,
+        value,
+        attention_mask=None,
+        training=None,
+        bias=None,
+    ):
+        query = tf.multiply(query, 1.0 / tf.math.sqrt(float(self._key_dim)))
+
+        attention_scores = tf.einsum(self._dot_product_equation, key, query)
+
+        if bias is not None:
+            attention_scores = tf.add(
+                attention_scores, tf.cast(bias, attention_scores.dtype)
+            )
+
+        attention_scores = self._masked_softmax(
+            attention_scores, attention_mask
+        )
+        attention_scores_dropout = self._dropout_layer(
+            attention_scores, training=training
+        )
+        attention_output = tf.einsum(
+            self._combine_equation, attention_scores_dropout, value
+        )
+        return attention_output, attention_scores
+
+
+class TransformerLayer(tf.keras.layers.Layer):
+    """Custom transformer layer with multi-head attention layer that allows
+    for additive bias pre-softmax."""
+
+    def __init__(self, num_heads, key_dim, attn_kwargs=None, **kwargs):
+        """Initialize the transformer layer.
+
+        Parameters
+        ----------
+        num_heads : int
+            Number of attention heads.
+        key_dim : int
+            Size of each attention head.
+        attn_kwargs : dict | None
+            Additional keyword arguments forwarded to the internal
+            :class:`MultiHeadAttention` layer.
+        **kwargs
+            Additional keyword arguments passed to ``tf.keras.layers.Layer``.
+        """
+        super().__init__(**kwargs)
+
+        self.attn = MultiHeadAttention(
+            num_heads=num_heads, key_dim=key_dim, **(attn_kwargs or {})
+        )
         self.lq = tf.keras.layers.LayerNormalization()
         self.lk = tf.keras.layers.LayerNormalization()
         self.lv = tf.keras.layers.LayerNormalization()
         self.lo = tf.keras.layers.LayerNormalization()
 
-        self.dense = tf.keras.layers.Dense(key_dim)
+        self._mlp_layers = [
+            tf.keras.layers.Dense(key_dim, activation='relu'),
+            tf.keras.layers.Dense(key_dim),
+        ]
 
-    def split_heads(self, x, batch_size):
-        """Split the last dimension into (num_heads, depth) and reorder
-        to (batch, heads, seq_len, depth) for multi-head attention."""
-        x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
-        return tf.transpose(x, perm=[0, 2, 1, 3])
+    def mlp(self, x):
+        """Pass input through MLP layers."""
+        for layer in self._mlp_layers:
+            x = layer(x)
+        return x
 
-    def compute_attention_scores(
-        self, query, key, value, mask=None, bias=None
-    ):
-        """Compute attention scores and output for multi-head attention.
-
-        Parameters
-        ----------
-        query : tf.Tensor
-            Query tensor with shape (batch_size, num_heads, seq_q, depth)
-        key : tf.Tensor
-            Key tensor with shape (batch_size, num_heads, seq_k, depth)
-        value : tf.Tensor
-            Value tensor with shape (batch_size, num_heads, seq_v, depth)
-        mask : tf.Tensor | None
-            Optional mask tensor to multiply the attention scores before
-            softmax.  Where the mask is 1, the corresponding attention score
-            will be masked.  Must be broadcastable to shape (batch_size,
-            num_heads, seq_q, seq_k).
-        bias : tf.Tensor | None
-            Optional bias tensor to add to the attention scores before softmax.
-            Must be broadcastable to shape (batch_size, num_heads, seq_q,
-            seq_k).
-
-        Returns
-        -------
-        out : tf.Tensor
-            Output tensor after applying attention, with shape (batch_size,
-            seq_q, key_dim)
-        """
-        batch_size = tf.shape(query)[0]
-        dk = tf.cast(tf.shape(key)[-1], key.dtype)
-
-        # (batch, heads, seq_q, seq_k)
-        matmul_qk = tf.matmul(query, key, transpose_b=True)
-        scaled = matmul_qk / tf.math.sqrt(dk)
-
-        if bias is not None:
-            scaled += bias
-        if mask is not None:
-            scaled += mask * -1e9
-
-        weights = tf.nn.softmax(scaled, axis=-1)
-
-        # (batch, heads, seq_q, depth)
-        attn = tf.matmul(weights, value)
-        # (batch, seq_q, heads, depth)
-        out = tf.transpose(attn, perm=[0, 2, 1, 3])
-        return tf.reshape(out, (batch_size, -1, self.key_dim))
-
-    def call(
-        self,
-        query,
-        key,
-        value,
-        query_pe=None,
-        key_pe=None,
-        value_pe=None,
-        bias=None,
-        mask=None,
-    ):
-        """Compute multi-head attention output.
+    def call(self, query, key, value, bias=None):
+        """Call transformer layer with multi-head attention output.
 
         Parameters
         ----------
@@ -682,59 +736,25 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             Key tensor with shape (batch_size, seq_k, features)
         value : tf.Tensor
             Value tensor with shape (batch_size, seq_v, features)
-        query_pe : tf.Tensor | None
-            Optional positional encoding tensor for the query with shape
-            (batch_size, seq_q, embed_dim).
-        key_pe : tf.Tensor | None
-            Optional positional encoding tensor for the key with shape
-            (batch_size, seq_k, embed_dim).
-        value_pe : tf.Tensor | None
-            Optional positional encoding tensor for the value with shape
-            (batch_size, seq_v, embed_dim).
         bias : tf.Tensor | None
             Optional bias tensor to add to the attention scores before softmax.
             Must be broadcastable to shape (batch_size, num_heads, seq_q,
             seq_k).
-        mask : tf.Tensor | None
-            Optional mask tensor to multiply the attention scores before
-            softmax.  Where the mask is 1, the corresponding attention score
-            will be masked.  Must be broadcastable to shape (batch_size,
-            num_heads, seq_q, seq_k).
         """
-        batch_size = tf.shape(query)[0]
-
-        q = self.wq(query)  # (batch, seq_q, d_model)
-        k = self.wk(key)
-        v = self.wv(value)
-
-        # Add positional encodings to query, key, and value tensors if
-        # provided.
-        q += query_pe if query_pe is not None else 0
-        k += key_pe if key_pe is not None else 0
-        v += value_pe if value_pe is not None else 0
-
-        # Apply layer normalization to query, key, and value tensors
-        q = self.lq(q)
-        k = self.lk(k)
-        v = self.lv(v)
-
-        q = self.split_heads(q, batch_size)  # (batch, heads, seq_q, depth)
-        k = self.split_heads(k, batch_size)
-        v = self.split_heads(v, batch_size)
-
-        attn_output = self.compute_attention_scores(
-            q, k, v, mask=mask, bias=bias
-        )
-        out = self.dense(attn_output)  # (batch, seq_q, key_dim)
-        return self.lo(out + query)
+        q = self.lq(query)
+        k = self.lk(key)
+        v = self.lv(value)
+        attn = self.attn(query=q, key=k, value=v, bias=bias)
+        out = self.lo(query + attn)
+        return query + self.mlp(out)
 
 
-class Sup3rCrossAttention(tf.keras.layers.Layer):
-    """Custom layer to implement cross attention with tokenization and
-    positional encoding. This is typically used for sparse observation
-    data assimilation, but can also be used to attend to gapless data like
-    topography. Queries are typically the latent space of the model and
-    keys/values are the high-resolution features.
+class Sup3rTransformerLayer(tf.keras.layers.Layer):
+    """Custom layer to implement transformer layer with cross attention with
+    tokenization and positional encoding. This is typically used for sparse
+    observation data assimilation, but can also be used to attend to gapless
+    data like topography. Queries are typically the latent space of the model
+    and keys/values are the high-resolution features.
 
     Note: This layer assumes that any sparse input data with NaN values has
     NaNs for the same tokens across all features. If you want to attend to
@@ -748,13 +768,14 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         name=None,
         features=None,
         exo_features=None,
-        embed_dim=64,
         num_heads=1,
         key_dim=64,
+        embed_dim=64,
         min_period_spatial=1e-4,
         max_period_spatial=2,
         min_period_temporal=1,
         max_period_temporal=864000,
+        attn_kwargs=None,
         **kwargs,
     ):
         """
@@ -781,6 +802,9 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
             Minimum period for the temporal positional encoding.
         max_period_temporal : float
             Maximum period for the temporal positional encoding.
+        attn_kwargs : dict | None
+            Additional keyword arguments forwarded to the internal
+            :class:`MultiHeadAttention` layer used by ``self.transformer``.
         **kwargs
              Additional keyword arguments to pass to the parent class. This can
              include arguments like trainable and dtype.
@@ -793,11 +817,10 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         self.final_proj = None
         self.num_heads = num_heads
         self.key_dim = key_dim
-        self.depth = key_dim // self.num_heads
         self.embed_dim = embed_dim
-        self.tq = Tokenizer(embed_dim=embed_dim)
-        self.tk = Tokenizer(embed_dim=embed_dim)
-        self.tv = Tokenizer(embed_dim=embed_dim)
+        self.eq = Embedder(embed_dim=embed_dim)
+        self.ek = Embedder(embed_dim=embed_dim)
+        self.ev = Embedder(embed_dim=embed_dim)
         self.pe = PositionEncoder(
             embed_dim=embed_dim,
             min_period_spatial=min_period_spatial,
@@ -805,8 +828,10 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
             min_period_temporal=min_period_temporal,
             max_period_temporal=max_period_temporal,
         )
-        self.attention = MultiHeadAttention(
-            key_dim=key_dim, num_heads=num_heads
+        self.transformer = TransformerLayer(
+            key_dim=key_dim,
+            num_heads=num_heads,
+            attn_kwargs=attn_kwargs,
         )
 
     def build(self, input_shape):
@@ -828,19 +853,19 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
 
         self.final_proj = tf.keras.layers.Dense(input_shape[-1])
 
-    def _attention_block(self, x_in, hr_in, lat, lon, time=None):
-        # tokenize query, key, and value inputs
-        q = self.tq(x_in)
-        k = self.tk(hr_in)
-        v = self.tv(hr_in)
+    def _transformer_layer(self, x_in, hr_in, lat, lon, time=None):
+        # embed query, key, and value inputs
+        q = self.eq(x_in)
+        k = self.ek(hr_in)
+        v = self.ev(hr_in)
 
         # add positional encodings for query, key, and value inputs
         q += self.pe(x_in, lat=lat, lon=lon, time=time)
         k += self.pe(hr_in, lat=lat, lon=lon, time=time)
         v += self.pe(hr_in, lat=lat, lon=lon, time=time)
 
-        attn = self.attention(query=q, key=k, value=v)
-        out = self.final_proj(attn)
+        out = self.transformer(query=q, key=k, value=v)
+        out = self.final_proj(out)
         return tf.reshape(out, tf.shape(x_in))
 
     def _call(self, x, hi_res_feature, idx, lat, lon, time=None):
@@ -880,7 +905,7 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         if tf.math.reduce_all(tf.math.is_nan(hr_in)):
             return tf.squeeze(x_in, axis=0)
 
-        out = self._attention_block(x_in, hr_in, lat=lat, lon=lon, time=time)
+        out = self._transformer_layer(x_in, hr_in, lat=lat, lon=lon, time=time)
 
         tf.debugging.assert_all_finite(
             out, message='Attention output contains NaN or Inf values.'
@@ -940,42 +965,10 @@ class Sup3rCrossAttention(tf.keras.layers.Layer):
         )
 
 
-class Sup3rCrossAttentionShaw(Sup3rCrossAttention):
-    """Sup3rCrossAttention layer with positional encoding added after linear
-    projections, as per Shaw et al. (2018) Self-Attention with Relative
-    Position Representations.
-
-    References
-    ----------
-    Shaw, P., Uszkoreit, J., & Vaswani, A. (2018). Self-Attention with Relative
-    Position Representations.  arXiv:1803.02155.
-    https://arxiv.org/abs/1803.02155
-    """
-
-    def _attention_block(self, x_in, hr_in, lat, lon, time=None):
-        # tokenize query, key, and value inputs
-        q = self.tq(x_in)
-        k = self.tk(hr_in)
-        v = self.tv(hr_in)
-
-        # get positional encodings for query and value inputs
-        qe = self.pe(x_in, lat=lat, lon=lon, time=time)
-        ve = self.pe(hr_in, lat=lat, lon=lon, time=time)
-        # Providing the encodings separately here puts them outside the
-        # learned projections. This seems to help the model condition on
-        # the positional information. This follows the approach from
-        # Shaw et al. (2018) Self-Attention with Relative Position
-        # Representations}, https://arxiv.org/abs/1803.02155
-
-        attn = self.attention(query=q, key=k, value=v, query_pe=qe, key_pe=ve)
-        out = self.final_proj(attn)
-        return tf.reshape(out, tf.shape(x_in))
-
-
-class Sup3rCrossAlibi(Sup3rCrossAttention):
-    """Cross attention layer with linear biases (ALiBi) instead of positional
-    encoding. This adds a distance-based bias to the attention scores before
-    softmax.
+class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
+    """Transformer layer with attention layer with linear biases (ALiBi)
+    instead of positional encoding. This adds a distance-based bias to the
+    attention scores before softmax.
 
     References
     ----------
@@ -1064,8 +1057,8 @@ class Sup3rCrossAlibi(Sup3rCrossAttention):
         lat_q = tf.reshape(lat, (tf.shape(lat)[0], -1, 1))
         lon_q = tf.reshape(lon, (tf.shape(lon)[0], -1, 1))
 
-        lat_v = self.tv._mask(hi_res_feature, lat)
-        lon_v = self.tv._mask(hi_res_feature, lon)
+        lat_v = self.ev._mask(hi_res_feature, lat)
+        lon_v = self.ev._mask(hi_res_feature, lon)
         lat_v = tf.reshape(lat_v, (tf.shape(lat)[0], 1, -1))
         lon_v = tf.reshape(lon_v, (tf.shape(lon)[0], 1, -1))
 
@@ -1088,17 +1081,130 @@ class Sup3rCrossAlibi(Sup3rCrossAttention):
         bias *= self.head_slopes
         return bias
 
-    def _attention_block(self, x_in, hr_in, lat, lon, time=None):
-        # tokenize query, key, and value inputs
-        q = self.tq(x_in)
-        k = self.tk(hr_in)
-        v = self.tv(hr_in)
+    def _transformer_layer(self, x_in, hr_in, lat, lon, time=None):
+        # embed query, key, and value inputs
+        q = self.eq(x_in)
+        k = self.ek(hr_in)
+        v = self.ev(hr_in)
 
         # use locality bias instead of positional encodings
         bias = self.get_locality_bias(x_in, hr_in, lat=lat, lon=lon, time=time)
-        attn = self.attention(query=q, key=k, value=v, bias=bias)
-        out = self.final_proj(attn)
+        out = self.transformer(query=q, key=k, value=v, bias=bias)
+        out = self.final_proj(out)
         return tf.reshape(out, tf.shape(x_in))
+
+
+class Sup3rTransformerBlock(tf.keras.layers.Layer):
+    """Custom layer to implement a block of Sup3rTransformerLayer layers."""
+
+    def __init__(
+        self,
+        name=None,
+        features=None,
+        exo_features=None,
+        num_heads=1,
+        key_dim=64,
+        embed_dim=64,
+        use_alibi=False,
+        transformer_kwargs=None,
+        attn_kwargs=None,
+        **kwargs,
+    ):
+        """
+        Parameters
+        ----------
+        name : str | None
+            Name of layer.
+        features : list[str] | None
+            List of hi-resolution feature names. The length of this list
+            determines the number of Sup3rTransformerLayer layers in the block.
+            Each layer will attend to the corresponding feature in the list.
+            For example, if features=['obs', 'topography'] then the first layer
+            will attend to the 'obs' feature and the second layer will attend
+            to the 'topography' feature. If None, no layers will be created.
+        exo_features : list[str] | None
+            List of exogenous feature names. These are features that will be
+            used for positional encoding like latitude, longitude, and time.
+            This will be used for all layers in the block. If None, no
+            exogenous features will be used for positional encoding.
+        num_heads : int
+            Number of attention heads for each transformer layer in the block.
+        key_dim : int
+            Size of each attention head for each transformer layer in the
+            block.
+        embed_dim : int
+            Dimension of the tokenized inputs for each transformer layer in the
+            block. This matches the embed_dim used for the positional encoding.
+        use_alibi : bool
+            Whether to use ALiBi (Attention with Linear Biases) instead of
+            positional encoding. If True, the Sup3rTransformerLayerAlibi class
+            will be used for the layers in the block. If False, the standard
+            Sup3rTransformerLayer with positional encoding will be used.
+            Default is False.
+        transformer_kwargs : dict | None
+            Keyword arguments forwarded to each transformer layer in the
+            block. This is the place to set transformer-layer options like
+            ``embed_dim``, ``key_dim``, or positional encoding periods.
+        attn_kwargs : dict | None
+            Additional keyword arguments forwarded to the internal
+            :class:`MultiHeadAttention` layer for each transformer layer.
+        **kwargs
+             Additional keyword arguments to pass to the block itself. This can
+             include arguments like trainable and dtype.
+        """
+        super().__init__(**kwargs)
+        self.features = features or []
+        self.exo_features = exo_features or []
+        transformer_kwargs = dict(transformer_kwargs or {})
+        transformer_kwargs['num_heads'] = num_heads
+        transformer_kwargs['key_dim'] = key_dim
+        transformer_kwargs['embed_dim'] = embed_dim
+
+        transformer_cls = (
+            Sup3rTransformerLayerAlibi if use_alibi else Sup3rTransformerLayer
+        )
+        self.layers = [
+            transformer_cls(
+                **transformer_kwargs,
+                attn_kwargs=attn_kwargs,
+            )
+            for _ in self.features
+        ]
+
+    def call(self, x, hi_res_features=None, exo_data=None):
+        """Call the stack of transformer layers.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D input tensor. Typically this is the latent space tensor
+            being updated by the attention block.
+        hi_res_features : tf.Tensor, optional
+            4D or 5D high resolution feature tensor. This will be used as the
+            value input. This can be sparse observation data, possibly with
+            some NaN values, or high-resolution gapless data like topography.
+        exo_data: tf.Tensor, optional
+            4D or 5D tensor of features to use for positional encoding. If
+            hi_res_feature is provided, this should must include latitude and
+            longitude, and optionally time, in that order.  Latitude and
+            longitude should be in degrees and time should be in a datetime
+            format that can be parsed by
+            tf.experimental.numpy.datetime_as_string.
+
+        Returns
+        -------
+        x : tf.Tensor
+            Output tensor of the attention block after passing through all
+            layers in the stack.
+        """
+        x_in = x
+        for i, layer in enumerate(self.layers):
+            x = layer(
+                x,
+                hi_res_feature=hi_res_features[..., i : i + 1],
+                exo_data=exo_data,
+            )
+        return x_in + x
 
 
 class ExpandDims(tf.keras.layers.Layer):
@@ -2211,6 +2317,128 @@ class CBAM(tf.keras.layers.Layer):
         config = super().get_config()
         config.update({'ratio': self._ratio})
         return config
+
+
+class FNO(tf.keras.layers.Layer):
+    """Custom layer for fourier neural operator block
+
+    Note that this is only set up to take a channels-last input
+
+    References
+    ----------
+    1. FourCastNet: A Global Data-driven High-resolution Weather Model using
+    Adaptive Fourier Neural Operators. http://arxiv.org/abs/2202.11214
+    2. Adaptive Fourier Neural Operators: Efficient Token Mixers for
+    Transformers. http://arxiv.org/abs/2111.13587
+    """
+
+    def __init__(self, filters, sparsity_threshold=0.5, activation='relu'):
+        """
+        Parameters
+        ----------
+        filters : int
+            Number of dense connections in the FNO block.
+        sparsity_threshold : float
+            Parameter to control sparsity and shrinkage in the softshrink
+            activation function following the MLP layers.
+        activation : str
+            Activation function used in MLP layers.
+        """
+
+        super().__init__()
+        self._filters = filters
+        self._fft_layer = None
+        self._ifft_layer = None
+        self._mlp_layers = None
+        self._activation = activation
+        self._n_channels = None
+        self._perms_in = None
+        self._perms_out = None
+        self._lambd = sparsity_threshold
+
+    def _softshrink(self, x):
+        """Softshrink activation function
+
+        https://pytorch.org/docs/stable/generated/torch.nn.Softshrink.html
+        """
+        values_below_lower = tf.where(x < -self._lambd, x + self._lambd, 0)
+        values_above_upper = tf.where(self._lambd < x, x - self._lambd, 0)
+        return values_below_lower + values_above_upper
+
+    def _fft(self, x):
+        """Apply needed transpositions and fft operation."""
+        x = tf.transpose(x, perm=self._perms_in)
+        x = self._fft_layer(tf.cast(x, tf.complex64))
+        x = tf.transpose(x, perm=self._perms_out)
+        return x
+
+    def _ifft(self, x):
+        """Apply needed transpositions and ifft operation."""
+        x = tf.transpose(x, perm=self._perms_in)
+        x = self._ifft_layer(tf.cast(x, tf.complex64))
+        x = tf.transpose(x, perm=self._perms_out)
+        return x
+
+    def build(self, input_shape):
+        """Build the FNO layer based on an input shape
+
+        Parameters
+        ----------
+        input_shape : tuple
+            Shape tuple of the input tensor
+        """
+        self._n_channels = input_shape[-1]
+        dims = list(range(len(input_shape)))
+        self._perms_in = [dims[-1], *dims[:-1]]
+        self._perms_out = [*dims[1:], dims[0]]
+
+        if len(input_shape) == 4:
+            self._fft_layer = tf.signal.fft2d
+            self._ifft_layer = tf.signal.ifft2d
+        elif len(input_shape) == 5:
+            self._fft_layer = tf.signal.fft3d
+            self._ifft_layer = tf.signal.ifft3d
+        else:
+            msg = (
+                'FNO layer can only accept 4D or 5D data for image or video '
+                'input but received input shape: {}'.format(input_shape)
+            )
+            logger.error(msg)
+            raise RuntimeError(msg)
+
+        self._mlp_layers = [
+            tf.keras.layers.Dense(self._filters, activation=self._activation),
+            tf.keras.layers.Dense(self._n_channels),
+        ]
+
+    def _mlp(self, x):
+        """Run mlp layers on input"""
+        for layer in self._mlp_layers:
+            x = layer(x)
+        return x
+
+    def call(self, x):
+        """Call the custom FourierNeuralOperator layer
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        x : tf.Tensor
+            Output tensor, this is the FNO weights added to the original input
+            tensor.
+        """
+        t_in = x
+        x = self._fft(x)
+        x = self._mlp(x)
+        x = self._softshrink(x)
+        x = self._ifft(x)
+        x = tf.cast(x, dtype=t_in.dtype)
+
+        return x + t_in
 
 
 class Sup3rAdder(tf.keras.layers.Layer):
