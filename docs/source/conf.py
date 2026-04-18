@@ -23,8 +23,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 
 project = 'phygnn'
-copyright = '2020, Alliance for Sustainable Energy, LLC'
-author = 'NREL: Grant Buster, Michael Rossol, Mike Bannister, Dylan Hettinger'
+copyright = '2020, Alliance for Energy Innovation, LLC'
+author = 'NLR: Grant Buster, Michael Rossol, Mike Bannister, Dylan Hettinger'
 
 pkg = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 pkg = os.path.dirname(pkg)
@@ -113,7 +113,7 @@ html_css_file = ["custom.css"]
 
 html_context = {
     "display_github": True,
-    "github_user": "nrel",
+    "github_user": "NatLabRockies",
     "github_repo": "phygnn",
     "github_version": "main",
     "conf_py_path": "/docs/source/",
