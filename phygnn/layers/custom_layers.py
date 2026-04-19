@@ -11,6 +11,15 @@ from phygnn.utilities.tf_utilities import idw_fill, mean_fill
 logger = logging.getLogger(__name__)
 
 
+def _get_layer_classes():
+    """Get local custom layer classes for Keras deserialization."""
+    return {
+        name: obj
+        for name, obj in globals().items()
+        if isinstance(obj, type) and issubclass(obj, tf.keras.layers.Layer)
+    }
+
+
 class FlexiblePadding(tf.keras.layers.Layer):
     """Class to perform padding on tensors"""
 
@@ -37,8 +46,10 @@ class FlexiblePadding(tf.keras.layers.Layer):
         self._paddings = tuple(
             tuple(int(value) for value in pad) for pad in paddings
         )
+        self._mode = mode
+        self._option = option
         self.paddings = tf.constant(self._paddings)
-        self.rank = len(paddings)
+        self.rank = len(self._paddings)
         self.mode = mode.lower()
         self.option = option.lower()
 
@@ -93,6 +104,18 @@ class FlexiblePadding(tf.keras.layers.Layer):
         """
         return self._pad_fun(x, self.paddings, mode=self.mode)
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {
+                'paddings': [list(pad) for pad in self._paddings],
+                'mode': self._mode,
+                'option': self._option,
+            }
+        )
+        return config
+
 
 class ExpandDims(tf.keras.layers.Layer):
     """Layer to add an extra dimension to a tensor."""
@@ -125,6 +148,12 @@ class ExpandDims(tf.keras.layers.Layer):
         """
         return tf.expand_dims(x, axis=self._axis)
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'axis': self._axis})
+        return config
+
 
 class TileLayer(tf.keras.layers.Layer):
     """Layer to tile (repeat) data across a given axis."""
@@ -139,7 +168,8 @@ class TileLayer(tf.keras.layers.Layer):
             tile each axis in the tensor.
         """
         super().__init__(**kwargs)
-        self._mult = tf.constant(multiples, tf.int32)
+        self._multiples = tuple(int(value) for value in multiples)
+        self._mult = tf.constant(self._multiples, tf.int32)
 
     def call(self, x):
         """Calls the tile operation
@@ -156,6 +186,12 @@ class TileLayer(tf.keras.layers.Layer):
             based on the multiples initialization argument.
         """
         return tf.tile(x, self._mult)
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'multiples': list(self._multiples)})
+        return config
 
 
 class GaussianAveragePooling2D(tf.keras.layers.Layer):
@@ -298,7 +334,7 @@ class GaussianAveragePooling2D(tf.keras.layers.Layer):
 class GaussianNoiseAxis(tf.keras.layers.Layer):
     """Layer to apply random noise along a given axis."""
 
-    def __init__(self, axis, mean=1, stddev=0.1):
+    def __init__(self, axis, mean=1, stddev=0.1, **kwargs):
         """
         Parameters
         ----------
@@ -314,11 +350,11 @@ class GaussianNoiseAxis(tf.keras.layers.Layer):
             The standard deviation of the normal distribution.
         """
 
-        super().__init__()
+        super().__init__(**kwargs)
         self.rank = None
         self._axis = axis if isinstance(axis, (tuple, list)) else [axis]
-        self._mean = tf.constant(mean, dtype=tf.dtypes.float32)
-        self._stddev = tf.constant(stddev, dtype=tf.dtypes.float32)
+        self._mean = float(mean)
+        self._stddev = float(stddev)
 
     def _get_rand_shape(self, x):
         """Get shape of random noise along the specified axes."""
@@ -361,12 +397,24 @@ class GaussianNoiseAxis(tf.keras.layers.Layer):
         )
         return x + rand_tensor
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {
+                'axis': list(self._axis),
+                'mean': self._mean,
+                'stddev': self._stddev,
+            }
+        )
+        return config
+
 
 class FlattenAxis(tf.keras.layers.Layer):
     """Layer to flatten an axis from a 5D spatiotemporal Tensor into axis-0
     observations."""
 
-    def __init__(self, axis=3):
+    def __init__(self, axis=3, **kwargs):
         """
         Parameters
         ----------
@@ -376,7 +424,7 @@ class FlattenAxis(tf.keras.layers.Layer):
             temporal axis of the default spatiotemporal shape of:
             (n_observations, n_spatial_0, n_spatial_1, n_temporal, n_features)
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self._axis = axis
 
     @staticmethod
@@ -413,13 +461,21 @@ class FlattenAxis(tf.keras.layers.Layer):
         self._check_shape(x.shape)
         return tf.concat(tf.unstack(x, axis=self._axis), axis=0)
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'axis': self._axis})
+        return config
+
 
 class SpatialExpansion(tf.keras.layers.Layer):
     """Class to expand the spatial dimensions of tensors with shape:
     (n_observations, n_spatial_0, n_spatial_1, n_features)
     """
 
-    def __init__(self, spatial_mult=1, spatial_method='depth_to_space'):
+    def __init__(
+        self, spatial_mult=1, spatial_method='depth_to_space', **kwargs
+    ):
         """
         Parameters
         ----------
@@ -434,7 +490,7 @@ class SpatialExpansion(tf.keras.layers.Layer):
             Either "depth_to_space" or an interpolation method for
             tf.image.resize().
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self._spatial_mult = int(spatial_mult)
         self._spatial_meth = spatial_method
 
@@ -518,6 +574,17 @@ class SpatialExpansion(tf.keras.layers.Layer):
 
         return x
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {
+                'spatial_mult': self._spatial_mult,
+                'spatial_method': self._spatial_meth,
+            }
+        )
+        return config
+
 
 class SpatioTemporalExpansion(tf.keras.layers.Layer):
     """Class to expand the spatiotemporal dimensions of tensors with shape:
@@ -531,6 +598,7 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
         spatial_method='depth_to_space',
         temporal_method='nearest',
         t_roll=0,
+        **kwargs,
     ):
         """
         Parameters
@@ -564,7 +632,7 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
             -1 from the end of the series to the beginning.
         """
 
-        super().__init__()
+        super().__init__(**kwargs)
         self._spatial_mult = int(spatial_mult)
         self._temporal_mult = int(temporal_mult)
         self._temporal_meth = temporal_method
@@ -713,6 +781,20 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
 
         return x
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {
+                'spatial_mult': self._spatial_mult,
+                'temporal_mult': self._temporal_mult,
+                'spatial_method': self._spatial_meth,
+                'temporal_method': self._temporal_meth,
+                't_roll': self._t_roll,
+            }
+        )
+        return config
+
 
 class SkipConnection(tf.keras.layers.Layer):
     """Custom layer to implement a skip connection. This layer should be
@@ -720,7 +802,7 @@ class SkipConnection(tf.keras.layers.Layer):
     skip start and skip end.
     """
 
-    def __init__(self, name, method='add'):
+    def __init__(self, name, method='add', **kwargs):
         """
         Parameters
         ----------
@@ -732,7 +814,7 @@ class SkipConnection(tf.keras.layers.Layer):
             Defaults to 'add'. If 'concat' this is applied along the trailing
             axis
         """
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
         self._cache = None
         self._method = method
 
@@ -774,6 +856,12 @@ class SkipConnection(tf.keras.layers.Layer):
             self._cache = None
             return out
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'method': self._method})
+        return config
+
 
 class SqueezeAndExcitation(tf.keras.layers.Layer):
     """Custom layer for squeeze and excitation block for convolutional networks
@@ -789,7 +877,7 @@ class SqueezeAndExcitation(tf.keras.layers.Layer):
     https://towardsdatascience.com/squeeze-and-excitation-networks-9ef5e71eacd7
     """
 
-    def __init__(self, ratio=16):
+    def __init__(self, ratio=16, **kwargs):
         """
         Parameters
         ----------
@@ -798,7 +886,7 @@ class SqueezeAndExcitation(tf.keras.layers.Layer):
             dense connections in the SE block.
         """
 
-        super().__init__()
+        super().__init__(**kwargs)
         self._ratio = ratio
         self._n_channels = None
         self._dense_units = None
@@ -861,6 +949,12 @@ class SqueezeAndExcitation(tf.keras.layers.Layer):
 
         return x
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'ratio': self._ratio})
+        return config
+
 
 class MaskedSqueezeAndExcitation(tf.keras.layers.Layer):
     """Custom layer for masked squeeze and excitation block for convolutional
@@ -868,7 +962,7 @@ class MaskedSqueezeAndExcitation(tf.keras.layers.Layer):
 
     Note that this is only set up to take a channels-last conv output"""
 
-    def __init__(self, ratio=16, name=None):
+    def __init__(self, ratio=16, name=None, **kwargs):
         """
         Parameters
         ----------
@@ -879,7 +973,7 @@ class MaskedSqueezeAndExcitation(tf.keras.layers.Layer):
             Name of layer
         """
 
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
         self._ratio = ratio
         self._n_channels = None
         self._dense_units = None
@@ -946,11 +1040,17 @@ class MaskedSqueezeAndExcitation(tf.keras.layers.Layer):
 
         return x
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'ratio': self._ratio})
+        return config
+
 
 class Attention(tf.keras.layers.Layer):
     """Self-Attention block"""
 
-    def __init__(self, num_heads=1, key_dim=16, name=None):
+    def __init__(self, num_heads=1, key_dim=16, name=None, **kwargs):
         """
         Parameters
         ----------
@@ -962,7 +1062,7 @@ class Attention(tf.keras.layers.Layer):
             Name of layer.
         """
 
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.attention = tf.keras.layers.MultiHeadAttention(
@@ -987,6 +1087,14 @@ class Attention(tf.keras.layers.Layer):
         output = tf.reshape(output, x.shape)
         return output
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {'num_heads': self.num_heads, 'key_dim': self.key_dim}
+        )
+        return config
+
 
 class AxialAttentionBlock(tf.keras.layers.Layer):
     """Axial Self-Attention block
@@ -997,7 +1105,7 @@ class AxialAttentionBlock(tf.keras.layers.Layer):
        https://arxiv.org/abs/1912.12180
     """
 
-    def __init__(self, num_heads=4, key_dim=64, name=None):
+    def __init__(self, num_heads=4, key_dim=64, name=None, **kwargs):
         """
         Parameters
         ----------
@@ -1009,7 +1117,7 @@ class AxialAttentionBlock(tf.keras.layers.Layer):
             Name of layer.
         """
 
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.attention_layers = None
@@ -1074,6 +1182,14 @@ class AxialAttentionBlock(tf.keras.layers.Layer):
             x = self._apply_attention_along_axis(x, axis=ida)
         return x
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {'num_heads': self.num_heads, 'key_dim': self.key_dim}
+        )
+        return config
+
 
 class SparseAttention(Attention):
     """Sparse Scan Self-Attention block
@@ -1125,7 +1241,7 @@ class CBAM(tf.keras.layers.Layer):
        Publishing, 2019.
     """
 
-    def __init__(self, ratio=8):
+    def __init__(self, ratio=8, **kwargs):
         """
         Parameters
         ----------
@@ -1134,7 +1250,7 @@ class CBAM(tf.keras.layers.Layer):
             dense connections in the CBAM block.
         """
 
-        super().__init__()
+        super().__init__(**kwargs)
         self._ratio = ratio
         self._n_channels = None
         self._dense_units = None
@@ -1285,12 +1401,18 @@ class CBAM(tf.keras.layers.Layer):
         x = self.spatiotemporal_attention(x)
         return x
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'ratio': self._ratio})
+        return config
+
 
 class Sup3rAdder(tf.keras.layers.Layer):
     """Layer to add high-resolution data to a sup3r model in the middle of a
     super resolution forward pass."""
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, **kwargs):
         """
         Parameters
         ----------
@@ -1298,7 +1420,7 @@ class Sup3rAdder(tf.keras.layers.Layer):
             Unique str identifier of the adder layer. Usually the name of the
             hi-resolution feature used in the addition.
         """
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def call(x, hi_res_adder):
@@ -1328,7 +1450,9 @@ class Sup3rConcatObs(tf.keras.layers.Layer):
     This uses the first channel of the input tensor as a background for the
     provided values and then concatenates with the input tensor."""
 
-    def __init__(self, name=None, fill_method=None, include_mask=False):
+    def __init__(
+        self, name=None, fill_method=None, include_mask=False, **kwargs
+    ):
         """
         Parameters
         ----------
@@ -1343,7 +1467,8 @@ class Sup3rConcatObs(tf.keras.layers.Layer):
             If True, the mask of the hi_res_feature showing where there is
             valid observation data will be included in the concatenation.
         """
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
+        self._fill_method_name = fill_method
         if fill_method == 'mean':
             self.fill_method = mean_fill
         elif fill_method == 'idw':
@@ -1351,6 +1476,17 @@ class Sup3rConcatObs(tf.keras.layers.Layer):
         else:
             self.fill_method = None
         self.include_mask = include_mask
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {
+                'fill_method': self._fill_method_name,
+                'include_mask': self.include_mask,
+            }
+        )
+        return config
 
     def call(self, x, hi_res_feature=None):
         """Combine the first channel of x and the non-nan data in
@@ -1407,6 +1543,7 @@ class Sup3rObsModel(tf.keras.layers.Layer):
         hidden_layers=None,
         fill_method='mean',
         include_mask=False,
+        **kwargs,
     ):
         """
         Parameters
@@ -1431,18 +1568,49 @@ class Sup3rObsModel(tf.keras.layers.Layer):
             data in the embedding. If False, the mask will not be included in
             the embedding.
         """
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
         self._hidden_layers = hidden_layers or []
         self.features = features or []
         self.exo_features = exo_features or []
         self.include_mask = include_mask
         self.rank = None
         self.fill_method = None
+        self._fill_method_name = fill_method
 
         if fill_method == 'mean':
             self.fill_method = mean_fill
         elif fill_method == 'idw':
             self.fill_method = idw_fill
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {
+                'features': self.features,
+                'exo_features': self.exo_features,
+                'hidden_layers': [
+                    tf.keras.layers.serialize(layer)
+                    for layer in self._hidden_layers
+                ],
+                'fill_method': self._fill_method_name,
+                'include_mask': self.include_mask,
+            }
+        )
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        """Deserialize nested hidden layers for Keras loading."""
+        hidden_layers = config.pop('hidden_layers', [])
+        hidden_layers = [
+            tf.keras.layers.deserialize(
+                layer_config, custom_objects=_get_layer_classes()
+            )
+            for layer_config in hidden_layers
+        ]
+        config['hidden_layers'] = hidden_layers
+        return cls(**config)
 
     def build(self, input_shape):
         """Build the weight net layer based on an input shape
@@ -1513,7 +1681,7 @@ class Sup3rConcat(tf.keras.layers.Layer):
     """Layer to concatenate a high-resolution feature to a sup3r model in the
     middle of a super resolution forward pass."""
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, **kwargs):
         """
         Parameters
         ----------
@@ -1521,7 +1689,7 @@ class Sup3rConcat(tf.keras.layers.Layer):
             Unique str identifier for the concat layer. Usually the name of the
             hi-resolution feature used in the concatenation.
         """
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
 
     @staticmethod
     def call(x, hi_res_feature):
@@ -1551,7 +1719,7 @@ class FunctionalLayer(tf.keras.layers.Layer):
     cannot be implemented in phygnn as normal layers because they need to
     operate on two tensors of equal shape."""
 
-    def __init__(self, name, value):
+    def __init__(self, name, value, **kwargs):
         """
         Parameters
         ----------
@@ -1569,9 +1737,10 @@ class FunctionalLayer(tf.keras.layers.Layer):
         )
         assert name in options, msg
 
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
+        self._function_name = name
         self.value = value
-        self.fun = getattr(tf.keras.layers, self.name)
+        self.fun = getattr(tf.keras.layers, self._function_name)
 
     def call(self, x):
         """Operates on x with the specified function
@@ -1588,6 +1757,12 @@ class FunctionalLayer(tf.keras.layers.Layer):
         """
         const = tf.constant(value=self.value, shape=x.shape, dtype=x.dtype)
         return self.fun((x, const))
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'name': self._function_name, 'value': self.value})
+        return config
 
 
 class SigLin(tf.keras.layers.Layer):
@@ -1622,7 +1797,15 @@ class LogTransform(tf.keras.layers.Layer):
     ``y = exp(x / scalar) - adder`` for the inverse
     """
 
-    def __init__(self, name=None, adder=0, scalar=1, inverse=False, idf=None):
+    def __init__(
+        self,
+        name=None,
+        adder=0,
+        scalar=1,
+        inverse=False,
+        idf=None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -1640,7 +1823,7 @@ class LogTransform(tf.keras.layers.Layer):
             None will perform transform on all feature channels.
         """
 
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
         self.adder = adder
         self.scalar = scalar
         self.inverse = inverse
@@ -1688,6 +1871,19 @@ class LogTransform(tf.keras.layers.Layer):
         out = tf.concat(out, -1, name='concat')
         return out
 
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {
+                'adder': self.adder,
+                'scalar': self.scalar,
+                'inverse': self.inverse,
+                'idf': self.idf,
+            }
+        )
+        return config
+
 
 class UnitConversion(tf.keras.layers.Layer):
     """Layer to convert units per feature channel using the linear transform:
@@ -1696,7 +1892,7 @@ class UnitConversion(tf.keras.layers.Layer):
     Be sure to check how this will interact with normalization factors.
     """
 
-    def __init__(self, name=None, adder=0, scalar=1):
+    def __init__(self, name=None, adder=0, scalar=1, **kwargs):
         """
         Parameters
         ----------
@@ -1714,7 +1910,9 @@ class UnitConversion(tf.keras.layers.Layer):
             and the length must match the number of feature channels
         """
 
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
+        self._adder_config = adder
+        self._scalar_config = scalar
         self.adder = adder
         self.scalar = scalar
         self.rank = None
@@ -1734,7 +1932,6 @@ class UnitConversion(tf.keras.layers.Layer):
 
         if isinstance(self.adder, dtypes):
             self.adder = np.ones(nfeat) * self.adder
-            self.adder = tf.convert_to_tensor(self.adder, dtype=tf.float32)
         else:
             msg = (
                 f'UnitConversion layer `adder` array has length '
@@ -1743,9 +1940,10 @@ class UnitConversion(tf.keras.layers.Layer):
             )
             assert len(self.adder) == input_shape[-1], msg
 
+        self.adder = tf.convert_to_tensor(self.adder, dtype=tf.float32)
+
         if isinstance(self.scalar, dtypes):
             self.scalar = np.ones(nfeat) * self.scalar
-            self.scalar = tf.convert_to_tensor(self.scalar, dtype=tf.float32)
         else:
             msg = (
                 f'UnitConversion layer `scalar` array has length '
@@ -1753,6 +1951,10 @@ class UnitConversion(tf.keras.layers.Layer):
                 f'as {input_shape[-1]}'
             )
             assert len(self.scalar) == input_shape[-1], msg
+
+        self.scalar = tf.convert_to_tensor(self.scalar, dtype=tf.float32)
+
+        super().build(input_shape)
 
     def call(self, x):
         """Convert units
@@ -1771,10 +1973,17 @@ class UnitConversion(tf.keras.layers.Layer):
         if self.rank is None:
             self.build(x.shape)
 
-        out = []
-        for idf, (adder, scalar) in enumerate(zip(self.adder, self.scalar)):
-            out.append(x[..., idf : idf + 1] * scalar + adder)
+        adder = tf.cast(self.adder, dtype=x.dtype)
+        scalar = tf.cast(self.scalar, dtype=x.dtype)
+        return x * scalar + adder
 
-        out = tf.concat(out, -1, name='concat')
-
-        return out
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update(
+            {
+                'adder': self._adder_config,
+                'scalar': self._scalar_config,
+            }
+        )
+        return config
