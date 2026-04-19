@@ -10,8 +10,34 @@ import tempfile
 import numpy as np
 import pandas as pd
 import pytest
+import tensorflow as tf
 
-from phygnn.model_interfaces.tf_model import TfModel
+from phygnn.layers.custom_layers import (
+    CBAM,
+    Attention,
+    AxialAttentionBlock,
+    ExpandDims,
+    FlattenAxis,
+    FlexiblePadding,
+    FunctionalLayer,
+    GaussianAveragePooling2D,
+    GaussianNoiseAxis,
+    LogTransform,
+    MaskedSqueezeAndExcitation,
+    SigLin,
+    SkipConnection,
+    SparseAttention,
+    SpatialExpansion,
+    SpatioTemporalExpansion,
+    SqueezeAndExcitation,
+    Sup3rAdder,
+    Sup3rConcat,
+    Sup3rConcatObs,
+    Sup3rObsModel,
+    TileLayer,
+    UnitConversion,
+)
+from phygnn.model_interfaces.tf_model import TfModel, _get_custom_layer_objects
 from phygnn.utilities import TF2
 
 TfModel.seed(0)
@@ -29,6 +55,56 @@ Y = np.sqrt(A**2 + B**2)
 X = np.hstack((A, B))
 FEATURES = pd.DataFrame(X, columns=['a', 'b'])
 LABELS = pd.DataFrame(Y, columns=['c'])
+
+
+def _make_custom_layer_instances():
+    """Build representative custom layer instances for serialization tests."""
+    return [
+        FlexiblePadding(((0, 0), (1, 1), (1, 1), (0, 0))),
+        ExpandDims(axis=1),
+        TileLayer((1, 2, 1)),
+        GaussianAveragePooling2D(
+            pool_size=2,
+            strides=1,
+            padding='same',
+            sigma=1.25,
+            trainable=False,
+        ),
+        GaussianNoiseAxis(axis=1, mean=0.0, stddev=0.5),
+        FlattenAxis(axis=3),
+        SpatialExpansion(spatial_mult=2, spatial_method='nearest'),
+        SpatioTemporalExpansion(
+            spatial_mult=2,
+            temporal_mult=2,
+            spatial_method='nearest',
+            temporal_method='nearest',
+            t_roll=1,
+        ),
+        SkipConnection(name='skip_a', method='concat'),
+        SqueezeAndExcitation(ratio=4),
+        MaskedSqueezeAndExcitation(ratio=4, name='masked_se'),
+        Attention(num_heads=2, key_dim=8, name='attention'),
+        AxialAttentionBlock(num_heads=2, key_dim=8, name='axial_attention'),
+        SparseAttention(num_heads=2, key_dim=8, name='sparse_attention'),
+        CBAM(ratio=4),
+        Sup3rAdder(name='adder'),
+        Sup3rConcatObs(name='obs', fill_method='mean', include_mask=True),
+        Sup3rObsModel(
+            name='obs_model',
+            features=['obs'],
+            exo_features=['topo'],
+            hidden_layers=[tf.keras.layers.Dense(2, activation='relu')],
+            fill_method='idw',
+            include_mask=True,
+        ),
+        Sup3rConcat(name='concat'),
+        FunctionalLayer('multiply', 2.5),
+        SigLin(),
+        LogTransform(
+            name='logtx', adder=1.0, scalar=2.0, inverse=True, idf=[0, 2]
+        ),
+        UnitConversion(name='unit', adder=[1.0, 2.0], scalar=[3.0, 4.0]),
+    ]
 
 
 @pytest.mark.parametrize(
@@ -209,9 +285,11 @@ def test_save_load():
         )
         y_pred = model[X]
 
+        assert os.path.exists(os.path.join(model_fpath, 'model.keras'))
+
         loaded = TfModel.load(model_fpath)
         y_pred_loaded = loaded[X]
-        np.allclose(y_pred.values, y_pred_loaded.values)
+        assert np.allclose(y_pred.values, y_pred_loaded.values)
         assert loaded.feature_names == ['a', 'b']
         assert loaded.label_names == ['c']
 
@@ -219,6 +297,48 @@ def test_save_load():
             params = json.load(f)
 
         assert 'version_record' in params
+
+
+def test_save_load_keras_path_custom_layer():
+    """Test saving to the `.keras` path and reloading a custom-layer model."""
+    with tempfile.TemporaryDirectory() as td:
+        model_fpath = os.path.join(td, 'test_custom_model/')
+        hidden_layers = [
+            {'class': 'UnitConversion', 'adder': 1.5, 'scalar': 2.0},
+            {'units': 32, 'activation': 'relu', 'name': 'relu1'},
+        ]
+        model = TfModel.build_trained(
+            FEATURES.copy(),
+            LABELS.copy(),
+            hidden_layers=hidden_layers,
+            epochs=2,
+            fit_kwargs={'batch_size': 16},
+            early_stop=False,
+            save_path=model_fpath,
+        )
+
+        y_pred = model[X]
+        assert os.path.exists(os.path.join(model_fpath, 'model.keras'))
+
+        loaded = TfModel.load(model_fpath)
+        y_pred_loaded = loaded[X]
+        assert np.allclose(y_pred.values, y_pred_loaded.values)
+
+
+@pytest.mark.parametrize(
+    'layer',
+    _make_custom_layer_instances(),
+    ids=lambda layer: layer.__class__.__name__,
+)
+def test_custom_layers_keras_deserialize(layer):
+    """Ensure all phygnn custom layers round-trip through Keras config."""
+    serialized = tf.keras.layers.serialize(layer)
+    loaded = tf.keras.layers.deserialize(
+        serialized, custom_objects=_get_custom_layer_objects()
+    )
+
+    assert isinstance(loaded, layer.__class__)
+    assert loaded.get_config() == layer.get_config()
 
 
 def test_OHE():
