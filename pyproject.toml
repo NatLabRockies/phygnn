@@ -15,16 +15,16 @@ authors = [
   {name = "Grant Buster", email = "grant.buster@nlr.gov"},
 ]
 license = {text = "BSD-3-Clause"}
-requires-python = ">= 3.8, < 3.12"
+requires-python = ">= 3.9"
 classifiers=[
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: BSD License",
   "Natural Language :: English",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11"
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
   "matplotlib>=3.1",
@@ -33,7 +33,7 @@ dependencies = [
   "pandas>=0.25",
   "pytest>=5.2",
   "scikit-learn>=1.2",
-  "tensorflow>2.4,<2.16"
+  "tensorflow>=2.16.1,<2.17"
 ]
 
 # If used, cause glibc conflict
@@ -43,10 +43,10 @@ dependencies = [
 # # 8.9.7
 
 [tool.pixi.target.linux-64.pypi-dependencies]
-tensorflow = {version = "~=2.15.1", extras = ["and-cuda"] }
+tensorflow = {version = "~=2.16.1", extras = ["and-cuda"] }
 
 [tool.pixi.target.osx-arm64.dependencies]
-tensorflow = {version = "~=2.15.0", channel = "conda-forge"}
+tensorflow = {version = "~=2.16.1", channel = "conda-forge"}
 
 [project.optional-dependencies]
 dev = [
