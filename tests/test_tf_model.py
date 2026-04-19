@@ -14,8 +14,6 @@ import tensorflow as tf
 
 from phygnn.layers.custom_layers import (
     CBAM,
-    Attention,
-    AxialAttentionBlock,
     ExpandDims,
     FlattenAxis,
     FlexiblePadding,
@@ -26,7 +24,6 @@ from phygnn.layers.custom_layers import (
     MaskedSqueezeAndExcitation,
     SigLin,
     SkipConnection,
-    SparseAttention,
     SpatialExpansion,
     SpatioTemporalExpansion,
     SqueezeAndExcitation,
@@ -83,9 +80,6 @@ def _make_custom_layer_instances():
         SkipConnection(name='skip_a', method='concat'),
         SqueezeAndExcitation(ratio=4),
         MaskedSqueezeAndExcitation(ratio=4, name='masked_se'),
-        Attention(num_heads=2, key_dim=8, name='attention'),
-        AxialAttentionBlock(num_heads=2, key_dim=8, name='axial_attention'),
-        SparseAttention(num_heads=2, key_dim=8, name='sparse_attention'),
         CBAM(ratio=4),
         Sup3rAdder(name='adder'),
         Sup3rConcatObs(name='obs', fill_method='mean', include_mask=True),
