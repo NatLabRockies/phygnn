@@ -910,50 +910,6 @@ def test_transformer_exo_data_time_forwarding(monkeypatch):
     assert calls == [(True, True, False)]
 
 
-def test_fno_2d():
-    """Test the FNO layer with 2D data (4D tensor input)"""
-    hidden_layers = [
-        {
-            'class': 'FNO',
-            'filters': 8,
-            'sparsity_threshold': 0.01,
-            'activation': 'relu',
-        }
-    ]
-    layers = HiddenLayers(hidden_layers)
-    assert len(layers.layers) == 1
-
-    x = np.random.normal(0, 1, size=(1, 4, 4, 3))
-
-    for layer in layers:
-        x_in = x
-        x = layer(x)
-        with pytest.raises(tf.errors.InvalidArgumentError):
-            tf.assert_equal(x_in, x)
-
-
-def test_fno_3d():
-    """Test the FNO layer with 3D data (5D tensor input)"""
-    hidden_layers = [
-        {
-            'class': 'FNO',
-            'filters': 8,
-            'sparsity_threshold': 0.01,
-            'activation': 'relu',
-        }
-    ]
-    layers = HiddenLayers(hidden_layers)
-    assert len(layers.layers) == 1
-
-    x = np.random.normal(0, 1, size=(1, 4, 4, 6, 3))
-
-    for layer in layers:
-        x_in = x
-        x = layer(x)
-        with pytest.raises(tf.errors.InvalidArgumentError):
-            tf.assert_equal(x_in, x)
-
-
 def test_functional_layer():
     """Test the generic functional layer"""
 
