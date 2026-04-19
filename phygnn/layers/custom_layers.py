@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class FlexiblePadding(tf.keras.layers.Layer):
     """Class to perform padding on tensors"""
 
-    def __init__(self, paddings, mode='REFLECT', option='tf'):
+    def __init__(self, paddings, mode='REFLECT', option='tf', **kwargs):
         """
         Parameters
         ----------
@@ -33,8 +33,11 @@ class FlexiblePadding(tf.keras.layers.Layer):
             to convert tensors to numpy arrays. See the tensorflow issue
             https://github.com/tensorflow/tensorflow/issues/91027
         """
-        super().__init__()
-        self.paddings = tf.constant(paddings)
+        super().__init__(**kwargs)
+        self._paddings = tuple(
+            tuple(int(value) for value in pad) for pad in paddings
+        )
+        self.paddings = tf.constant(self._paddings)
         self.rank = len(paddings)
         self.mode = mode.lower()
         self.option = option.lower()
@@ -66,7 +69,11 @@ class FlexiblePadding(tf.keras.layers.Layer):
         """
         output_shape = [0] * self.rank
         for d in range(self.rank):
-            output_shape[d] = sum(self.paddings[d]) + input_shape[d]
+            output_shape[d] = (
+                None
+                if input_shape[d] is None
+                else sum(self._paddings[d]) + input_shape[d]
+            )
         return tf.TensorShape(output_shape)
 
     def call(self, x):
@@ -90,7 +97,7 @@ class FlexiblePadding(tf.keras.layers.Layer):
 class ExpandDims(tf.keras.layers.Layer):
     """Layer to add an extra dimension to a tensor."""
 
-    def __init__(self, axis=3):
+    def __init__(self, axis=3, **kwargs):
         """
         Parameters
         ----------
@@ -100,7 +107,7 @@ class ExpandDims(tf.keras.layers.Layer):
             spatiotemporal shape of: (n_observations, n_spatial_0, n_spatial_1,
             n_temporal, n_features)
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self._axis = axis
 
     def call(self, x):
@@ -122,7 +129,7 @@ class ExpandDims(tf.keras.layers.Layer):
 class TileLayer(tf.keras.layers.Layer):
     """Layer to tile (repeat) data across a given axis."""
 
-    def __init__(self, multiples):
+    def __init__(self, multiples, **kwargs):
         """
         Parameters
         ----------
@@ -131,7 +138,7 @@ class TileLayer(tf.keras.layers.Layer):
             input tensor. Each entry in the list determines how many times to
             tile each axis in the tensor.
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self._mult = tf.constant(multiples, tf.int32)
 
     def call(self, x):
@@ -211,7 +218,7 @@ class GaussianAveragePooling2D(tf.keras.layers.Layer):
             init = tf.keras.initializers.Constant(value=self.sigma)
             self.sigma = self.add_weight(
                 name='sigma',
-                shape=[1],
+                shape=[],
                 trainable=self.trainable,
                 dtype=tf.float32,
                 initializer=init,
@@ -235,7 +242,7 @@ class GaussianAveragePooling2D(tf.keras.layers.Layer):
             -0.5 * tf.math.square(ax) / tf.math.square(self.sigma)
         )
         kernel = tf.expand_dims(gauss, 0) * tf.expand_dims(gauss, -1)
-        kernel = kernel / tf.math.reduce_sum(kernel)
+        kernel /= tf.math.reduce_sum(kernel)
         kernel = tf.expand_dims(kernel, -1)
         kernel = tf.expand_dims(kernel, -1)
         return kernel
@@ -660,8 +667,10 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
                 logger.error(msg)
                 raise RuntimeError(msg)
 
-            out = [tf.nn.depth_to_space(x_unstack, self._spatial_mult)
-                   for x_unstack in tf.unstack(x, axis=3)]
+            out = [
+                tf.nn.depth_to_space(x_unstack, self._spatial_mult)
+                for x_unstack in tf.unstack(x, axis=3)
+            ]
 
         else:
             s_expand_shape = tf.stack([
@@ -1277,128 +1286,6 @@ class CBAM(tf.keras.layers.Layer):
         return x
 
 
-class FNO(tf.keras.layers.Layer):
-    """Custom layer for fourier neural operator block
-
-    Note that this is only set up to take a channels-last input
-
-    References
-    ----------
-    1. FourCastNet: A Global Data-driven High-resolution Weather Model using
-    Adaptive Fourier Neural Operators. http://arxiv.org/abs/2202.11214
-    2. Adaptive Fourier Neural Operators: Efficient Token Mixers for
-    Transformers. http://arxiv.org/abs/2111.13587
-    """
-
-    def __init__(self, filters, sparsity_threshold=0.5, activation='relu'):
-        """
-        Parameters
-        ----------
-        filters : int
-            Number of dense connections in the FNO block.
-        sparsity_threshold : float
-            Parameter to control sparsity and shrinkage in the softshrink
-            activation function following the MLP layers.
-        activation : str
-            Activation function used in MLP layers.
-        """
-
-        super().__init__()
-        self._filters = filters
-        self._fft_layer = None
-        self._ifft_layer = None
-        self._mlp_layers = None
-        self._activation = activation
-        self._n_channels = None
-        self._perms_in = None
-        self._perms_out = None
-        self._lambd = sparsity_threshold
-
-    def _softshrink(self, x):
-        """Softshrink activation function
-
-        https://pytorch.org/docs/stable/generated/torch.nn.Softshrink.html
-        """
-        values_below_lower = tf.where(x < -self._lambd, x + self._lambd, 0)
-        values_above_upper = tf.where(self._lambd < x, x - self._lambd, 0)
-        return values_below_lower + values_above_upper
-
-    def _fft(self, x):
-        """Apply needed transpositions and fft operation."""
-        x = tf.transpose(x, perm=self._perms_in)
-        x = self._fft_layer(tf.cast(x, tf.complex64))
-        x = tf.transpose(x, perm=self._perms_out)
-        return x
-
-    def _ifft(self, x):
-        """Apply needed transpositions and ifft operation."""
-        x = tf.transpose(x, perm=self._perms_in)
-        x = self._ifft_layer(tf.cast(x, tf.complex64))
-        x = tf.transpose(x, perm=self._perms_out)
-        return x
-
-    def build(self, input_shape):
-        """Build the FNO layer based on an input shape
-
-        Parameters
-        ----------
-        input_shape : tuple
-            Shape tuple of the input tensor
-        """
-        self._n_channels = input_shape[-1]
-        dims = list(range(len(input_shape)))
-        self._perms_in = [dims[-1], *dims[:-1]]
-        self._perms_out = [*dims[1:], dims[0]]
-
-        if len(input_shape) == 4:
-            self._fft_layer = tf.signal.fft2d
-            self._ifft_layer = tf.signal.ifft2d
-        elif len(input_shape) == 5:
-            self._fft_layer = tf.signal.fft3d
-            self._ifft_layer = tf.signal.ifft3d
-        else:
-            msg = (
-                'FNO layer can only accept 4D or 5D data for image or video '
-                'input but received input shape: {}'.format(input_shape)
-            )
-            logger.error(msg)
-            raise RuntimeError(msg)
-
-        self._mlp_layers = [
-            tf.keras.layers.Dense(self._filters, activation=self._activation),
-            tf.keras.layers.Dense(self._n_channels),
-        ]
-
-    def _mlp_block(self, x):
-        """Run mlp layers on input"""
-        for layer in self._mlp_layers:
-            x = layer(x)
-        return x
-
-    def call(self, x):
-        """Call the custom FourierNeuralOperator layer
-
-        Parameters
-        ----------
-        x : tf.Tensor
-            Input tensor.
-
-        Returns
-        -------
-        x : tf.Tensor
-            Output tensor, this is the FNO weights added to the original input
-            tensor.
-        """
-        t_in = x
-        x = self._fft(x)
-        x = self._mlp_block(x)
-        x = self._softshrink(x)
-        x = self._ifft(x)
-        x = tf.cast(x, dtype=t_in.dtype)
-
-        return x + t_in
-
-
 class Sup3rAdder(tf.keras.layers.Layer):
     """Layer to add high-resolution data to a sup3r model in the middle of a
     super resolution forward pass."""
@@ -1794,9 +1681,9 @@ class LogTransform(tf.keras.layers.Layer):
         out = []
         for idf in range(x.shape[-1]):
             if idf in self.idf:
-                out.append(self._logt(x[..., idf: idf + 1]))
+                out.append(self._logt(x[..., idf : idf + 1]))
             else:
-                out.append(x[..., idf: idf + 1])
+                out.append(x[..., idf : idf + 1])
 
         out = tf.concat(out, -1, name='concat')
         return out
@@ -1886,7 +1773,7 @@ class UnitConversion(tf.keras.layers.Layer):
 
         out = []
         for idf, (adder, scalar) in enumerate(zip(self.adder, self.scalar)):
-            out.append(x[..., idf: idf + 1] * scalar + adder)
+            out.append(x[..., idf : idf + 1] * scalar + adder)
 
         out = tf.concat(out, -1, name='concat')
 

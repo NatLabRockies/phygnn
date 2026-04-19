@@ -14,12 +14,22 @@ import tensorflow as tf
 from tensorflow import feature_column
 from tensorflow.keras.optimizers import Adam
 
+import phygnn.layers.custom_layers
 from phygnn.layers.handlers import Layers
 from phygnn.model_interfaces.base_model import ModelBase
 from phygnn.utilities import TF2
 from phygnn.utilities.pre_processing import PreProcess
 
 logger = logging.getLogger(__name__)
+
+
+def _get_custom_layer_objects():
+    """Get phygnn custom layer classes for Keras deserialization."""
+    return {
+        name: obj
+        for name, obj in vars(phygnn.layers.custom_layers).items()
+        if isinstance(obj, type) and issubclass(obj, tf.keras.layers.Layer)
+    }
 
 
 class TfModel(ModelBase):
@@ -459,8 +469,10 @@ class TfModel(ModelBase):
         if not os.path.exists(path):
             os.makedirs(path)
 
+        model_path = os.path.join(path, 'model.keras')
+
         if TF2:
-            self.model.save(path)
+            self.model.save(model_path)
         if not TF2:
             tf.saved_model.save(self.model, path)
 
@@ -507,7 +519,16 @@ class TfModel(ModelBase):
             logger.error(e)
             raise OSError(e)
 
-        loaded = tf.keras.models.load_model(path)
+        model_path = os.path.join(path, 'model.keras')
+        custom_objects = _get_custom_layer_objects()
+        if os.path.exists(model_path):
+            loaded = tf.keras.models.load_model(
+                model_path, custom_objects=custom_objects
+            )
+        else:
+            loaded = tf.keras.models.load_model(
+                path, custom_objects=custom_objects
+            )
 
         json_path = path + 'model.json'
         with open(json_path) as f:
