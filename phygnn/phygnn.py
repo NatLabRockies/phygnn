@@ -166,9 +166,9 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
 
         self._optimizer = optimizer
         if isinstance(optimizer, dict):
-            class_name = optimizer['name']
-            OptimizerClass = getattr(optimizers, class_name)
-            self._optimizer = OptimizerClass.from_config(optimizer)
+            self._optimizer = optimizers.deserialize(
+                {'class_name': optimizer['name'], 'config': optimizer}
+            )
         elif optimizer is None:
             self._optimizer = optimizers.Adam(learning_rate=learning_rate)
 
@@ -335,9 +335,6 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
             p_kwargs = {}
 
         with tf.GradientTape() as tape:
-            for layer in self._layers:
-                tape.watch(layer.variables)
-
             y_predicted = self.predict(x, to_numpy=False)
             p_loss = self._p_fun(self, y_true, y_predicted, p, **p_kwargs)
             grad = tape.gradient(p_loss, self.weights)
@@ -455,9 +452,6 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
     def _get_grad(self, x, y_true, p, p_kwargs):
         """Get the gradient based on a mini-batch of x and y_true data."""
         with tf.GradientTape() as tape:
-            for layer in self._layers:
-                tape.watch(layer.variables)
-
             y_predicted = self.predict(x, to_numpy=False, training=True)
             loss, nn_loss, p_loss = self.calc_loss(y_true, y_predicted,
                                                    p, p_kwargs)
