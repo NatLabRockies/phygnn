@@ -39,6 +39,23 @@ def _dot_product_attention(*args, **kwargs):
     return tf.keras.ops.dot_product_attention(*args, **kwargs)
 
 
+def _get_keras_mask(x):
+    """Return the attached Keras mask across TF/Keras versions."""
+    get_mask = getattr(tf.keras.backend, 'get_keras_mask', None)
+    if get_mask is not None:
+        return get_mask(x)
+    return getattr(x, '_keras_mask', None)
+
+
+def _set_keras_mask(x, mask):
+    """Attach a Keras mask across TF/Keras versions."""
+    set_mask = getattr(tf.keras.backend, 'set_keras_mask', None)
+    if set_mask is not None:
+        set_mask(x, mask)
+    elif hasattr(x, '_keras_mask') or mask is not None:
+        x._keras_mask = mask
+
+
 class FlexiblePadding(tf.keras.layers.Layer):
     """Class to perform padding on tensors"""
 
@@ -613,10 +630,21 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         bias=None,
     ):
         """Call multi-head attention with optional bias."""
-        if not self._built_from_signature:
-            self._build_from_signature(query=query, value=value, key=key)
+        if not self.built:
+            self.build(
+                query.shape,
+                value.shape,
+                None if key is None else key.shape,
+            )
         if key is None:
             key = value
+
+        query_mask = _get_keras_mask(query)
+        value_mask = _get_keras_mask(value)
+        key_mask = _get_keras_mask(key)
+        _set_keras_mask(query, None)
+        _set_keras_mask(value, None)
+        _set_keras_mask(key, None)
 
         # RaggedTensor handling (unchanged from base class)
         query_is_ragged = isinstance(query, tf.RaggedTensor)
@@ -639,7 +667,9 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         attention_mask = self._compute_attention_mask(
             query,
             value,
-            key=key,
+            query_mask=query_mask,
+            value_mask=value_mask,
+            key_mask=key_mask,
             attention_mask=attention_mask,
             use_causal_mask=use_causal_mask,
         )
@@ -663,6 +693,9 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
             attention_output = tf.RaggedTensor.from_tensor(
                 attention_output, lengths=query_lengths
             )
+
+        if query_mask is not None:
+            _set_keras_mask(attention_output, query_mask)
 
         if return_attention_scores:
             return attention_output, attention_scores
