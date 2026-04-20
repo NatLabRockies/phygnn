@@ -11,13 +11,17 @@ import random
 import tempfile
 from abc import ABC, abstractmethod
 from inspect import signature
+from warnings import warn
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.layers import LSTM, BatchNormalization, Dropout
 
-from phygnn.layers.custom_layers import get_custom_layer_objects
+from phygnn.layers.custom_layers import (
+    SkipConnection,
+    get_custom_layer_objects,
+)
 from phygnn.layers.handlers import Layers
 from phygnn.utilities import VERSION_RECORD
 
@@ -43,7 +47,6 @@ class CustomNetwork(ABC):
         layers_obj=None,
         feature_names=None,
         output_names=None,
-        input_shape=None,
         name=None,
     ):
         """
@@ -100,7 +103,6 @@ class CustomNetwork(ABC):
 
         self._n_features = n_features
         self._n_labels = n_labels
-        self._input_shape = input_shape
         self.feature_names = feature_names
         self.output_names = output_names
         self.name = name if isinstance(name, str) else 'CustomNetwork'
@@ -259,7 +261,6 @@ class CustomNetwork(ABC):
             'layers_obj': self.layers_obj,
             'feature_names': self.feature_names,
             'output_names': self.output_names,
-            'input_shape': self._input_shape,
             'name': self.name,
             'version_record': self.version_record,
         }
@@ -408,9 +409,6 @@ class CustomNetwork(ABC):
         if self._n_features is None:
             self._n_features = x.shape[-1]
 
-        if self._input_shape is None:
-            self._input_shape = tuple(x.shape[1:])
-
         x_msg = 'x data has {} features but expected {}'.format(
             x.shape[-1], self._n_features
         )
@@ -518,24 +516,11 @@ class CustomNetwork(ABC):
         model_params = self._history_to_dict(self.model_params)
         model_params.pop('layers_obj', None)
 
-        save_input_shape = self._normalize_input_shape(self._input_shape)
-        if isinstance(save_input_shape, tuple):
-            dummy_shape = [
-                1 if dim is None else dim for dim in save_input_shape
-            ]
-            dummy_input = np.zeros([1, *dummy_shape], dtype=np.float32)
-        else:
-            dummy_input = None
-        keras_model = self._get_keras_wrapper_model(
-            self, save_input_shape, dummy_input=dummy_input
-        )
+        keras_model = self._get_keras_wrapper_model(self)
         payload = {
             'phygnn_pickle_format': KERAS_PICKLE_FORMAT,
             'model_params': model_params,
             'keras_model_bytes': self._serialize_keras_model(keras_model),
-            'layer_names': [
-                ln.name for ln in self._get_non_input_layers(self)
-            ],
         }
 
         with open(path, 'wb') as f:
@@ -552,7 +537,7 @@ class CustomNetwork(ABC):
         fpath : str
             File path to `.pkl` model file.
 
-        Return
+        Returns
         -------
         model : PhysicsGuidedNeuralNetwork
             Instantiated phygnn model
@@ -654,44 +639,7 @@ class CustomNetwork(ABC):
             payload['keras_model_bytes']
         )
 
-        # Prefer input_shape already stored in model_params; fall back to
-        # the Keras model's metadata for payloads saved before model_params
-        # reliably included it.
-        # TODO: remove this fallback once all saved models include input_shape.
-        input_shape = model_params.get('input_shape')
-        if input_shape is None:
-            input_shape = cls._normalize_input_shape(
-                getattr(loaded_keras_model, 'input_shape', None)
-            )
-            if (
-                isinstance(input_shape, tuple)
-                and input_shape
-                and input_shape[0] is None
-            ):
-                input_shape = input_shape[1:]
-            if isinstance(input_shape, tuple):
-                model_params['input_shape'] = input_shape
-
-        # Reconstruct ordered layer list preserving shared SkipConnection
-        # identity.  get_layer(name) always returns the same Python object for
-        # a given name, so two entries of 'skip_a' in layer_names yield the
-        # same object both times — restoring the shared-ref invariant that
-        # SkipConnection._cache depends on.
-        layer_names = payload.get('layer_names')
-        if layer_names is not None:
-            ordered_layers = [
-                loaded_keras_model.get_layer(n) for n in layer_names
-            ]
-        else:
-            # Backward-compatible fallback for saves without layer_names.
-            ordered_layers = cls._get_non_input_layers(loaded_keras_model)
-
-        # Keras auto-builds the loaded model with symbolic tensors, which can
-        # leave stateful layers (e.g. SkipConnection._cache) set to a symbolic
-        # tensor.  Reset any such state so predict() starts from a clean slate.
-        for layer in ordered_layers:
-            if hasattr(layer, '_cache'):
-                layer._cache = None
+        ordered_layers = cls._get_non_input_layers(loaded_keras_model)
 
         layers_obj = Layers.from_layers(
             ordered_layers,
@@ -700,22 +648,10 @@ class CustomNetwork(ABC):
             hidden_layers=model_params.get('hidden_layers'),
             input_layer=model_params.get('input_layer'),
             output_layer=model_params.get('output_layer'),
-            input_shape=input_shape,
         )
         model_params['layers_obj'] = layers_obj
 
         return cls._init_model_from_params(model_params)
-
-    @classmethod
-    def _normalize_input_shape(cls, input_shape):
-        """Normalize Keras/TensorFlow input shape metadata to a tuple."""
-        if isinstance(input_shape, list):
-            input_shape = input_shape[0]
-        if isinstance(input_shape, tuple):
-            return input_shape
-        if isinstance(input_shape, tf.TensorShape):
-            return tuple(input_shape.as_list())
-        return input_shape
 
     @classmethod
     def _get_non_input_layers(cls, model):
@@ -726,25 +662,61 @@ class CustomNetwork(ABC):
             if not isinstance(layer, tf.keras.layers.InputLayer)
         ]
 
+    @staticmethod
+    def _skip_layer_serialization_name(base_name, occurrence):
+        """Return a unique name for the *occurrence*-th appearance of a
+        SkipConnection named *base_name* in the serialized layer list.
+
+        Even occurrences → ``_start`` (the caching half).
+        Odd  occurrences → ``_end``   (the combining half).
+        Pairs beyond the first get a numeric suffix: ``_start_1``, ``_end_1``.
+        """
+        suffix = '_start' if occurrence % 2 == 0 else '_end'
+        pair_idx = occurrence // 2
+        if pair_idx == 0:
+            return f'{base_name}{suffix}'
+        return f'{base_name}{suffix}_{pair_idx}'
+
     @classmethod
-    def _get_keras_wrapper_model(cls, model, input_shape, dummy_input=None):
-        """Build a Keras Sequential wrapper from explicit input + layers."""
+    def _get_keras_wrapper_model(cls, model):
+        """Build a Keras Sequential wrapper around the model's layers.
+
+        When the same ``SkipConnection`` instance appears more than once (the
+        normal runtime representation), Keras deduplicates them to a single
+        layer on ``save()`` / ``load()``.  To prevent that, each occurrence is
+        replaced with a new SkipConnection whose name has a ``_start`` /
+        ``_end`` suffix.  After loading,
+        :meth:`~phygnn.layers.handlers.Layers.relink_skip_connections`
+        strips the suffixes and restores the shared-instance invariant.
+
+        ``model._layers.skip_layers`` guarantees that each unique instance has
+        a unique name, so layer names are used as keys instead of object ids.
+        """
         wrapper_model = tf.keras.Sequential(name=model.name)
-        if isinstance(input_shape, tuple):
-            wrapper_model.add(tf.keras.Input(shape=input_shape))
-
+        skip_counts = {}  # base name -> occurrence count
         for layer in cls._get_non_input_layers(model):
-            wrapper_model.add(layer)
-
-        if dummy_input is not None:
-            # Keras auto-builds each layer once (symbolically) during add(),
-            # which can leave stateful layers such as SkipConnection with a
-            # dirty _cache holding a symbolic tensor.  Reset any such caches
-            # so the actual concrete forward pass starts from a clean state.
-            for layer in cls._get_non_input_layers(model):
-                if hasattr(layer, '_cache'):
-                    layer._cache = None
-            wrapper_model(dummy_input)
+            if isinstance(layer, SkipConnection):
+                count = skip_counts.get(layer.name, 0)
+                layer_name = cls._skip_layer_serialization_name(
+                    layer.name, count
+                )
+                skip_counts[layer.name] = count + 1
+                wrapper_model.add(
+                    SkipConnection(layer_name, method=layer._method)
+                )
+            else:
+                wrapper_model.add(layer)
+        # The constituent layers are already built from training (they
+        # have weights) even though the Sequential wrapper itself has
+        # never been called as a unit.  Mark it built so Keras does not
+        # emit a spurious "not yet built" warning when serializing.
+        wrapper_model.built = bool(wrapper_model.weights)
+        if not wrapper_model.built:
+            msg = 'Saving model {} with unbuilt Keras wrapper'.format(
+                model.name
+            )
+            logger.warning(msg)
+            warn(msg)
         return wrapper_model
 
     @classmethod
