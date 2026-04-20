@@ -14,22 +14,12 @@ import tensorflow as tf
 from tensorflow import feature_column
 from tensorflow.keras.optimizers import Adam
 
-import phygnn.layers.custom_layers
+from phygnn.layers.custom_layers import get_custom_layer_objects
 from phygnn.layers.handlers import Layers
 from phygnn.model_interfaces.base_model import ModelBase
-from phygnn.utilities import TF2
 from phygnn.utilities.pre_processing import PreProcess
 
 logger = logging.getLogger(__name__)
-
-
-def _get_custom_layer_objects():
-    """Get phygnn custom layer classes for Keras deserialization."""
-    return {
-        name: obj
-        for name, obj in vars(phygnn.layers.custom_layers).items()
-        if isinstance(obj, type) and issubclass(obj, tf.keras.layers.Layer)
-    }
 
 
 class TfModel(ModelBase):
@@ -289,6 +279,24 @@ class TfModel(ModelBase):
         return tf_columns
 
     @staticmethod
+    def _normalize_model_dir(path):
+        """Normalize a save/load target to a model directory path."""
+
+        model_dir = os.path.abspath(path)
+        if model_dir.endswith('.json'):
+            model_dir = os.path.dirname(model_dir)
+        return model_dir
+
+    @classmethod
+    def _get_model_paths(cls, path):
+        """Get normalized TfModel artifact paths."""
+
+        model_dir = cls._normalize_model_dir(path)
+        model_path = os.path.join(model_dir, 'model.keras')
+        json_path = os.path.join(model_dir, 'model.json')
+        return model_dir, model_path, json_path
+
+    @staticmethod
     def compile_model(n_features, n_labels=1, hidden_layers=None,
                       input_layer=None, output_layer=None,
                       learning_rate=0.001, loss="mean_squared_error",
@@ -456,25 +464,17 @@ class TfModel(ModelBase):
         Parameters
         ----------
         path : str
-            Directory path to save model to. The tensorflow model will be
-            saved to the directory while the framework parameters will be
-            saved in json.
+            Directory path, or path ending in `.json`, to save model to.
+            The Keras model will be saved to `model.keras` inside the target
+            directory while the framework parameters will be saved to
+            `model.json`.
         """
-        if path.endswith('.json'):
-            path = path.replace('.json', '/')
+        model_dir, model_path, json_path = self._get_model_paths(path)
 
-        if not path.endswith('/'):
-            path += '/'
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
 
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        model_path = os.path.join(path, 'model.keras')
-
-        if TF2:
-            self.model.save(model_path)
-        if not TF2:
-            tf.saved_model.save(self.model, path)
+        self.model.save(model_path)
 
         model_params = {'feature_names': self.feature_names,
                         'label_names': self.label_names,
@@ -485,7 +485,6 @@ class TfModel(ModelBase):
                         'version_record': self.version_record,
                         }
 
-        json_path = path + 'model.json'
         model_params = self.dict_json_convert(model_params)
         with open(json_path, 'w') as f:
             json.dump(model_params, f, indent=2, sort_keys=True)
@@ -498,39 +497,34 @@ class TfModel(ModelBase):
         Parameters
         ----------
         path : str
-            Directory path for TfModel to load model from. There should be a
-            saved model directory with json and pickle files for the TfModel
-            framework.
+            Directory path, or path ending in `.json`, for TfModel to load
+            from. The target directory should contain `model.keras` and
+            `model.json` files. Legacy directory-based Keras artifacts are
+            still supported.
 
         Returns
         -------
         model : TfModel
             Loaded TfModel from disk.
         """
-        if path.endswith('.json'):
-            path = path.replace('.json', '/')
+        model_dir, model_path, json_path = cls._get_model_paths(path)
 
-        if not path.endswith('/'):
-            path += '/'
-
-        if not os.path.isdir(path):
+        if not os.path.isdir(model_dir):
             e = ('Can only load directory path but target is not '
-                 'directory: {}'.format(path))
+                 'directory: {}'.format(model_dir))
             logger.error(e)
             raise OSError(e)
 
-        model_path = os.path.join(path, 'model.keras')
-        custom_objects = _get_custom_layer_objects()
+        custom_objects = get_custom_layer_objects()
         if os.path.exists(model_path):
             loaded = tf.keras.models.load_model(
                 model_path, custom_objects=custom_objects
             )
         else:
             loaded = tf.keras.models.load_model(
-                path, custom_objects=custom_objects
+                model_dir, custom_objects=custom_objects
             )
 
-        json_path = path + 'model.json'
         with open(json_path) as f:
             model_params = json.load(f)
 

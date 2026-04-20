@@ -220,8 +220,8 @@ class PhygnnModel(ModelBase):
         ----------
         path : str
             Target model save path. Can be a target .json, .pkl, or a directory
-            that will be created+populated with a pkl model file and json
-            parameters file.
+            that will be created+populated with a json parameters file and a
+            `.pkl` file for the underlying PhysicsGuidedNeuralNetwork.
         """
 
         json_path = os.path.abspath(path)
@@ -643,8 +643,9 @@ class PhygnnModel(ModelBase):
         ----------
         path : str
             Directory path for PhygnnModel to load model from. There should be
-            a saved model directory with json and pickle files for the
-            PhygnnModel framework.
+            a saved model directory with a json file for the PhygnnModel
+            framework and a `.pkl` file for the underlying
+            PhysicsGuidedNeuralNetwork.
 
         Returns
         -------
@@ -655,7 +656,7 @@ class PhygnnModel(ModelBase):
         if not path.endswith(('.json', '.pkl')):
             pkl_path = os.path.join(path, os.path.basename(path) + '.pkl')
         elif path.endswith('.json'):
-            pkl_path = path.replace('.pkl', '.json')
+            pkl_path = path.replace('.json', '.pkl')
         elif path.endswith('.pkl'):
             pkl_path = path
 
