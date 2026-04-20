@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import tensorflow as tf
+from phygnn.layers.custom_layers import SkipConnection
 from tensorflow.keras.layers import (
     LSTM,
     Activation,
@@ -257,6 +258,46 @@ def test_save_load():
     assert isinstance(model._optimizer, Adam)
     assert isinstance(loaded._optimizer, Adam)
     assert model._optimizer.get_config() == loaded._optimizer.get_config()
+
+
+def test_save_load_skip_connections():
+    """Test save/load preserves repeated shared skip-connection execution."""
+    hidden_layers = [
+        {'units': 64, 'activation': 'relu', 'name': 'relu1'},
+        {'class': 'SkipConnection', 'name': 'skip_a'},
+        {'units': 64, 'activation': 'relu', 'name': 'relu2'},
+        {'class': 'SkipConnection', 'name': 'skip_a'},
+        {'units': 64, 'activation': 'relu', 'name': 'relu3'},
+    ]
+
+    PhysicsGuidedNeuralNetwork.seed(0)
+    model = PhysicsGuidedNeuralNetwork(
+        p_fun=p_fun_pythag,
+        hidden_layers=hidden_layers,
+        loss_weights=(0.0, 1.0),
+        n_features=2,
+        n_labels=1,
+        feature_names=['a', 'b'],
+        output_names=['c'],
+    )
+
+    model.fit(X, Y_NOISE, P, n_batch=4, n_epoch=10)
+    y_pred = model.predict(X)
+
+    with tempfile.TemporaryDirectory() as td:
+        fpath = os.path.join(td, 'tempfile.pkl')
+        model.save(fpath)
+        loaded = PhysicsGuidedNeuralNetwork.load(fpath)
+
+    y_pred_loaded = loaded.predict(X)
+    skip_layers = [
+        layer for layer in loaded.layers if isinstance(layer, SkipConnection)
+    ]
+
+    assert len(model.layers) == len(loaded.layers)
+    assert len(skip_layers) == 2
+    assert id(skip_layers[0]) == id(skip_layers[1])
+    assert np.allclose(y_pred, y_pred_loaded)
 
 
 def test_dummy_p_fun():

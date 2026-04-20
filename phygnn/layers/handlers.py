@@ -433,11 +433,74 @@ class Layers(HiddenLayers):
 
         self._add_output_layer()
 
+    @classmethod
+    def from_layers(
+        cls,
+        layers,
+        n_features=None,
+        n_labels=1,
+        hidden_layers=None,
+        input_layer=None,
+        output_layer=None,
+        input_shape=None,
+    ):
+        """Wrap an existing ordered list of Keras layers.
+
+        Parameters
+        ----------
+        layers : list | tuple
+            Ordered Keras layers including any input/output layers.
+        n_features : int | None
+            Number of input features used to initialize the original model.
+        n_labels : int
+            Number of output labels used to initialize the original model.
+        hidden_layers : list | None
+            Serialized hidden layer kwargs metadata.
+        input_layer : None | bool | dict
+            Serialized input layer kwargs metadata.
+        output_layer : None | bool | list | dict
+            Serialized output layer kwargs metadata.
+        input_shape : tuple | list | None
+            Explicit input shape metadata used to restore the default
+            InputLayer wrapper when needed.
+
+        Returns
+        -------
+        Layers
+            Layers wrapper around the existing Keras layer objects.
+        """
+
+        obj = cls.__new__(cls)
+        obj._i = 0
+        obj._layers = list(layers)
+        obj._n_features = n_features
+        obj._n_labels = n_labels
+        obj._input_layer_kwargs = copy.deepcopy(input_layer)
+        obj._output_layer_kwargs = copy.deepcopy(output_layer)
+        obj._hidden_layers_kwargs = copy.deepcopy(hidden_layers)
+
+        if (
+            obj._input_layer_kwargs is None
+            and obj._layers
+            and not isinstance(obj._layers[0], InputLayer)
+        ):
+            if input_shape is None and n_features is not None:
+                input_shape = (n_features,)
+            if input_shape is not None:
+                obj._layers.insert(0, InputLayer(shape=input_shape))
+
+        if obj._hidden_layers_kwargs is not None:
+            obj._hidden_layers_kwargs = cls.parse_repeats(
+                obj._hidden_layers_kwargs
+            )
+
+        return obj
+
     def _add_input_layer(self):
         """Add an input layer, defaults to tf.layers.InputLayer"""
 
         if self.input_layer_kwargs is None:
-            self._layers = [InputLayer(input_shape=[self._n_features])]
+            self._layers = [InputLayer(shape=(self._n_features,))]
 
         elif self.input_layer_kwargs:
             if not isinstance(self.input_layer_kwargs, dict):

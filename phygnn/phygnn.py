@@ -29,7 +29,8 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
                  learning_rate=0.01, history=None,
                  kernel_reg_rate=0.0, kernel_reg_power=1,
                  bias_reg_rate=0.0, bias_reg_power=1,
-                 feature_names=None, output_names=None, name=None):
+                 feature_names=None, output_names=None,
+                 input_shape=None, name=None):
         """
         Parameters
         ----------
@@ -136,6 +137,7 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
                          layers_obj=layers_obj,
                          feature_names=feature_names,
                          output_names=output_names,
+                         input_shape=input_shape,
                          )
 
         self._p_fun = p_fun if p_fun is not None else self.p_fun_dummy

@@ -33,8 +33,9 @@ from phygnn.layers.custom_layers import (
     Sup3rObsModel,
     TileLayer,
     UnitConversion,
+    get_custom_layer_objects,
 )
-from phygnn.model_interfaces.tf_model import TfModel, _get_custom_layer_objects
+from phygnn.model_interfaces.tf_model import TfModel
 from phygnn.utilities import TF2
 
 TfModel.seed(0)
@@ -328,7 +329,7 @@ def test_custom_layers_keras_deserialize(layer):
     """Ensure all phygnn custom layers round-trip through Keras config."""
     serialized = tf.keras.layers.serialize(layer)
     loaded = tf.keras.layers.deserialize(
-        serialized, custom_objects=_get_custom_layer_objects()
+        serialized, custom_objects=get_custom_layer_objects()
     )
 
     assert isinstance(loaded, layer.__class__)

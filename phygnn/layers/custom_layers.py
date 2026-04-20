@@ -11,7 +11,7 @@ from phygnn.utilities.tf_utilities import idw_fill, mean_fill
 logger = logging.getLogger(__name__)
 
 
-def _get_layer_classes():
+def get_custom_layer_objects():
     """Get local custom layer classes for Keras deserialization."""
     return {
         name: obj
@@ -847,7 +847,7 @@ class SkipConnection(tf.keras.layers.Layer):
             msg = (
                 'Could not {} SkipConnection "{}" data cache of '
                 'shape {} to input of shape {}.'.format(
-                    self._method, self._name, self._cache.shape, x.shape
+                    self._method, self.name, self._cache.shape, x.shape
                 )
             )
             logger.error(msg)
@@ -1427,7 +1427,7 @@ class Sup3rObsModel(tf.keras.layers.Layer):
         hidden_layers = config.pop('hidden_layers', [])
         hidden_layers = [
             tf.keras.layers.deserialize(
-                layer_config, custom_objects=_get_layer_classes()
+                layer_config, custom_objects=get_custom_layer_objects()
             )
             for layer_config in hidden_layers
         ]
