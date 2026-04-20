@@ -157,7 +157,7 @@ class CustomNetwork(ABC):
     def _check_shapes(x, y):
         """Check the shape of two input arrays for usage in this NN."""
         msg = (
-            'Number of input observations dont match! Received arrays of '
+            "Number of input observations don't match! Received arrays of "
             'shapes {} and {} where the 0-axis should match and be the '
             'number of observations'.format(x.shape, y.shape)
         )
