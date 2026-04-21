@@ -143,13 +143,11 @@ class FlexiblePadding(tf.keras.layers.Layer):
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update(
-            {
-                'paddings': [list(pad) for pad in self._paddings],
-                'mode': self._mode,
-                'option': self._option,
-            }
-        )
+        config.update({
+            'paddings': [list(pad) for pad in self._paddings],
+            'mode': self._mode,
+            'option': self._option,
+        })
         return config
 
 
@@ -200,6 +198,13 @@ class PatchLayer(tf.keras.layers.Layer):
             )
             logger.error(msg)
             raise ValueError(msg)
+        super().build(input_shape)
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'patch_size': self.patch_size})
+        return config
 
     @classmethod
     def _get_padding(cls, x_shape, patch_size=1):
@@ -328,6 +333,7 @@ class Embedder(PatchLayer):
             self.embed_layer = tf.keras.layers.Dense(
                 self.embed_dim, use_bias=False
             )
+        self.embed_layer.build(input_shape)
 
     def call(self, x):
         """Embed inputs for attention blocks.
@@ -349,6 +355,12 @@ class Embedder(PatchLayer):
         # batch members can have different NaN patterns in general so this
         # reshape could fail if batch_size > 1
         return tf.reshape(x_emb, (tf.shape(x)[0], -1, self.embed_dim))
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({'embed_dim': self.embed_dim})
+        return config
 
 
 class PositionEncoder(PatchLayer):
@@ -564,6 +576,7 @@ class PositionEncoder(PatchLayer):
             if self.rank == 4
             else tf.keras.layers.AveragePooling3D(**kwargs)
         )
+        self._pool_layer.build(input_shape)
 
     def call(self, x, lat, lon, time=None):
         """Get positional encoding for attention blocks.
@@ -597,6 +610,18 @@ class PositionEncoder(PatchLayer):
                 x, time, self.min_period_temporal, self.max_period_temporal
             )
         return x_enc
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({
+            'embed_dim': self.embed_dim,
+            'min_period_spatial': self.min_period_spatial,
+            'max_period_spatial': self.max_period_spatial,
+            'min_period_temporal': self.min_period_temporal,
+            'max_period_temporal': self.max_period_temporal,
+        })
+        return config
 
 
 class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
@@ -711,9 +736,8 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         bias=None,
         return_attention_scores=False,
     ):
-        use_fused_attention = (
-            not return_attention_scores
-            and (self._dropout == 0.0 or training is False)
+        use_fused_attention = not return_attention_scores and (
+            self._dropout == 0.0 or training is False
         )
 
         if use_fused_attention:
@@ -776,6 +800,9 @@ class TransformerLayer(tf.keras.layers.Layer):
             Additional keyword arguments passed to ``tf.keras.layers.Layer``.
         """
         super().__init__(**kwargs)
+        self.num_heads = num_heads
+        self.key_dim = key_dim
+        self.attn_kwargs = attn_kwargs
 
         self.attn = MultiHeadAttention(
             num_heads=num_heads, key_dim=key_dim, **(attn_kwargs or {})
@@ -789,6 +816,29 @@ class TransformerLayer(tf.keras.layers.Layer):
             tf.keras.layers.Dense(key_dim, activation='relu'),
             tf.keras.layers.Dense(key_dim),
         ]
+
+    def build(self, input_shape):
+        """Build all sub-layers. input_shape is the query shape (or a list of
+        shapes for multi-input calls: [query_shape, key_shape, value_shape])."""
+        if (
+            isinstance(input_shape, (list, tuple))
+            and len(input_shape) > 0
+            and isinstance(input_shape[0], (list, tuple))
+        ):
+            query_shape = input_shape[0]
+        else:
+            query_shape = input_shape
+        self.lq.build(query_shape)
+        self.lk.build(query_shape)
+        self.lv.build(query_shape)
+        self.lo.build(query_shape)
+        self._mlp_layers[0].build(query_shape)
+        self._mlp_layers[1].build(tuple(query_shape[:-1]) + (self.key_dim,))
+        # MultiHeadAttention is lazily built inside call() by default; build
+        # it explicitly here so all weights exist before the first @tf.function
+        # trace.  query and value/key have the same shape after LayerNorm.
+        self.attn.build(query_shape, query_shape)
+        super().build(input_shape)
 
     def mlp(self, x):
         """Pass input through MLP layers."""
@@ -818,6 +868,16 @@ class TransformerLayer(tf.keras.layers.Layer):
         attn = self.attn(query=q, key=k, value=v, bias=bias)
         out = self.lo(query + attn)
         return query + self.mlp(out)
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({
+            'num_heads': self.num_heads,
+            'key_dim': self.key_dim,
+            'attn_kwargs': self.attn_kwargs,
+        })
+        return config
 
 
 class Sup3rTransformerLayer(tf.keras.layers.Layer):
@@ -892,6 +952,11 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.eq = Embedder(embed_dim=embed_dim)
         self.ek = Embedder(embed_dim=embed_dim)
         self.ev = Embedder(embed_dim=embed_dim)
+        self.min_period_spatial = min_period_spatial
+        self.max_period_spatial = max_period_spatial
+        self.min_period_temporal = min_period_temporal
+        self.max_period_temporal = max_period_temporal
+        self.attn_kwargs = attn_kwargs
         self.pe = PositionEncoder(
             embed_dim=embed_dim,
             min_period_spatial=min_period_spatial,
@@ -915,7 +980,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         """
         self.rank = len(input_shape)
         msg = (
-            'CrossAttentionBlock input must be 4D or 5D, but received input '
+            'Sup3rTransformerLayer input must be 4D or 5D, but received input '
             f'shape: {input_shape}'
         )
         if self.rank not in {4, 5}:
@@ -923,6 +988,34 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             raise ValueError(msg)
 
         self.final_proj = tf.keras.layers.Dense(input_shape[-1])
+        # ek/ev embed hi_res_feature which has len(self.features) channels,
+        # which may differ from input_shape[-1] (the LR latent-space channels).
+        n_hi_res = len(self.features) if self.features else input_shape[-1]
+        hi_res_shape = tuple(input_shape[:-1]) + (n_hi_res,)
+        self.eq.build(input_shape)
+        self.ek.build(hi_res_shape)
+        self.ev.build(hi_res_shape)
+        self.pe.build(input_shape)
+        self.final_proj.build((None, None, self.embed_dim))
+        self.transformer.build((None, None, self.embed_dim))
+        super().build(input_shape)
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({
+            'features': self.features,
+            'exo_features': self.exo_features,
+            'num_heads': self.num_heads,
+            'key_dim': self.key_dim,
+            'embed_dim': self.embed_dim,
+            'min_period_spatial': self.min_period_spatial,
+            'max_period_spatial': self.max_period_spatial,
+            'min_period_temporal': self.min_period_temporal,
+            'max_period_temporal': self.max_period_temporal,
+            'attn_kwargs': self.attn_kwargs,
+        })
+        return config
 
     def _transformer_layer(self, x_in, hr_in, lat, lon, time=None):
         # embed query, key, and value inputs
@@ -1089,7 +1182,7 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
         super().build(input_shape)
         self.sigma = self.add_weight(
             name='sigma',
-            shape=[1],
+            shape=[],
             trainable=self.trainable,
             dtype=tf.float32,
             initializer=tf.keras.initializers.Constant(self.sigma),
@@ -1231,6 +1324,12 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         transformer_kwargs.setdefault('key_dim', key_dim)
         transformer_kwargs.setdefault('embed_dim', embed_dim)
 
+        self._use_alibi = use_alibi
+        self._num_heads = num_heads
+        self._key_dim = key_dim
+        self._embed_dim = embed_dim
+        self._attn_kwargs = attn_kwargs
+        self._transformer_kwargs_orig = dict(transformer_kwargs or {})
         transformer_cls = (
             Sup3rTransformerLayerAlibi if use_alibi else Sup3rTransformerLayer
         )
@@ -1276,6 +1375,33 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
                 exo_data=exo_data,
             )
         return x_in + x
+
+    def build(self, input_shape):
+        """Build the block based on an input shape
+
+        Parameters
+        ----------
+        input_shape : tuple
+            Shape tuple of the input tensor.
+        """
+        for layer in self.layers:
+            layer.build(input_shape)
+        super().build(input_shape)
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({
+            'features': self.features,
+            'exo_features': self.exo_features,
+            'num_heads': self._num_heads,
+            'key_dim': self._key_dim,
+            'embed_dim': self._embed_dim,
+            'use_alibi': self._use_alibi,
+            'transformer_kwargs': self._transformer_kwargs_orig,
+            'attn_kwargs': self._attn_kwargs,
+        })
+        return config
 
 
 class ExpandDims(tf.keras.layers.Layer):
@@ -1560,13 +1686,11 @@ class GaussianNoiseAxis(tf.keras.layers.Layer):
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update(
-            {
-                'axis': list(self._axis),
-                'mean': self._mean,
-                'stddev': self._stddev,
-            }
-        )
+        config.update({
+            'axis': list(self._axis),
+            'mean': self._mean,
+            'stddev': self._stddev,
+        })
         return config
 
 
@@ -1737,12 +1861,10 @@ class SpatialExpansion(tf.keras.layers.Layer):
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update(
-            {
-                'spatial_mult': self._spatial_mult,
-                'spatial_method': self._spatial_meth,
-            }
-        )
+        config.update({
+            'spatial_mult': self._spatial_mult,
+            'spatial_method': self._spatial_meth,
+        })
         return config
 
 
@@ -1944,15 +2066,13 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update(
-            {
-                'spatial_mult': self._spatial_mult,
-                'temporal_mult': self._temporal_mult,
-                'spatial_method': self._spatial_meth,
-                'temporal_method': self._temporal_meth,
-                't_roll': self._t_roll,
-            }
-        )
+        config.update({
+            'spatial_mult': self._spatial_mult,
+            'temporal_mult': self._temporal_mult,
+            'spatial_method': self._spatial_meth,
+            'temporal_method': self._temporal_meth,
+            't_roll': self._t_roll,
+        })
         return config
 
 
@@ -2465,12 +2585,10 @@ class Sup3rConcatObs(tf.keras.layers.Layer):
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update(
-            {
-                'fill_method': self._fill_method_name,
-                'include_mask': self.include_mask,
-            }
-        )
+        config.update({
+            'fill_method': self._fill_method_name,
+            'include_mask': self.include_mask,
+        })
         return config
 
     def call(self, x, hi_res_feature=None):
@@ -2570,18 +2688,16 @@ class Sup3rObsModel(tf.keras.layers.Layer):
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update(
-            {
-                'features': self.features,
-                'exo_features': self.exo_features,
-                'hidden_layers': [
-                    tf.keras.layers.serialize(layer)
-                    for layer in self._hidden_layers
-                ],
-                'fill_method': self._fill_method_name,
-                'include_mask': self.include_mask,
-            }
-        )
+        config.update({
+            'features': self.features,
+            'exo_features': self.exo_features,
+            'hidden_layers': [
+                tf.keras.layers.serialize(layer)
+                for layer in self._hidden_layers
+            ],
+            'fill_method': self._fill_method_name,
+            'include_mask': self.include_mask,
+        })
         return config
 
     @classmethod
@@ -2859,14 +2975,12 @@ class LogTransform(tf.keras.layers.Layer):
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update(
-            {
-                'adder': self.adder,
-                'scalar': self.scalar,
-                'inverse': self.inverse,
-                'idf': self.idf,
-            }
-        )
+        config.update({
+            'adder': self.adder,
+            'scalar': self.scalar,
+            'inverse': self.inverse,
+            'idf': self.idf,
+        })
         return config
 
 
@@ -2965,12 +3079,10 @@ class UnitConversion(tf.keras.layers.Layer):
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update(
-            {
-                'adder': self._adder_config,
-                'scalar': self._scalar_config,
-            }
-        )
+        config.update({
+            'adder': self._adder_config,
+            'scalar': self._scalar_config,
+        })
         return config
 
 
