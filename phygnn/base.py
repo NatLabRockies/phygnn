@@ -28,9 +28,6 @@ from phygnn.utilities import VERSION_RECORD
 logger = logging.getLogger(__name__)
 
 
-KERAS_PICKLE_FORMAT = 'keras-bytes-v1'
-
-
 class CustomNetwork(ABC):
     """Custom infrastructure for feed forward neural networks.
 
@@ -518,7 +515,6 @@ class CustomNetwork(ABC):
 
         keras_model = self._get_keras_wrapper_model(self)
         payload = {
-            'phygnn_pickle_format': KERAS_PICKLE_FORMAT,
             'model_params': model_params,
             'keras_model_bytes': self._serialize_keras_model(keras_model),
         }
@@ -557,26 +553,13 @@ class CustomNetwork(ABC):
 
         with open(path, 'rb') as f:
             payload = pickle.load(f)
-        if cls._is_keras_pickle_payload(payload):
-            model = cls._load_keras_pickle_model(payload)
-        else:
-            model = cls._load_legacy_model(payload, path)
+        model = cls._load_keras_pickle_model(payload)
 
         logger.info(
             'Successfully initialized model from file: {}'.format(fpath)
         )
 
         return model
-
-    @classmethod
-    def _is_keras_pickle_payload(cls, payload):
-        """Check whether a pickle payload contains embedded Keras bytes."""
-        return (
-            isinstance(payload, dict)
-            and payload.get('phygnn_pickle_format') == KERAS_PICKLE_FORMAT
-            and 'model_params' in payload
-            and 'keras_model_bytes' in payload
-        )
 
     @classmethod
     def _normalize_model_params(cls, model_params):
@@ -601,16 +584,6 @@ class CustomNetwork(ABC):
         }
         return cls(**model_params)
 
-    @classmethod
-    def _load_legacy_model(cls, payload, path):
-        """Load a legacy single-file pickle model."""
-        model_params = cls._normalize_model_params(payload)
-        logger.info(
-            'Loading legacy CustomNetwork pickle without embedded Keras '
-            'model bytes: {}'.format(path)
-        )
-        return cls._init_model_from_params(model_params)
-
     @staticmethod
     def _serialize_keras_model(keras_model):
         """Serialize a Keras model to bytes using the native Keras format."""
@@ -632,6 +605,38 @@ class CustomNetwork(ABC):
             )
 
     @classmethod
+    def _check_layer_count(cls, ordered_layers, model_params):
+        """Warn if the loaded layer count does not match what the saved
+        hidden_layers config would build.
+
+        Parameters
+        ----------
+        ordered_layers : list
+            Non-input layers extracted from the loaded Keras model.
+        model_params : dict
+            Deserialized model parameters from the pickle payload.
+        """
+        layers_kwargs = {
+            k: v
+            for k, v in model_params.items()
+            if k in signature(Layers).parameters
+        }
+        reference = Layers(**layers_kwargs)
+        ref_non_input = [
+            layer
+            for layer in reference.layers
+            if not isinstance(layer, tf.keras.layers.InputLayer)
+        ]
+        if len(ref_non_input) != len(ordered_layers):
+            e = (
+                'Loaded model has {} layers but the saved hidden_layers '
+                'config builds {} layers. Model did not load '
+                'correctly.'.format(len(ordered_layers), len(ref_non_input))
+            )
+            logger.error(e)
+            raise RuntimeError(e)
+
+    @classmethod
     def _load_keras_pickle_model(cls, payload):
         """Load a pickle payload with embedded Keras model bytes."""
         model_params = cls._normalize_model_params(payload['model_params'])
@@ -640,15 +645,14 @@ class CustomNetwork(ABC):
         )
 
         ordered_layers = cls._get_non_input_layers(loaded_keras_model)
+        cls._check_layer_count(ordered_layers, model_params)
 
-        layers_obj = Layers.from_layers(
-            ordered_layers,
-            n_features=model_params.get('n_features'),
-            n_labels=model_params.get('n_labels', 1),
-            hidden_layers=model_params.get('hidden_layers'),
-            input_layer=model_params.get('input_layer'),
-            output_layer=model_params.get('output_layer'),
-        )
+        layers_kwargs = {
+            k: v
+            for k, v in model_params.items()
+            if k in signature(Layers.from_layers).parameters
+        }
+        layers_obj = Layers.from_layers(ordered_layers, **layers_kwargs)
         model_params['layers_obj'] = layers_obj
 
         return cls._init_model_from_params(model_params)
@@ -712,7 +716,7 @@ class CustomNetwork(ABC):
         # emit a spurious "not yet built" warning when serializing.
         wrapper_model.built = bool(wrapper_model.weights)
         if not wrapper_model.built:
-            msg = 'Saving model {} with unbuilt Keras wrapper'.format(
+            msg = 'Saving model "{}" with unbuilt Keras wrapper.'.format(
                 model.name
             )
             logger.warning(msg)
