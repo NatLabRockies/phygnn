@@ -1336,9 +1336,10 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         self.layers = [
             transformer_cls(
                 **transformer_kwargs,
+                features=[feat],
                 attn_kwargs=attn_kwargs,
             )
-            for _ in self.features
+            for feat in self.features
         ]
 
     def call(self, x, hi_res_features=None, exo_data=None):
