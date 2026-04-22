@@ -154,7 +154,7 @@ class FlexiblePadding(tf.keras.layers.Layer):
 class PatchLayer(tf.keras.layers.Layer):
     """Layer with patchification functionality."""
 
-    def __init__(self, name=None, patch_size=1):
+    def __init__(self, name=None, patch_size=1, **kwargs):
         """Initialize the PatchLayer layer.
 
         Parameters
@@ -164,8 +164,11 @@ class PatchLayer(tf.keras.layers.Layer):
         patch_size : int
             Height, width, and depth of tokens. Default is 1 for pixel-wise
             tokenization.
+        **kwargs : dict
+            Additional keyword arguments passed to
+            ``tf.keras.layers.Layer``.
         """
-        super().__init__(name=name)
+        super().__init__(name=name, **kwargs)
         self.patch_size = patch_size
         self.rank = None
 
@@ -289,7 +292,7 @@ class PatchLayer(tf.keras.layers.Layer):
 class Embedder(PatchLayer):
     """Embedding layer."""
 
-    def __init__(self, name=None, patch_size=1, embed_dim=64):
+    def __init__(self, name=None, patch_size=1, embed_dim=64, **kwargs):
         """Initialize the Embedding layer.
 
         Parameters
@@ -302,8 +305,11 @@ class Embedder(PatchLayer):
         embed_dim : int
             Dimension of the embedding. This determines the size of the output
             tokens after tokenization. Default is 64.
+        **kwargs : dict
+            Additional keyword arguments passed to the
+            :class:`PatchLayer` base class.
         """
-        super().__init__(name=name, patch_size=patch_size)
+        super().__init__(name=name, patch_size=patch_size, **kwargs)
         self.embed_layer = None
         self.embed_dim = embed_dim
         self.rank = None
@@ -316,7 +322,6 @@ class Embedder(PatchLayer):
         input_shape : tuple
             Shape tuple of the input tensor
         """
-        super().build(input_shape)
         if self.patch_size > 1:
             kwargs = {
                 'kernel_size': [self.patch_size] * (self.rank - 2),
@@ -333,7 +338,7 @@ class Embedder(PatchLayer):
             self.embed_layer = tf.keras.layers.Dense(
                 self.embed_dim, use_bias=False
             )
-        self.embed_layer.build(input_shape)
+        super().build(input_shape)
 
     def call(self, x):
         """Embed inputs for attention blocks.
@@ -375,6 +380,7 @@ class PositionEncoder(PatchLayer):
         max_period_spatial=2,
         min_period_temporal=1,
         max_period_temporal=864000,
+        **kwargs,
     ):
         """Initialize the PositionEncoder layer.
 
@@ -405,8 +411,11 @@ class PositionEncoder(PatchLayer):
             Maximum period in seconds for the positional encoding. This is
             typically set to a value like 864000 to ensure that the positional
             encoding captures low frequency information.
+        **kwargs : dict
+            Additional keyword arguments passed to the
+            :class:`PatchLayer` base class.
         """
-        super().__init__(name=name, patch_size=patch_size)
+        super().__init__(name=name, patch_size=patch_size, **kwargs)
         self._pool_layer = None
         self.patch_size = patch_size
         self.embed_dim = embed_dim
@@ -576,7 +585,6 @@ class PositionEncoder(PatchLayer):
             if self.rank == 4
             else tf.keras.layers.AveragePooling3D(**kwargs)
         )
-        self._pool_layer.build(input_shape)
 
     def call(self, x, lat, lon, time=None):
         """Get positional encoding for attention blocks.
@@ -803,51 +811,39 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.attn_kwargs = attn_kwargs
+        self.attn = None
+        self.lq = None
+        self.lk = None
+        self.lv = None
+        self.lo = None
+        self.mlp = None
 
+    def build(self, input_shape):
+        """Build all sub-layers."""
         self.attn = MultiHeadAttention(
-            num_heads=num_heads, key_dim=key_dim, **(attn_kwargs or {})
+            num_heads=self.num_heads,
+            key_dim=self.key_dim,
+            **(self.attn_kwargs or {}),
         )
         self.lq = tf.keras.layers.LayerNormalization()
         self.lk = tf.keras.layers.LayerNormalization()
         self.lv = tf.keras.layers.LayerNormalization()
         self.lo = tf.keras.layers.LayerNormalization()
-
-        self._mlp_layers = [
-            tf.keras.layers.Dense(key_dim, activation='relu'),
-            tf.keras.layers.Dense(key_dim),
-        ]
-
-    def build(self, input_shape):
-        """Build all sub-layers. input_shape is the query shape (or a list of
-        shapes for multi-input calls: [query_shape, key_shape, value_shape])."""
-        if (
-            isinstance(input_shape, (list, tuple))
-            and len(input_shape) > 0
-            and isinstance(input_shape[0], (list, tuple))
-        ):
-            query_shape = input_shape[0]
-        else:
-            query_shape = input_shape
-        self.lq.build(query_shape)
-        self.lk.build(query_shape)
-        self.lv.build(query_shape)
-        self.lo.build(query_shape)
-        self._mlp_layers[0].build(query_shape)
-        self._mlp_layers[1].build(tuple(query_shape[:-1]) + (self.key_dim,))
-        # MultiHeadAttention is lazily built inside call() by default; build
-        # it explicitly here so all weights exist before the first @tf.function
-        # trace.  query and value/key have the same shape after LayerNorm.
-        self.attn.build(query_shape, query_shape)
+        self.mlp = tf.keras.Sequential([
+            tf.keras.layers.Dense(self.key_dim, activation='relu'),
+            tf.keras.layers.Dense(self.key_dim),
+        ])
         super().build(input_shape)
-
-    def mlp(self, x):
-        """Pass input through MLP layers."""
-        for layer in self._mlp_layers:
-            x = layer(x)
-        return x
 
     def call(self, query, key, value, bias=None):
         """Call transformer layer with multi-head attention output.
+
+        Note
+        ----
+        The order of layers follows Swin Transformer style with pre-attention
+        and pre-MLP layer normalization and a skip connection around the
+        attention and MLP blocks together. The attention output is added to
+        the input before passing through the MLP.
 
         Parameters
         ----------
@@ -867,7 +863,7 @@ class TransformerLayer(tf.keras.layers.Layer):
         v = self.lv(value)
         attn = self.attn(query=q, key=k, value=v, bias=bias)
         out = self.lo(query + attn)
-        return query + self.mlp(out)
+        return q + self.mlp(out)
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -945,30 +941,20 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.features = features or []
         self.exo_features = exo_features or []
         self.rank = None
-        self.final_proj = None
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.embed_dim = embed_dim
-        self.eq = Embedder(embed_dim=embed_dim)
-        self.ek = Embedder(embed_dim=embed_dim)
-        self.ev = Embedder(embed_dim=embed_dim)
         self.min_period_spatial = min_period_spatial
         self.max_period_spatial = max_period_spatial
         self.min_period_temporal = min_period_temporal
         self.max_period_temporal = max_period_temporal
         self.attn_kwargs = attn_kwargs
-        self.pe = PositionEncoder(
-            embed_dim=embed_dim,
-            min_period_spatial=min_period_spatial,
-            max_period_spatial=max_period_spatial,
-            min_period_temporal=min_period_temporal,
-            max_period_temporal=max_period_temporal,
-        )
-        self.transformer = TransformerLayer(
-            key_dim=key_dim,
-            num_heads=num_heads,
-            attn_kwargs=attn_kwargs,
-        )
+        self.eq = None
+        self.ek = None
+        self.ev = None
+        self.pe = None
+        self.tl = None
+        self.final_proj = None
 
     def build(self, input_shape):
         """Build the CrossAttentionBlock layer based on an input shape
@@ -978,6 +964,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         input_shape : tuple
             Shape tuple of the input tensor.
         """
+        super().build(input_shape)
         self.rank = len(input_shape)
         msg = (
             'Sup3rTransformerLayer input must be 4D or 5D, but received input '
@@ -987,18 +974,28 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             logger.error(msg)
             raise ValueError(msg)
 
+        self.eq = Embedder(embed_dim=self.embed_dim)
+        self.ek = Embedder(embed_dim=self.embed_dim)
+        self.ev = Embedder(embed_dim=self.embed_dim)
+        self.pe = PositionEncoder(
+            embed_dim=self.embed_dim,
+            min_period_spatial=self.min_period_spatial,
+            max_period_spatial=self.max_period_spatial,
+            min_period_temporal=self.min_period_temporal,
+            max_period_temporal=self.max_period_temporal,
+        )
+        self.tl = TransformerLayer(
+            key_dim=self.key_dim,
+            num_heads=self.num_heads,
+            attn_kwargs=self.attn_kwargs,
+        )
+
+        # final projection layer to project back to input feature space
         self.final_proj = tf.keras.layers.Dense(input_shape[-1])
-        # ek/ev embed hi_res_feature which has len(self.features) channels,
-        # which may differ from input_shape[-1] (the LR latent-space channels).
-        n_hi_res = len(self.features) if self.features else input_shape[-1]
-        hi_res_shape = tuple(input_shape[:-1]) + (n_hi_res,)
-        self.eq.build(input_shape)
-        self.ek.build(hi_res_shape)
-        self.ev.build(hi_res_shape)
-        self.pe.build(input_shape)
-        self.final_proj.build((None, None, self.embed_dim))
-        self.transformer.build((None, None, self.embed_dim))
-        super().build(input_shape)
+        dummy = tf.keras.Input(
+            shape=(None, self.embed_dim), dtype=self.compute_dtype
+        )
+        self.final_proj(dummy)
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -1017,24 +1014,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         })
         return config
 
-    def _transformer_layer(self, x_in, hr_in, lat, lon, time=None):
-        # embed query, key, and value inputs
-        q = self.eq(x_in)
-        k = self.ek(hr_in)
-        v = self.ev(hr_in)
-
-        # add positional encodings for query, key, and value inputs
-        q += self.pe(x_in, lat=lat, lon=lon, time=time)
-        k += self.pe(hr_in, lat=lat, lon=lon, time=time)
-        v += self.pe(hr_in, lat=lat, lon=lon, time=time)
-
-        out = self.transformer(query=q, key=k, value=v)
-        out = self.final_proj(out)
-        return tf.reshape(out, tf.shape(x_in))
-
     def _call(self, x, hi_res_feature, idx, lat, lon, time=None):
-        """Call attention layer for a single batch member. This is necessary to
-        handle different NaN patterns across batch members in the case of
+        """Call transformer layer for a single batch member. This is necessary
+        to handle different NaN patterns across batch members in the case of
         sparse observation data.
 
         Parameters
@@ -1058,7 +1040,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         Returns
         -------
         x : tf.Tensor
-            Output tensor of the attention block.
+            Output tensor of the transformer layer.
         """
         x_in = x[idx : idx + 1]
         hr_in = hi_res_feature[idx : idx + 1]
@@ -1069,7 +1051,23 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         if tf.math.reduce_all(tf.math.is_nan(hr_in)):
             return tf.squeeze(x_in, axis=0)
 
-        out = self._transformer_layer(x_in, hr_in, lat=lat, lon=lon, time=time)
+        # embed query, key, and value inputs
+        q = self.eq(x_in)
+        k = self.ek(hr_in)
+        v = self.ev(hr_in)
+
+        # add positional encodings for query, key, and value inputs
+        q += self.pe(x_in, lat=lat, lon=lon, time=time)
+        k += self.pe(hr_in, lat=lat, lon=lon, time=time)
+        v += self.pe(hr_in, lat=lat, lon=lon, time=time)
+
+        # apply transformer layer with cross attention
+        out = self.tl(query=q, key=k, value=v)
+
+        # project back to input feature space and reshape to input spatial
+        # shape
+        out = self.final_proj(out)
+        out = tf.reshape(out, tf.shape(x_in))
 
         tf.debugging.assert_all_finite(
             out, message='Attention output contains NaN or Inf values.'
@@ -1078,8 +1076,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         return tf.squeeze(out, axis=0)
 
     def call(self, x, hi_res_feature=None, exo_data=None):
-        """Call attention layer across batch dimension to handle different NaN
-        patterns in the case of sparse observation data.
+        """Call transformer layer across batch dimension to handle different
+        NaN patterns in the case of sparse observation data.
 
         Parameters
         ----------
@@ -1319,28 +1317,13 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         super().__init__(**kwargs)
         self.features = features or []
         self.exo_features = exo_features or []
-        transformer_kwargs = dict(transformer_kwargs or {})
-        transformer_kwargs.setdefault('num_heads', num_heads)
-        transformer_kwargs.setdefault('key_dim', key_dim)
-        transformer_kwargs.setdefault('embed_dim', embed_dim)
-
-        self._use_alibi = use_alibi
-        self._num_heads = num_heads
-        self._key_dim = key_dim
-        self._embed_dim = embed_dim
-        self._attn_kwargs = attn_kwargs
-        self._transformer_kwargs_orig = dict(transformer_kwargs or {})
-        transformer_cls = (
-            Sup3rTransformerLayerAlibi if use_alibi else Sup3rTransformerLayer
-        )
-        self.layers = [
-            transformer_cls(
-                **transformer_kwargs,
-                features=[feat],
-                attn_kwargs=attn_kwargs,
-            )
-            for feat in self.features
-        ]
+        self.transformer_kwargs = dict(transformer_kwargs or {})
+        self.use_alibi = use_alibi
+        self.num_heads = num_heads
+        self.key_dim = key_dim
+        self.embed_dim = embed_dim
+        self.attn_kwargs = attn_kwargs
+        self.layers = None
 
     def call(self, x, hi_res_features=None, exo_data=None):
         """Call the stack of transformer layers.
@@ -1385,8 +1368,22 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         input_shape : tuple
             Shape tuple of the input tensor.
         """
-        for layer in self.layers:
-            layer.build(input_shape)
+        transformer_cls = (
+            Sup3rTransformerLayerAlibi
+            if self.use_alibi
+            else Sup3rTransformerLayer
+        )
+        self.layers = [
+            transformer_cls(
+                num_heads=self.num_heads,
+                key_dim=self.key_dim,
+                embed_dim=self.embed_dim,
+                features=[feat],
+                attn_kwargs=self.attn_kwargs,
+                **self.transformer_kwargs,
+            )
+            for feat in self.features
+        ]
         super().build(input_shape)
 
     def get_config(self):
