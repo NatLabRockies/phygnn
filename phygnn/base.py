@@ -8,20 +8,14 @@ import os
 import pickle
 import pprint
 import random
-import tempfile
 from abc import ABC, abstractmethod
 from inspect import signature
-from warnings import warn
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.layers import LSTM, BatchNormalization, Dropout
 
-from phygnn.layers.custom_layers import (
-    SkipConnection,
-    get_custom_layer_objects,
-)
 from phygnn.layers.handlers import Layers
 from phygnn.utilities import VERSION_RECORD
 
@@ -491,8 +485,8 @@ class CustomNetwork(ABC):
         return y
 
     def save(self, fpath):
-        """Save phygnn model to a pickle file containing Keras-native model
-        bytes and framework metadata.
+        """Save phygnn model to a pickle file containing framework
+        metadata and the ordered layer graph.
 
         Parameters
         ----------
@@ -511,12 +505,9 @@ class CustomNetwork(ABC):
             os.makedirs(dirname)
 
         model_params = self._history_to_dict(self.model_params)
-        model_params.pop('layers_obj', None)
-
-        keras_model = self._get_keras_wrapper_model(self)
         payload = {
+            'phygnn_pickle_format': 'layers-pickle-v1',
             'model_params': model_params,
-            'keras_model_bytes': self._serialize_keras_model(keras_model),
         }
 
         with open(path, 'wb') as f:
@@ -553,7 +544,9 @@ class CustomNetwork(ABC):
 
         with open(path, 'rb') as f:
             payload = pickle.load(f)
-        model = cls._load_keras_pickle_model(payload)
+        cls._validate_checkpoint_payload(payload)
+        model_params = cls._normalize_model_params(payload['model_params'])
+        model = cls._init_model_from_params(model_params)
 
         logger.info(
             'Successfully initialized model from file: {}'.format(fpath)
@@ -584,144 +577,27 @@ class CustomNetwork(ABC):
         }
         return cls(**model_params)
 
-    @staticmethod
-    def _serialize_keras_model(keras_model):
-        """Serialize a Keras model to bytes using the native Keras format."""
-        with tempfile.TemporaryDirectory() as td:
-            model_path = os.path.join(td, 'model.keras')
-            keras_model.save(model_path)
-            with open(model_path, 'rb') as f:
-                return f.read()
+    @classmethod
+    def _validate_checkpoint_payload(cls, payload):
+        """Validate the direct-pickle checkpoint payload format."""
+        if not isinstance(payload, dict):
+            msg = 'Expected checkpoint payload to be a dict.'
+            logger.error(msg)
+            raise ValueError(msg)
 
-    @staticmethod
-    def _load_keras_model_from_bytes(model_bytes):
-        """Load a Keras model from serialized bytes."""
-        with tempfile.TemporaryDirectory() as td:
-            model_path = os.path.join(td, 'model.keras')
-            with open(model_path, 'wb') as f:
-                f.write(model_bytes)
-            return tf.keras.models.load_model(
-                model_path, custom_objects=get_custom_layer_objects()
+        fmt = payload.get('phygnn_pickle_format')
+        if fmt != 'layers-pickle-v1':
+            msg = (
+                'Unsupported phygnn checkpoint format: {}. Expected '
+                '"layers-pickle-v1".'.format(fmt)
             )
+            logger.error(msg)
+            raise ValueError(msg)
 
-    @classmethod
-    def _check_layer_count(cls, ordered_layers, model_params):
-        """Warn if the loaded layer count does not match what the saved
-        hidden_layers config would build.
-
-        Parameters
-        ----------
-        ordered_layers : list
-            Non-input layers extracted from the loaded Keras model.
-        model_params : dict
-            Deserialized model parameters from the pickle payload.
-        """
-        layers_kwargs = {
-            k: v
-            for k, v in model_params.items()
-            if k in signature(Layers).parameters
-        }
-        reference = Layers(**layers_kwargs)
-        ref_non_input = [
-            layer
-            for layer in reference.layers
-            if not isinstance(layer, tf.keras.layers.InputLayer)
-        ]
-        if len(ref_non_input) != len(ordered_layers):
-            e = (
-                'Loaded model has {} layers but the saved hidden_layers '
-                'config builds {} layers. Model did not load '
-                'correctly.'.format(len(ordered_layers), len(ref_non_input))
-            )
-            logger.error(e)
-            raise RuntimeError(e)
-
-    @classmethod
-    def _load_keras_pickle_model(cls, payload):
-        """Load a pickle payload with embedded Keras model bytes."""
-        model_params = cls._normalize_model_params(payload['model_params'])
-        loaded_keras_model = cls._load_keras_model_from_bytes(
-            payload['keras_model_bytes']
-        )
-
-        ordered_layers = cls._get_non_input_layers(loaded_keras_model)
-        cls._check_layer_count(ordered_layers, model_params)
-
-        layers_kwargs = {
-            k: v
-            for k, v in model_params.items()
-            if k in signature(Layers.from_layers).parameters
-        }
-        layers_obj = Layers.from_layers(ordered_layers, **layers_kwargs)
-        model_params['layers_obj'] = layers_obj
-
-        return cls._init_model_from_params(model_params)
-
-    @classmethod
-    def _get_non_input_layers(cls, model):
-        """Get model layers excluding any stored InputLayer wrapper."""
-        return [
-            layer
-            for layer in model.layers
-            if not isinstance(layer, tf.keras.layers.InputLayer)
-        ]
-
-    @staticmethod
-    def _skip_layer_serialization_name(base_name, occurrence):
-        """Return a unique name for the *occurrence*-th appearance of a
-        SkipConnection named *base_name* in the serialized layer list.
-
-        Even occurrences → ``_start`` (the caching half).
-        Odd  occurrences → ``_end``   (the combining half).
-        Pairs beyond the first get a numeric suffix: ``_start_1``, ``_end_1``.
-        """
-        suffix = '_start' if occurrence % 2 == 0 else '_end'
-        pair_idx = occurrence // 2
-        if pair_idx == 0:
-            return f'{base_name}{suffix}'
-        return f'{base_name}{suffix}_{pair_idx}'
-
-    @classmethod
-    def _get_keras_wrapper_model(cls, model):
-        """Build a Keras Sequential wrapper around the model's layers.
-
-        When the same ``SkipConnection`` instance appears more than once (the
-        normal runtime representation), Keras deduplicates them to a single
-        layer on ``save()`` / ``load()``.  To prevent that, each occurrence is
-        replaced with a new SkipConnection whose name has a ``_start`` /
-        ``_end`` suffix.  After loading,
-        :meth:`~phygnn.layers.handlers.Layers.relink_skip_connections`
-        strips the suffixes and restores the shared-instance invariant.
-
-        ``model._layers.skip_layers`` guarantees that each unique instance has
-        a unique name, so layer names are used as keys instead of object ids.
-        """
-        wrapper_model = tf.keras.Sequential(name=model.name)
-        skip_counts = {}  # base name -> occurrence count
-        for layer in cls._get_non_input_layers(model):
-            if isinstance(layer, SkipConnection):
-                count = skip_counts.get(layer.name, 0)
-                layer_name = cls._skip_layer_serialization_name(
-                    layer.name, count
-                )
-                skip_counts[layer.name] = count + 1
-                wrapper_model.add(
-                    SkipConnection(layer_name, method=layer._method)
-                )
-            else:
-                wrapper_model.add(layer)
-        # The constituent layers are already built from training (they
-        # have weights) even though the Sequential wrapper itself has
-        # never been called as a unit.  Mark it built so Keras does not
-        # emit a spurious "not yet built" warning when serializing.
-        wrapper_model.built = bool(wrapper_model.weights)
-        if not wrapper_model.built:
-            msg = 'Saving model "{}" with unbuilt Keras wrapper.'.format(
-                model.name
-            )
-            logger.warning(msg)
-            warn(msg)
-        return wrapper_model
+        if 'model_params' not in payload:
+            msg = 'Checkpoint payload missing required key "model_params".'
+            logger.error(msg)
+            raise ValueError(msg)
 
     @classmethod
     def _history_to_dict(cls, model_params):
