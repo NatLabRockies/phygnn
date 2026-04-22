@@ -5,7 +5,6 @@ Tensorflow Layers Handlers
 
 import copy
 import logging
-import re
 
 import tensorflow as tf
 from tensorflow.keras.layers import (
