@@ -2,6 +2,7 @@
 """
 Tensorflow Layers Handlers
 """
+
 import copy
 import logging
 
@@ -47,14 +48,16 @@ class HiddenLayers:
 
         if self._hidden_layers_kwargs is not None:
             self._hidden_layers_kwargs = self.parse_repeats(
-                self._hidden_layers_kwargs)
+                self._hidden_layers_kwargs
+            )
 
         for layer in self._hidden_layers_kwargs:
             self.add_layer(layer)
 
     def __repr__(self):
-        msg = "{} with {} hidden layers".format(self.__class__.__name__,
-                                                len(self))
+        msg = '{} with {} hidden layers'.format(
+            self.__class__.__name__, len(self)
+        )
 
         return msg
 
@@ -117,8 +120,10 @@ class HiddenLayers:
                     out += repeat
 
             elif 'repeat' in layer and 'n' not in layer:
-                msg = ('Keyword "repeat" was found in layer but "n" was not: '
-                       '{}'.format(layer))
+                msg = (
+                    'Keyword "repeat" was found in layer but "n" was not: '
+                    '{}'.format(layer)
+                )
                 raise KeyError(msg)
 
             else:
@@ -258,10 +263,13 @@ class HiddenLayers:
             Key word arguments to initialize the class.
         """
         layer_class = None
-        msg = ('Need layer "class" definition as string to retrieve '
-               'from phygnn.layers.custom_layers or from '
-               'tensorflow.keras.layers, but received: {} {}'
-               .format(type(class_name), class_name))
+        msg = (
+            'Need layer "class" definition as string to retrieve '
+            'from phygnn.layers.custom_layers or from '
+            'tensorflow.keras.layers, but received: {} {}'.format(
+                type(class_name), class_name
+            )
+        )
         assert isinstance(class_name, str), msg
 
         # prioritize phygnn custom classes
@@ -271,10 +279,11 @@ class HiddenLayers:
             layer_class = getattr(tf.keras.layers, class_name, None)
 
         if layer_class is None:
-            msg = ('Could not retrieve layer class "{}" from '
-                   'phygnn.layers.custom_layers or from '
-                   'tensorflow.keras.layers'
-                   .format(class_name))
+            msg = (
+                'Could not retrieve layer class "{}" from '
+                'phygnn.layers.custom_layers or from '
+                'tensorflow.keras.layers'.format(class_name)
+            )
             logger.error(msg)
             raise KeyError(msg)
 
@@ -374,8 +383,14 @@ class Layers(HiddenLayers):
     Class to handle TensorFlow layers
     """
 
-    def __init__(self, n_features, n_labels=1, hidden_layers=None,
-                 input_layer=None, output_layer=None):
+    def __init__(
+        self,
+        n_features,
+        n_labels=1,
+        hidden_layers=None,
+        input_layer=None,
+        output_layer=None,
+    ):
         """
         Parameters
         ----------
@@ -423,7 +438,8 @@ class Layers(HiddenLayers):
 
         if self._hidden_layers_kwargs is not None:
             self._hidden_layers_kwargs = self.parse_repeats(
-                self._hidden_layers_kwargs)
+                self._hidden_layers_kwargs
+            )
 
         self._add_input_layer()
 
@@ -437,18 +453,18 @@ class Layers(HiddenLayers):
         """Add an input layer, defaults to tf.layers.InputLayer"""
 
         if self.input_layer_kwargs is None:
-            self._layers = [InputLayer(input_shape=[self._n_features])]
+            self._layers = [InputLayer(shape=(self._n_features,))]
 
         elif self.input_layer_kwargs:
             if not isinstance(self.input_layer_kwargs, dict):
-                msg = ('Input layer spec needs to be a dict but received: {}'
-                       .format(type(self.input_layer_kwargs)))
+                msg = 'Input layer spec needs to be a dict but received: {}'
+                msg = msg.format(type(self.input_layer_kwargs))
                 raise TypeError(msg)
             self.add_layer(self.input_layer_kwargs)
 
     def _add_output_layer(self):
-        """Add an output layer, defaults to tf.layers.Dense without activation
-        """
+        """Add an output layer, defaults to tf.layers.Dense without
+        activation"""
 
         if self._output_layer_kwargs is None:
             self._layers.append(Dense(self._n_labels))
@@ -456,8 +472,10 @@ class Layers(HiddenLayers):
             if isinstance(self._output_layer_kwargs, dict):
                 self._output_layer_kwargs = [self._output_layer_kwargs]
             if not isinstance(self._output_layer_kwargs, list):
-                msg = ('Output layer spec needs to be a dict or list but '
-                       'received: {}'.format(type(self._output_layer_kwargs)))
+                msg = (
+                    'Output layer spec needs to be a dict or list but '
+                    'received: {}'.format(type(self._output_layer_kwargs))
+                )
                 raise TypeError(msg)
             for layer in self._output_layer_kwargs:
                 self.add_layer(layer)
@@ -489,8 +507,15 @@ class Layers(HiddenLayers):
         return self._output_layer_kwargs
 
     @classmethod
-    def compile(cls, model, n_features, n_labels=1, hidden_layers=None,
-                input_layer=None, output_layer=None):
+    def compile(
+        cls,
+        model,
+        n_features,
+        n_labels=1,
+        hidden_layers=None,
+        input_layer=None,
+        output_layer=None,
+    ):
         """
         Build all layers needed for model
 
@@ -533,10 +558,13 @@ class Layers(HiddenLayers):
         model : tensorflow.keras
             Model with layers added
         """
-        layers = cls(n_features, n_labels=n_labels,
-                     hidden_layers=hidden_layers,
-                     input_layer=input_layer,
-                     output_layer=output_layer)
+        layers = cls(
+            n_features,
+            n_labels=n_labels,
+            hidden_layers=hidden_layers,
+            input_layer=input_layer,
+            output_layer=output_layer,
+        )
         for layer in layers:
             model.add(layer)
 

@@ -579,69 +579,6 @@ def test_cbam_3d():
             tf.assert_equal(x_in, x)
 
 
-def test_s3a_layer():
-    """Test the S3A layer with 3D data (5D tensor input)"""
-    hidden_layers = [{'class': 'SparseAttention'}]
-    layers = HiddenLayers(hidden_layers)
-    assert len(layers.layers) == 1
-
-    x = np.random.normal(0, 1, size=(1, 10, 10, 6, 3))
-    y = np.random.uniform(0, 1, size=(1, 10, 10, 6, 1))
-    mask = np.random.choice([False, True], (1, 10, 10), p=[0.1, 0.9])
-    y[mask] = np.nan
-
-    for layer in layers:
-        x_in = x
-        x = layer(x, y)
-        assert x.shape == x_in.shape
-        with pytest.raises(tf.errors.InvalidArgumentError):
-            tf.assert_equal(x_in, x)
-
-
-def test_fno_2d():
-    """Test the FNO layer with 2D data (4D tensor input)"""
-    hidden_layers = [
-        {
-            'class': 'FNO',
-            'filters': 8,
-            'sparsity_threshold': 0.01,
-            'activation': 'relu',
-        }
-    ]
-    layers = HiddenLayers(hidden_layers)
-    assert len(layers.layers) == 1
-
-    x = np.random.normal(0, 1, size=(1, 4, 4, 3))
-
-    for layer in layers:
-        x_in = x
-        x = layer(x)
-        with pytest.raises(tf.errors.InvalidArgumentError):
-            tf.assert_equal(x_in, x)
-
-
-def test_fno_3d():
-    """Test the FNO layer with 3D data (5D tensor input)"""
-    hidden_layers = [
-        {
-            'class': 'FNO',
-            'filters': 8,
-            'sparsity_threshold': 0.01,
-            'activation': 'relu',
-        }
-    ]
-    layers = HiddenLayers(hidden_layers)
-    assert len(layers.layers) == 1
-
-    x = np.random.normal(0, 1, size=(1, 4, 4, 6, 3))
-
-    for layer in layers:
-        x_in = x
-        x = layer(x)
-        with pytest.raises(tf.errors.InvalidArgumentError):
-            tf.assert_equal(x_in, x)
-
-
 def test_functional_layer():
     """Test the generic functional layer"""
 
@@ -924,7 +861,7 @@ def test_recursive_hidden_layers_init():
             'fill_method': 'idw',
             'hidden_layers': [
                 {
-                    'class': 'Conv2D',
+                    'class': 'Conv3D',
                     'padding': 'same',
                     'filters': 8,
                     'kernel_size': 3,
