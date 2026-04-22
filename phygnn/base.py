@@ -485,13 +485,12 @@ class CustomNetwork(ABC):
         return y
 
     def save(self, fpath):
-        """Save phygnn model to a pickle file containing framework
-        metadata and the ordered layer graph.
+        """Save phygnn model to pickle file.
 
         Parameters
         ----------
         fpath : str
-            File path to `.pkl` file to save model to.
+            File path to .pkl file to save model to.
         """
 
         if not fpath.endswith('.pkl'):
@@ -499,30 +498,25 @@ class CustomNetwork(ABC):
             logger.error(e)
             raise ValueError(e)
 
-        path = os.path.abspath(fpath)
-        dirname = os.path.dirname(path)
+        dirname = os.path.dirname(fpath)
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
 
         model_params = self._history_to_dict(self.model_params)
-        payload = {
-            'phygnn_pickle_format': 'layers-pickle-v1',
-            'model_params': model_params,
-        }
 
-        with open(path, 'wb') as f:
-            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(fpath, 'wb') as f:
+            pickle.dump(model_params, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        logger.info('Saved model to: {}'.format(path))
+        logger.info('Saved model to: {}'.format(fpath))
 
     @classmethod
     def load(cls, fpath):
-        """Load a phygnn model from a pickle file.
+        """Load a phygnn model that has been saved to a pickle file.
 
         Parameters
         ----------
         fpath : str
-            File path to `.pkl` model file.
+            File path to .pkl file to load model from.
 
         Returns
         -------
@@ -532,72 +526,34 @@ class CustomNetwork(ABC):
 
         logger.info('Loading saved model: {}'.format(fpath))
 
-        path = os.path.abspath(fpath)
-        if not os.path.exists(path):
-            e = 'Could not load file, does not exist: {}'.format(path)
+        if not os.path.exists(fpath):
+            e = 'Could not load file, does not exist: {}'.format(fpath)
             logger.error(e)
             raise FileNotFoundError(e)
-        if not os.path.isfile(path) or not path.endswith('.pkl'):
-            e = 'Can only load model from .pkl file: {}'.format(path)
+
+        if not fpath.endswith('.pkl'):
+            e = 'Can only load model from .pkl file!'
             logger.error(e)
             raise ValueError(e)
 
-        with open(path, 'rb') as f:
-            payload = pickle.load(f)
-        cls._validate_checkpoint_payload(payload)
-        model_params = cls._normalize_model_params(payload['model_params'])
-        model = cls._init_model_from_params(model_params)
+        with open(fpath, 'rb') as f:
+            model_params = pickle.load(f)
+            model_params = cls._history_to_df(model_params)
 
-        logger.info(
-            'Successfully initialized model from file: {}'.format(fpath)
-        )
-
-        return model
-
-    @classmethod
-    def _normalize_model_params(cls, model_params):
-        """Normalize serialized model parameters before initialization."""
-        model_params = cls._history_to_df(model_params)
         if 'version_record' in model_params:
             version_record = model_params.pop('version_record')
-            logger.info(
-                'Loading model from disk that was created with the '
-                'following package versions: \n{}'.format(
-                    pprint.pformat(version_record, indent=4)
-                )
-            )
-        return model_params
+            logger.info('Loading model from disk that was created with the '
+                        'following package versions: \n{}'
+                        .format(pprint.pformat(version_record, indent=4)))
 
-    @classmethod
-    def _init_model_from_params(cls, model_params):
-        """Initialize a model instance from serialized constructor args."""
         sig = signature(cls)
-        model_params = {
-            k: v for k, v in model_params.items() if k in sig.parameters
-        }
-        return cls(**model_params)
+        model_params = {k: v for k, v in model_params.items()
+                        if k in sig.parameters}
+        model = cls(**model_params)
+        logger.info('Successfully initialized model from file: {}'
+                    .format(fpath))
 
-    @classmethod
-    def _validate_checkpoint_payload(cls, payload):
-        """Validate the direct-pickle checkpoint payload format."""
-        if not isinstance(payload, dict):
-            msg = 'Expected checkpoint payload to be a dict.'
-            logger.error(msg)
-            raise ValueError(msg)
-
-        fmt = payload.get('phygnn_pickle_format')
-        if fmt != 'layers-pickle-v1':
-            msg = (
-                'Unsupported phygnn checkpoint format: {}. Expected '
-                '"layers-pickle-v1".'.format(fmt)
-            )
-            logger.error(msg)
-            raise ValueError(msg)
-
-        if 'model_params' not in payload:
-            msg = 'Checkpoint payload missing required key "model_params".'
-            logger.error(msg)
-            raise ValueError(msg)
+        return model
 
     @classmethod
     def _history_to_dict(cls, model_params):
