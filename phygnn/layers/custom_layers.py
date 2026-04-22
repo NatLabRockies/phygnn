@@ -201,7 +201,6 @@ class PatchLayer(tf.keras.layers.Layer):
             )
             logger.error(msg)
             raise ValueError(msg)
-        super().build(input_shape)
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -338,7 +337,7 @@ class Embedder(PatchLayer):
             self.embed_layer = tf.keras.layers.Dense(
                 self.embed_dim, use_bias=False
             )
-        super().build(input_shape)
+        self.embed_layer.build(input_shape)
 
     def call(self, x):
         """Embed inputs for attention blocks.
@@ -574,7 +573,6 @@ class PositionEncoder(PatchLayer):
         input_shape : tuple
             Shape tuple of the input tensor
         """
-        super().build(input_shape)
         kwargs = {
             'pool_size': self.patch_size,
             'strides': self.patch_size,
@@ -833,7 +831,13 @@ class TransformerLayer(tf.keras.layers.Layer):
             tf.keras.layers.Dense(self.key_dim, activation='relu'),
             tf.keras.layers.Dense(self.key_dim),
         ])
-        super().build(input_shape)
+        q_shape, k_shape, v_shape = input_shape
+        self.attn.build(q_shape, k_shape, v_shape)
+        self.lq.build(q_shape)
+        self.lk.build(k_shape)
+        self.lv.build(v_shape)
+        self.lo.build(q_shape)
+        self.mlp.build(q_shape)
 
     def call(self, query, key, value, bias=None):
         """Call transformer layer with multi-head attention output.
@@ -989,10 +993,19 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             num_heads=self.num_heads,
             attn_kwargs=self.attn_kwargs,
         )
-
+        q_shape, v_shape = (
+            input_shape
+            if all(isinstance(elem, tuple) for elem in input_shape)
+            else (input_shape, (*input_shape[:-1], len(self.features)))
+        )
+        embed_shape = (None, None, self.embed_dim)
         # final projection layer to project back to input feature space
-        self.final_proj = tf.keras.layers.Dense(input_shape[-1])
-        self.final_proj.build((None, None, self.embed_dim))
+        self.final_proj = tf.keras.layers.Dense(q_shape[-1])
+        self.eq.build(q_shape)
+        self.ek.build(v_shape)
+        self.ev.build(v_shape)
+        self.tl.build((embed_shape, embed_shape, embed_shape))
+        self.final_proj.build(embed_shape)
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -1048,29 +1061,30 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         if tf.math.reduce_all(tf.math.is_nan(hr_in)):
             return tf.squeeze(x_in, axis=0)
 
-        # embed query, key, and value inputs
-        q = self.eq(x_in)
-        k = self.ek(hr_in)
-        v = self.ev(hr_in)
-
-        # add positional encodings for query, key, and value inputs
-        q += self.pe(x_in, lat=lat, lon=lon, time=time)
-        k += self.pe(hr_in, lat=lat, lon=lon, time=time)
-        v += self.pe(hr_in, lat=lat, lon=lon, time=time)
-
-        # apply transformer layer with cross attention
-        out = self.tl(query=q, key=k, value=v)
-
-        # project back to input feature space and reshape to input spatial
-        # shape
-        out = self.final_proj(out)
-        out = tf.reshape(out, tf.shape(x_in))
+        out = self._transformer_layer(
+            x_in, hr_in, lat=lat, lon=lon, time=time
+        )
 
         tf.debugging.assert_all_finite(
             out, message='Attention output contains NaN or Inf values.'
         )
 
         return tf.squeeze(out, axis=0)
+
+    def _transformer_layer(self, x_in, hr_in, lat, lon, time=None):
+        """Run the base transformer attention path for one batch member."""
+
+        q = self.eq(x_in)
+        k = self.ek(hr_in)
+        v = self.ev(hr_in)
+
+        q += self.pe(x_in, lat=lat, lon=lon, time=time)
+        k += self.pe(hr_in, lat=lat, lon=lon, time=time)
+        v += self.pe(hr_in, lat=lat, lon=lon, time=time)
+
+        out = self.tl(query=q, key=k, value=v)
+        out = self.final_proj(out)
+        return tf.reshape(out, tf.shape(x_in))
 
     def call(self, x, hi_res_feature=None, exo_data=None):
         """Call transformer layer across batch dimension to handle different
@@ -1248,7 +1262,7 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
 
         # use locality bias instead of positional encodings
         bias = self.get_locality_bias(x_in, hr_in, lat=lat, lon=lon, time=time)
-        out = self.transformer(query=q, key=k, value=v, bias=bias)
+        out = self.tl(query=q, key=k, value=v, bias=bias)
         out = self.final_proj(out)
         return tf.reshape(out, tf.shape(x_in))
 
@@ -1381,7 +1395,8 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             )
             for feat in self.features
         ]
-        super().build(input_shape)
+        for layer in self.layers:
+            layer.build(input_shape)
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -3047,8 +3062,6 @@ class UnitConversion(tf.keras.layers.Layer):
             assert len(self.scalar) == input_shape[-1], msg
 
         self.scalar = tf.convert_to_tensor(self.scalar, dtype=tf.float32)
-
-        super().build(input_shape)
 
     def call(self, x):
         """Convert units
