@@ -16,8 +16,22 @@ def get_custom_layer_objects():
     return {
         name: obj
         for name, obj in globals().items()
-        if isinstance(obj, type) and issubclass(obj, tf.keras.layers.Layer)
+        if isinstance(obj, type)
+        and issubclass(obj, tf.keras.layers.Layer)
+        and obj.__module__ == __name__
     }
+
+
+def _register_custom_layer_objects():
+    """Register local custom layers in Keras' global object registry."""
+    registry = tf.keras.utils.get_custom_objects()
+    register = getattr(tf.keras.utils, 'register_keras_serializable', None)
+
+    for name, obj in get_custom_layer_objects().items():
+        if register is not None:
+            register(package='phygnn', name=name)(obj)
+        registry[name] = obj
+        registry[f'phygnn>{name}'] = obj
 
 
 class FlexiblePadding(tf.keras.layers.Layer):
@@ -1809,3 +1823,6 @@ class UnitConversion(tf.keras.layers.Layer):
             }
         )
         return config
+
+
+_register_custom_layer_objects()
