@@ -123,6 +123,7 @@ class FlexiblePadding(tf.keras.layers.Layer):
             )
         return tf.TensorShape(output_shape)
 
+    @tf.function
     def call(self, x):
         """Calls the padding routine
 
@@ -339,6 +340,7 @@ class Embedder(PatchLayer):
             )
         self.embed_layer.build(input_shape)
 
+    @tf.function
     def call(self, x):
         """Embed inputs for attention blocks.
 
@@ -584,6 +586,7 @@ class PositionEncoder(PatchLayer):
             else tf.keras.layers.AveragePooling3D(**kwargs)
         )
 
+    @tf.function
     def call(self, x, lat, lon, time=None):
         """Get positional encoding for attention blocks.
 
@@ -649,6 +652,7 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         output = layer(query, value, bias=my_bias)
     """
 
+    @tf.function
     def call(
         self,
         query,
@@ -839,6 +843,7 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.lo.build(q_shape)
         self.mlp.build(q_shape)
 
+    @tf.function
     def call(self, query, key, value, bias=None):
         """Call transformer layer with multi-head attention output.
 
@@ -1086,6 +1091,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         out = self.final_proj(out)
         return tf.reshape(out, tf.shape(x_in))
 
+    @tf.function
     def call(self, x, hi_res_feature=None, exo_data=None):
         """Call transformer layer across batch dimension to handle different
         NaN patterns in the case of sparse observation data.
@@ -1154,16 +1160,7 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
         super().__init__(*args, **kwargs)
         self.sigma = sigma
         self.trainable = trainable
-
-        # Compute head slopes for the ALiBi bias based on the number of
-        # attention heads. This follows the approach from the ALiBi paper to
-        # give each head a different slope for the distance-based bias.
-        x = 2 ** (8 / self.num_heads)
-        slopes = np.array(
-            [1 / (x ** (i + 1)) for i in range(self.num_heads)],
-            dtype=np.float32,
-        ).reshape(1, self.num_heads, 1, 1)
-        self.head_slopes = tf.constant(slopes, dtype=tf.float32)
+        self.head_slopes = None
 
     def get_config(self):
         """Implementation of get_config method from tf.keras.layers.Layer for
@@ -1195,6 +1192,21 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
             trainable=self.trainable,
             dtype=tf.float32,
             initializer=tf.keras.initializers.Constant(self.sigma),
+        )
+        # Compute head slopes for the ALiBi bias based on the number of
+        # attention heads. This follows the approach from the ALiBi paper to
+        # give each head a different slope for the distance-based bias.
+        x = 2 ** (8 / self.num_heads)
+        slopes = np.array(
+            [1 / (x ** (i + 1)) for i in range(self.num_heads)],
+            dtype=np.float32,
+        ).reshape(1, self.num_heads, 1, 1)
+        self.head_slopes = self.add_weight(
+            name='head_slopes',
+            shape=slopes.shape,
+            trainable=False,
+            dtype=tf.float32,
+            initializer=tf.keras.initializers.Constant(slopes),
         )
 
     def get_locality_bias(self, x, hi_res_feature, lat, lon, time=None):
@@ -1336,6 +1348,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         self.attn_kwargs = attn_kwargs
         self.layers = None
 
+    @tf.function
     def call(self, x, hi_res_features=None, exo_data=None):
         """Call the stack of transformer layers.
 
@@ -1430,6 +1443,7 @@ class ExpandDims(tf.keras.layers.Layer):
         super().__init__(**kwargs)
         self._axis = axis
 
+    @tf.function
     def call(self, x):
         """Calls the expand dims operation
 
@@ -1468,6 +1482,7 @@ class TileLayer(tf.keras.layers.Layer):
         self._multiples = tuple(int(value) for value in multiples)
         self._mult = tf.constant(self._multiples, tf.int32)
 
+    @tf.function
     def call(self, x):
         """Calls the tile operation
 
@@ -1597,6 +1612,7 @@ class GaussianAveragePooling2D(tf.keras.layers.Layer):
         })
         return config
 
+    @tf.function
     def call(self, x):
         """Operates on x with the specified function
 
@@ -1671,6 +1687,7 @@ class GaussianNoiseAxis(tf.keras.layers.Layer):
         """
         self.rank = len(input_shape)
 
+    @tf.function
     def call(self, x):
         """Calls the tile operation
 
@@ -1738,6 +1755,7 @@ class FlattenAxis(tf.keras.layers.Layer):
         )
         assert len(input_shape) == 5, msg
 
+    @tf.function
     def call(self, x):
         """Calls the flatten axis operation
 
@@ -1847,6 +1865,7 @@ class SpatialExpansion(tf.keras.layers.Layer):
 
         return out
 
+    @tf.function
     def call(self, x):
         """Call the custom SpatialExpansion layer
 
@@ -2049,6 +2068,7 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
 
         return tf.stack(out, axis=3)
 
+    @tf.function
     def call(self, x):
         """Call the custom SpatioTemporalExpansion layer
 
@@ -2215,6 +2235,7 @@ class SqueezeAndExcitation(tf.keras.layers.Layer):
             tf.keras.layers.Multiply(),
         ]
 
+    @tf.function
     def call(self, x):
         """Call the custom SqueezeAndExcitation layer
 
@@ -2302,6 +2323,7 @@ class MaskedSqueezeAndExcitation(tf.keras.layers.Layer):
             tf.keras.layers.Multiply(),
         ]
 
+    @tf.function
     def call(self, x, y):
         """Call the custom SqueezeAndExcitation layer
 
@@ -2494,6 +2516,7 @@ class CBAM(tf.keras.layers.Layer):
 
         return x
 
+    @tf.function
     def call(self, x):
         """Call the full CBAM block
 
@@ -2535,6 +2558,7 @@ class Sup3rAdder(tf.keras.layers.Layer):
         super().__init__(name=name, **kwargs)
 
     @staticmethod
+    @tf.function
     def call(x, hi_res_adder):
         """Adds hi-resolution data to the input tensor x in the middle of a
         sup3r resolution network.
@@ -2601,6 +2625,7 @@ class Sup3rConcatObs(tf.keras.layers.Layer):
         })
         return config
 
+    @tf.function
     def call(self, x, hi_res_feature=None):
         """Combine the first channel of x and the non-nan data in
         hi_res_feature and concatenate with x.
@@ -2733,6 +2758,7 @@ class Sup3rObsModel(tf.keras.layers.Layer):
         """
         self.rank = len(input_shape)
 
+    @tf.function
     def call(self, x, hi_res_feature=None, exo_data=None):
         """Apply the embed net to hi_res_feature, exogenous data, and the
         mask representing where hi_res_feature is not nan. Concatenate the
@@ -2803,6 +2829,7 @@ class Sup3rConcat(tf.keras.layers.Layer):
         super().__init__(name=name, **kwargs)
 
     @staticmethod
+    @tf.function
     def call(x, hi_res_feature):
         """Concatenates a hi-resolution feature to the input tensor x in the
         middle of a sup3r resolution network.
@@ -2853,6 +2880,7 @@ class FunctionalLayer(tf.keras.layers.Layer):
         self.value = value
         self.fun = getattr(tf.keras.layers, self._function_name)
 
+    @tf.function
     def call(self, x):
         """Operates on x with the specified function
 
@@ -2884,6 +2912,7 @@ class SigLin(tf.keras.layers.Layer):
     """
 
     @staticmethod
+    @tf.function
     def call(x):
         """Operates on x with SigLin
 
@@ -2956,6 +2985,7 @@ class LogTransform(tf.keras.layers.Layer):
             return tf.math.log(x + self.adder) * self.scalar
         return tf.math.exp(x / self.scalar) - self.adder
 
+    @tf.function
     def call(self, x):
         """Operates on x with (inverse) log transform
 
@@ -3063,6 +3093,7 @@ class UnitConversion(tf.keras.layers.Layer):
 
         self.scalar = tf.convert_to_tensor(self.scalar, dtype=tf.float32)
 
+    @tf.function
     def call(self, x):
         """Convert units
 
