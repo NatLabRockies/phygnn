@@ -992,10 +992,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         # final projection layer to project back to input feature space
         self.final_proj = tf.keras.layers.Dense(input_shape[-1])
-        dummy = tf.keras.Input(
-            shape=(None, self.embed_dim), dtype=self.compute_dtype
-        )
-        self.final_proj(dummy)
+        self.final_proj.build((None, None, self.embed_dim))
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -1392,12 +1389,12 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         config.update({
             'features': self.features,
             'exo_features': self.exo_features,
-            'num_heads': self._num_heads,
-            'key_dim': self._key_dim,
-            'embed_dim': self._embed_dim,
-            'use_alibi': self._use_alibi,
-            'transformer_kwargs': self._transformer_kwargs_orig,
-            'attn_kwargs': self._attn_kwargs,
+            'num_heads': self.num_heads,
+            'key_dim': self.key_dim,
+            'embed_dim': self.embed_dim,
+            'use_alibi': self.use_alibi,
+            'transformer_kwargs': self.transformer_kwargs,
+            'attn_kwargs': self.attn_kwargs,
         })
         return config
 
