@@ -256,6 +256,34 @@ def test_bias_regularization():
     assert np.abs(model_l2.bias_reg_term - 1) < 5
 
 
+def test_calc_loss_uses_float32_accumulation_for_bfloat16():
+    """Scalar phygnn losses should accumulate in float32."""
+    model = PhysicsGuidedNeuralNetwork.__new__(PhysicsGuidedNeuralNetwork)
+    model._loss_weights = (1.0, 1.0)
+    model._metric_fun = (
+        lambda y_true, y_predicted: tf.reduce_mean(
+            tf.cast(tf.abs(y_true - y_predicted), tf.bfloat16)
+        )
+    )
+    model._p_fun = (
+        lambda _model, _y_true, y_predicted, _p, **_kwargs: tf.reduce_mean(
+            tf.cast(y_predicted + 2.0, tf.bfloat16)
+        )
+    )
+    model.kernel_reg_rate = 0.0
+    model.bias_reg_rate = 0.0
+
+    y_true = tf.ones((2, 1), dtype=tf.bfloat16)
+    y_predicted = tf.zeros((2, 1), dtype=tf.bfloat16)
+
+    loss, nn_loss, p_loss = model.calc_loss(y_true, y_predicted, p=None)
+
+    assert loss.dtype == tf.float32
+    assert nn_loss.dtype == tf.float32
+    assert p_loss.dtype == tf.float32
+    assert loss.numpy() == pytest.approx(3.0)
+
+
 def test_save_load():
     """Test the save/load operations of PGNN"""
     PhysicsGuidedNeuralNetwork.seed(0)
@@ -290,6 +318,32 @@ def test_save_load():
     assert isinstance(model._optimizer, Adam)
     assert isinstance(loaded._optimizer, Adam)
     assert model._optimizer.get_config() == loaded._optimizer.get_config()
+
+
+def test_compute_dtype_save_load():
+    """Test compute_dtype persistence across phygnn save/load."""
+    model = PhysicsGuidedNeuralNetwork(
+        p_fun=p_fun_pythag,
+        hidden_layers=HIDDEN_LAYERS,
+        loss_weights=(0.0, 1.0),
+        n_features=2,
+        n_labels=1,
+        compute_dtype='float16',
+    )
+
+    model.predict(X[:4])
+
+    with tempfile.TemporaryDirectory() as td:
+        fpath = os.path.join(td, 'tempfile.pkl')
+        model.save(fpath)
+        loaded = PhysicsGuidedNeuralNetwork.load(fpath)
+
+    dense_layers = [
+        layer for layer in loaded.layers if isinstance(layer, Dense)
+    ]
+    assert loaded.compute_dtype == 'float16'
+    assert dense_layers
+    assert dense_layers[0].compute_dtype == 'float16'
 
 
 def test_save_load_skip_connections():

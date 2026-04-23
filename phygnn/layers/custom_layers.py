@@ -328,6 +328,7 @@ class Embedder(PatchLayer):
                 'strides': [self.patch_size] * (self.rank - 2),
                 'filters': self.embed_dim,
                 'padding': 'valid',
+                'dtype': self.compute_dtype,
             }
             self.embed_layer = (
                 tf.keras.layers.Conv2D(**kwargs)
@@ -336,7 +337,7 @@ class Embedder(PatchLayer):
             )
         else:
             self.embed_layer = tf.keras.layers.Dense(
-                self.embed_dim, use_bias=False
+                self.embed_dim, use_bias=False, dtype=self.compute_dtype
             )
         self.embed_layer.build(input_shape)
 
@@ -455,29 +456,96 @@ class PositionEncoder(PatchLayer):
         return tf.stack([tf.sin(theta), tf.cos(theta)], axis=-1)
 
     @staticmethod
-    def _compute_doy_soy(time):
-        """Compute day of year and second of year from unix timestamps.
-
-        Parameters
-        ----------
-        time : np.ndarray
-            Array of unix timestamps (seconds since epoch).
-
-        Returns
-        -------
-        doy : np.ndarray
-            Day of year as float32.
-        soy : np.ndarray
-            Second of year as float32.
-        """
-        dt = time.astype(np.int64).view('datetime64[s]')
-        year_start = dt.astype('datetime64[Y]')
-        doy = dt.astype('datetime64[D]') - year_start.astype('datetime64[D]')
-        soy = dt - year_start.astype('datetime64[s]')
-        return (
-            (doy / np.timedelta64(1, 'D')).astype(np.float32),
-            (soy / np.timedelta64(1, 's')).astype(np.float32),
+    def _civil_from_days(days):
+        """Convert days since unix epoch to Gregorian year/month/day."""
+        z = days + tf.cast(719468, days.dtype)
+        era = tf.math.floordiv(
+            tf.where(z >= 0, z, z - tf.cast(146096, z.dtype)),
+            tf.cast(146097, z.dtype),
         )
+        doe = z - era * tf.cast(146097, z.dtype)
+        yoe = tf.math.floordiv(
+            doe
+            - tf.math.floordiv(doe, tf.cast(1460, doe.dtype))
+            + tf.math.floordiv(doe, tf.cast(36524, doe.dtype))
+            - tf.math.floordiv(doe, tf.cast(146096, doe.dtype)),
+            tf.cast(365, doe.dtype),
+        )
+        year = yoe + era * tf.cast(400, yoe.dtype)
+        doy = doe - (
+            tf.cast(365, doe.dtype) * yoe
+            + tf.math.floordiv(yoe, tf.cast(4, yoe.dtype))
+            - tf.math.floordiv(yoe, tf.cast(100, yoe.dtype))
+        )
+        month_prime = tf.math.floordiv(
+            tf.cast(5, doy.dtype) * doy + tf.cast(2, doy.dtype),
+            tf.cast(153, doy.dtype),
+        )
+        day = (
+            doy
+            - tf.math.floordiv(
+                tf.cast(153, doy.dtype) * month_prime + tf.cast(2, doy.dtype),
+                tf.cast(5, doy.dtype),
+            )
+            + tf.cast(1, doy.dtype)
+        )
+        month = month_prime + tf.where(
+            month_prime < tf.cast(10, month_prime.dtype),
+            tf.cast(3, month_prime.dtype),
+            tf.cast(-9, month_prime.dtype),
+        )
+        year += tf.cast(month <= 2, year.dtype)
+        return year, month, day
+
+    @staticmethod
+    def _days_from_civil(year, month, day):
+        """Convert Gregorian year/month/day to days since unix epoch."""
+        year -= tf.cast(month <= 2, year.dtype)
+        era = tf.math.floordiv(
+            tf.where(year >= 0, year, year - tf.cast(399, year.dtype)),
+            tf.cast(400, year.dtype),
+        )
+        yoe = year - era * tf.cast(400, year.dtype)
+        month_prime = month + tf.where(
+            month <= 2,
+            tf.cast(9, month.dtype),
+            tf.cast(-3, month.dtype),
+        )
+        doy = (
+            tf.math.floordiv(
+                tf.cast(153, month_prime.dtype) * month_prime
+                + tf.cast(2, month_prime.dtype),
+                tf.cast(5, month_prime.dtype),
+            )
+            + day
+            - tf.cast(1, day.dtype)
+        )
+        doe = (
+            yoe * tf.cast(365, yoe.dtype)
+            + tf.math.floordiv(yoe, tf.cast(4, yoe.dtype))
+            - tf.math.floordiv(yoe, tf.cast(100, yoe.dtype))
+            + doy
+        )
+        return (
+            era * tf.cast(146097, era.dtype) + doe - tf.cast(719468, doe.dtype)
+        )
+
+    @classmethod
+    def _compute_doy_soy(cls, time):
+        """Compute day of year and second of year from unix timestamps."""
+        time = tf.cast(time, tf.int64)
+        seconds_per_day = tf.cast(86400, tf.int64)
+        days = tf.math.floordiv(time, seconds_per_day)
+        second_of_day = time - days * seconds_per_day
+        year, _, _ = cls._civil_from_days(days)
+        year_start_days = cls._days_from_civil(
+            year,
+            tf.ones_like(year),
+            tf.ones_like(year),
+        )
+        day_of_year = days - year_start_days
+        second_of_year = day_of_year * seconds_per_day + second_of_day
+        return day_of_year, second_of_year
 
     def encode_lat_lon(self, x, lat, lon, min_period, max_period):
         """Sinusoidal positional encoding for latitude and longitude.
@@ -550,11 +618,9 @@ class PositionEncoder(PatchLayer):
         assert self.embed_dim % 4 == 0, (
             'Embedding dimension must be divisible by 4 for time encoding.'
         )
-        doy, soy = tf.numpy_function(
-            self._compute_doy_soy, [time], [tf.float32, tf.float32]
-        )
-        doy = tf.reshape(doy, tf.shape(time))
-        soy = tf.reshape(soy, tf.shape(time))
+        doy, soy = self._compute_doy_soy(time)
+        doy = tf.cast(tf.reshape(doy, tf.shape(time)), x.dtype)
+        soy = tf.cast(tf.reshape(soy, tf.shape(time)), x.dtype)
         min_period_doy = min_period / 86400  # convert seconds to days
         max_period_doy = max_period / 86400  # convert seconds to days
         doy_enc = self._freq_encode(
@@ -579,6 +645,7 @@ class PositionEncoder(PatchLayer):
             'pool_size': self.patch_size,
             'strides': self.patch_size,
             'padding': 'valid',
+            'dtype': self.compute_dtype,
         }
         self._pool_layer = (
             tf.keras.layers.AveragePooling2D(**kwargs)
@@ -822,18 +889,24 @@ class TransformerLayer(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         """Build all sub-layers."""
+        attn_kwargs = dict(self.attn_kwargs or {})
+        attn_kwargs.setdefault('dtype', self.compute_dtype)
         self.attn = MultiHeadAttention(
             num_heads=self.num_heads,
             key_dim=self.key_dim,
-            **(self.attn_kwargs or {}),
+            **attn_kwargs,
         )
-        self.lq = tf.keras.layers.LayerNormalization()
-        self.lk = tf.keras.layers.LayerNormalization()
-        self.lv = tf.keras.layers.LayerNormalization()
-        self.lo = tf.keras.layers.LayerNormalization()
+        self.lq = tf.keras.layers.LayerNormalization(dtype=self.compute_dtype)
+        self.lk = tf.keras.layers.LayerNormalization(dtype=self.compute_dtype)
+        self.lv = tf.keras.layers.LayerNormalization(dtype=self.compute_dtype)
+        self.lo = tf.keras.layers.LayerNormalization(dtype=self.compute_dtype)
         self.mlp = tf.keras.Sequential([
-            tf.keras.layers.Dense(self.key_dim, activation='relu'),
-            tf.keras.layers.Dense(self.key_dim),
+            tf.keras.layers.Dense(
+                self.key_dim,
+                activation='relu',
+                dtype=self.compute_dtype,
+            ),
+            tf.keras.layers.Dense(self.key_dim, dtype=self.compute_dtype),
         ])
         q_shape, k_shape, v_shape = input_shape
         self.attn.build(q_shape, k_shape, v_shape)
@@ -983,20 +1056,22 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             logger.error(msg)
             raise ValueError(msg)
 
-        self.eq = Embedder(embed_dim=self.embed_dim)
-        self.ek = Embedder(embed_dim=self.embed_dim)
-        self.ev = Embedder(embed_dim=self.embed_dim)
+        self.eq = Embedder(embed_dim=self.embed_dim, dtype=self.compute_dtype)
+        self.ek = Embedder(embed_dim=self.embed_dim, dtype=self.compute_dtype)
+        self.ev = Embedder(embed_dim=self.embed_dim, dtype=self.compute_dtype)
         self.pe = PositionEncoder(
             embed_dim=self.embed_dim,
             min_period_spatial=self.min_period_spatial,
             max_period_spatial=self.max_period_spatial,
             min_period_temporal=self.min_period_temporal,
             max_period_temporal=self.max_period_temporal,
+            dtype=self.compute_dtype,
         )
         self.tl = TransformerLayer(
             key_dim=self.key_dim,
             num_heads=self.num_heads,
             attn_kwargs=self.attn_kwargs,
+            dtype=self.compute_dtype,
         )
         q_shape, v_shape = (
             input_shape
@@ -1005,7 +1080,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         )
         embed_shape = (None, None, self.embed_dim)
         # final projection layer to project back to input feature space
-        self.final_proj = tf.keras.layers.Dense(q_shape[-1])
+        self.final_proj = tf.keras.layers.Dense(
+            q_shape[-1], dtype=self.compute_dtype
+        )
         self.eq.build(q_shape)
         self.ek.build(v_shape)
         self.ev.build(v_shape)
@@ -1066,9 +1143,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         if tf.math.reduce_all(tf.math.is_nan(hr_in)):
             return tf.squeeze(x_in, axis=0)
 
-        out = self._transformer_layer(
-            x_in, hr_in, lat=lat, lon=lon, time=time
-        )
+        out = self._transformer_layer(x_in, hr_in, lat=lat, lon=lon, time=time)
 
         tf.debugging.assert_all_finite(
             out, message='Attention output contains NaN or Inf values.'
@@ -1086,6 +1161,16 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         q += self.pe(x_in, lat=lat, lon=lon, time=time)
         k += self.pe(hr_in, lat=lat, lon=lon, time=time)
         v += self.pe(hr_in, lat=lat, lon=lon, time=time)
+
+        tf.debugging.assert_all_finite(
+            q, message='Query contains NaN or Inf values.'
+        )
+        tf.debugging.assert_all_finite(
+            k, message='Key contains NaN or Inf values.'
+        )
+        tf.debugging.assert_all_finite(
+            v, message='Value contains NaN or Inf values.'
+        )
 
         out = self.tl(query=q, key=k, value=v)
         out = self.final_proj(out)
@@ -1156,9 +1241,9 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
     arXiv:2108.12409. https://arxiv.org/abs/2108.12409
     """
 
-    def __init__(self, *args, sigma=0.01, trainable=True, **kwargs):
+    def __init__(self, *args, alpha=10, trainable=True, **kwargs):
         super().__init__(*args, **kwargs)
-        self.sigma = sigma
+        self.alpha = alpha
         self.trainable = trainable
         self.head_slopes = None
 
@@ -1173,7 +1258,7 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
         config = super().get_config().copy()
         config.update({
             'trainable': self.trainable,
-            'sigma': float(self.sigma),
+            'alpha': float(self.alpha),
         })
         return config
 
@@ -1186,12 +1271,13 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
             Shape tuple of the input tensor.
         """
         super().build(input_shape)
-        self.sigma = self.add_weight(
-            name='sigma',
+        weight_dtype = tf.dtypes.as_dtype(self.compute_dtype)
+        self.alpha = self.add_weight(
+            name='alpha',
             shape=[],
             trainable=self.trainable,
-            dtype=tf.float32,
-            initializer=tf.keras.initializers.Constant(self.sigma),
+            dtype=weight_dtype,
+            initializer=tf.keras.initializers.Constant(self.alpha),
         )
         # Compute head slopes for the ALiBi bias based on the number of
         # attention heads. This follows the approach from the ALiBi paper to
@@ -1199,13 +1285,13 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
         x = 2 ** (8 / self.num_heads)
         slopes = np.array(
             [1 / (x ** (i + 1)) for i in range(self.num_heads)],
-            dtype=np.float32,
+            dtype=weight_dtype.as_numpy_dtype,
         ).reshape(1, self.num_heads, 1, 1)
         self.head_slopes = self.add_weight(
             name='head_slopes',
             shape=slopes.shape,
             trainable=False,
-            dtype=tf.float32,
+            dtype=weight_dtype,
             initializer=tf.keras.initializers.Constant(slopes),
         )
 
@@ -1242,10 +1328,24 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
         lat_q = tf.reshape(lat, (tf.shape(lat)[0], -1, 1))
         lon_q = tf.reshape(lon, (tf.shape(lon)[0], -1, 1))
 
+        tf.debugging.assert_all_finite(
+            lat_q, message='Latitude query contains NaN or Inf values.'
+        )
+        tf.debugging.assert_all_finite(
+            lon_q, message='Longitude query contains NaN or Inf values.'
+        )
         lat_v = self.ev._mask(hi_res_feature, lat)
         lon_v = self.ev._mask(hi_res_feature, lon)
+
         lat_v = tf.reshape(lat_v, (tf.shape(lat)[0], 1, -1))
         lon_v = tf.reshape(lon_v, (tf.shape(lon)[0], 1, -1))
+
+        tf.debugging.assert_all_finite(
+            lat_v, message='Latitude value contains NaN or Inf values.'
+        )
+        tf.debugging.assert_all_finite(
+            lon_v, message='Longitude value contains NaN or Inf values.'
+        )
 
         lat_q_rad = lat_q * (np.pi / 180.0)
         lon_q_rad = lon_q * (np.pi / 180.0)
@@ -1259,7 +1359,17 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
             + tf.cos(lat_q_rad) * tf.cos(lat_v_rad) * tf.sin(dlon / 2) ** 2
         )
         distance = 2 * tf.asin(tf.sqrt(a))
-        bias = -(distance**2) / (2 * self.sigma**2)
+
+        tf.debugging.assert_all_finite(
+            distance, message='Distance matrix contains NaN or Inf values.'
+        )
+
+        bias = -(distance**2) * self.alpha
+
+        tf.debugging.assert_all_finite(
+            bias,
+            message='Bias matrix contains NaN or Inf values before scaling.',
+        )
 
         bias = tf.expand_dims(bias, axis=1)
         bias = tf.repeat(bias, repeats=self.num_heads, axis=1)
@@ -1274,6 +1384,20 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
 
         # use locality bias instead of positional encodings
         bias = self.get_locality_bias(x_in, hr_in, lat=lat, lon=lon, time=time)
+
+        tf.debugging.assert_all_finite(
+            q, message='Query contains NaN or Inf values.'
+        )
+        tf.debugging.assert_all_finite(
+            k, message='Key contains NaN or Inf values.'
+        )
+        tf.debugging.assert_all_finite(
+            v, message='Value contains NaN or Inf values.'
+        )
+        tf.debugging.assert_all_finite(
+            bias, message='Bias contains NaN or Inf values.'
+        )
+
         out = self.tl(query=q, key=k, value=v, bias=bias)
         out = self.final_proj(out)
         return tf.reshape(out, tf.shape(x_in))
@@ -1329,7 +1453,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         transformer_kwargs : dict | None
             Keyword arguments forwarded to each transformer layer in the
             block. This is the place to set transformer-layer options like
-            ``embed_dim``, ``key_dim``, or positional encoding periods.
+            positional encoding periods.
         attn_kwargs : dict | None
             Additional keyword arguments forwarded to the internal
             :class:`MultiHeadAttention` layer for each transformer layer.
@@ -1340,13 +1464,17 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         super().__init__(**kwargs)
         self.features = features or []
         self.exo_features = exo_features or []
-        self.transformer_kwargs = dict(transformer_kwargs or {})
         self.use_alibi = use_alibi
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.embed_dim = embed_dim
         self.attn_kwargs = attn_kwargs
         self.layers = None
+        self.transformer_kwargs_orig = dict(transformer_kwargs or {})
+        self.transformer_kwargs = dict(self.transformer_kwargs_orig)
+        self.transformer_kwargs.setdefault('num_heads', self.num_heads)
+        self.transformer_kwargs.setdefault('key_dim', self.key_dim)
+        self.transformer_kwargs.setdefault('embed_dim', self.embed_dim)
 
     @tf.function
     def call(self, x, hi_res_features=None, exo_data=None):
@@ -1399,11 +1527,9 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         )
         self.layers = [
             transformer_cls(
-                num_heads=self.num_heads,
-                key_dim=self.key_dim,
-                embed_dim=self.embed_dim,
                 features=[feat],
                 attn_kwargs=self.attn_kwargs,
+                dtype=self.compute_dtype,
                 **self.transformer_kwargs,
             )
             for feat in self.features
@@ -1421,7 +1547,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             'key_dim': self.key_dim,
             'embed_dim': self.embed_dim,
             'use_alibi': self.use_alibi,
-            'transformer_kwargs': self.transformer_kwargs,
+            'transformer_kwargs': self.transformer_kwargs_orig,
             'attn_kwargs': self.attn_kwargs,
         })
         return config
@@ -1567,7 +1693,7 @@ class GaussianAveragePooling2D(tf.keras.layers.Layer):
                 name='sigma',
                 shape=[],
                 trainable=self.trainable,
-                dtype=tf.float32,
+                dtype=tf.dtypes.as_dtype(self.compute_dtype),
                 initializer=init,
             )
 
@@ -3079,7 +3205,9 @@ class UnitConversion(tf.keras.layers.Layer):
             )
             assert len(self.adder) == input_shape[-1], msg
 
-        self.adder = tf.convert_to_tensor(self.adder, dtype=tf.float32)
+        self.adder = tf.convert_to_tensor(
+            self.adder, dtype=tf.dtypes.as_dtype(self.compute_dtype)
+        )
 
         if isinstance(self.scalar, dtypes):
             self.scalar = np.ones(nfeat) * self.scalar
@@ -3091,7 +3219,9 @@ class UnitConversion(tf.keras.layers.Layer):
             )
             assert len(self.scalar) == input_shape[-1], msg
 
-        self.scalar = tf.convert_to_tensor(self.scalar, dtype=tf.float32)
+        self.scalar = tf.convert_to_tensor(
+            self.scalar, dtype=tf.dtypes.as_dtype(self.compute_dtype)
+        )
 
     @tf.function
     def call(self, x):

@@ -26,7 +26,7 @@ class HiddenLayers:
     Class to handle TensorFlow hidden layers
     """
 
-    def __init__(self, hidden_layers):
+    def __init__(self, hidden_layers, compute_dtype='float32'):
         """
         Parameters
         ----------
@@ -41,9 +41,14 @@ class HiddenLayers:
                  {'batch_normalization': {'axis': -1}},
                  {'activation': 'relu'},
                  {'dropout': 0.01}]
+        compute_dtype : str, optional
+            Per-layer compute dtype used when instantiating TensorFlow
+            layers. Defaults to ``'float32'``.
         """
         self._i = 0
         self._layers = []
+        self._compute_dtype = compute_dtype
+        self._dtype_policy = self.get_dtype_policy(compute_dtype)
         self._hidden_layers_kwargs = copy.deepcopy(hidden_layers)
 
         if self._hidden_layers_kwargs is not None:
@@ -53,6 +58,11 @@ class HiddenLayers:
 
         for layer in self._hidden_layers_kwargs:
             self.add_layer(layer)
+
+    @staticmethod
+    def get_dtype_policy(compute_dtype):
+        """Resolve the dtype used for per-layer construction."""
+        return tf.dtypes.as_dtype(compute_dtype).name
 
     def __repr__(self):
         msg = '{} with {} hidden layers'.format(
@@ -234,7 +244,7 @@ class HiddenLayers:
 
         return weights
 
-    def add_skip_layer(self, name, method='add'):
+    def add_skip_layer(self, name, method='add', **kwargs):
         """Add a skip layer, looking for a prior skip connection start point if
         already in the layer list.
 
@@ -249,7 +259,7 @@ class HiddenLayers:
         if name in self.skip_layers:
             self._layers.append(self.skip_layers[name])
         else:
-            self._layers.append(SkipConnection(name, method))
+            self._layers.append(SkipConnection(name, method, **kwargs))
 
     def add_layer_by_class(self, class_name, **kwargs):
         """Add a new layer by the class name, either from
@@ -287,10 +297,16 @@ class HiddenLayers:
             logger.error(msg)
             raise KeyError(msg)
 
+        if 'dtype' not in kwargs:
+            kwargs['dtype'] = self._dtype_policy
+
         # If a layer has a "hidden_layers" argument it's assumed that
         # "layer_class" holds a nested set of hidden layers
         if 'hidden_layers' in kwargs:
-            hl = HiddenLayers(hidden_layers=kwargs.pop('hidden_layers'))
+            hl = HiddenLayers(
+                hidden_layers=kwargs.pop('hidden_layers'),
+                compute_dtype=self._compute_dtype,
+            )
             layer = layer_class(hidden_layers=hl._layers, **kwargs)
             self._layers.append(layer)
         elif layer_class == SkipConnection:
@@ -331,13 +347,15 @@ class HiddenLayers:
             drop_layer = None
 
             if dense_units is not None:
-                dense_layer = Dense(dense_units)
+                dense_layer = Dense(dense_units, dtype=self._dtype_policy)
             if batch_norm_kwargs is not None:
+                batch_norm_kwargs = copy.deepcopy(batch_norm_kwargs)
+                batch_norm_kwargs.setdefault('dtype', self._dtype_policy)
                 bn_layer = BatchNormalization(**batch_norm_kwargs)
             if activation_arg is not None:
-                a_layer = Activation(activation_arg)
+                a_layer = Activation(activation_arg, dtype=self._dtype_policy)
             if dropout_rate is not None:
-                drop_layer = Dropout(dropout_rate)
+                drop_layer = Dropout(dropout_rate, dtype=self._dtype_policy)
 
             # This ensures proper default ordering of layers if requested
             # together.
@@ -390,6 +408,7 @@ class Layers(HiddenLayers):
         hidden_layers=None,
         input_layer=None,
         output_layer=None,
+        compute_dtype='float32',
     ):
         """
         Parameters
@@ -426,12 +445,17 @@ class Layers(HiddenLayers):
             This defaults to a single dense layer with no activation
             (best for regression problems).  Can be False if the output layer
             will be included in the hidden_layers input.
+        compute_dtype : str, optional
+            Per-layer compute dtype used when instantiating TensorFlow
+            layers. Defaults to ``'float32'``.
         """
 
         self._i = 0
         self._layers = []
         self._n_features = n_features
         self._n_labels = n_labels
+        self._compute_dtype = compute_dtype
+        self._dtype_policy = self.get_dtype_policy(compute_dtype)
         self._input_layer_kwargs = copy.deepcopy(input_layer)
         self._output_layer_kwargs = copy.deepcopy(output_layer)
         self._hidden_layers_kwargs = copy.deepcopy(hidden_layers)
@@ -453,7 +477,12 @@ class Layers(HiddenLayers):
         """Add an input layer, defaults to tf.layers.InputLayer"""
 
         if self.input_layer_kwargs is None:
-            self._layers = [InputLayer(shape=(self._n_features,))]
+            self._layers = [
+                InputLayer(
+                    input_shape=(self._n_features,),
+                    dtype=self._compute_dtype,
+                )
+            ]
 
         elif self.input_layer_kwargs:
             if not isinstance(self.input_layer_kwargs, dict):
@@ -467,7 +496,9 @@ class Layers(HiddenLayers):
         activation"""
 
         if self._output_layer_kwargs is None:
-            self._layers.append(Dense(self._n_labels))
+            self._layers.append(
+                Dense(self._n_labels, dtype=self._dtype_policy)
+            )
         elif self._output_layer_kwargs:
             if isinstance(self._output_layer_kwargs, dict):
                 self._output_layer_kwargs = [self._output_layer_kwargs]

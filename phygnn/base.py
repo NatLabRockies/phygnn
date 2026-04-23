@@ -39,6 +39,7 @@ class CustomNetwork(ABC):
         feature_names=None,
         output_names=None,
         name=None,
+        compute_dtype='float32',
     ):
         """
         Parameters
@@ -90,6 +91,9 @@ class CustomNetwork(ABC):
             if phygnn is trained on a DataFrame.
         name : None | str
             Optional model name for debugging.
+        compute_dtype : str, optional
+            Per-model compute dtype used to construct TensorFlow layers.
+            Defaults to ``'float32'``.
         """
 
         self._n_features = n_features
@@ -97,6 +101,7 @@ class CustomNetwork(ABC):
         self.feature_names = feature_names
         self.output_names = output_names
         self.name = name if isinstance(name, str) else 'CustomNetwork'
+        self._compute_dtype = self._normalize_compute_dtype(compute_dtype)
 
         self._version_record = VERSION_RECORD
         logger.info(
@@ -116,6 +121,7 @@ class CustomNetwork(ABC):
                 hidden_layers=hidden_layers,
                 input_layer=input_layer,
                 output_layer=output_layer,
+                compute_dtype=self.compute_dtype,
             )
         elif not isinstance(layers_obj, Layers):
             msg = (
@@ -234,6 +240,18 @@ class CustomNetwork(ABC):
         return self._layers.bias_weights
 
     @property
+    def compute_dtype(self):
+        """Per-model compute dtype used to build layer policies."""
+        return self._compute_dtype
+
+    @staticmethod
+    def _normalize_compute_dtype(compute_dtype):
+        """Normalize a dtype or policy into a simple dtype string."""
+        if hasattr(compute_dtype, 'compute_dtype'):
+            compute_dtype = compute_dtype.compute_dtype
+        return tf.dtypes.as_dtype(compute_dtype).name
+
+    @property
     def model_params(self):
         """
         Model parameters, used to save model to disc
@@ -253,6 +271,7 @@ class CustomNetwork(ABC):
             'feature_names': self.feature_names,
             'output_names': self.output_names,
             'name': self.name,
+            'compute_dtype': self.compute_dtype,
             'version_record': self.version_record,
         }
 
@@ -510,13 +529,16 @@ class CustomNetwork(ABC):
         logger.info('Saved model to: {}'.format(fpath))
 
     @classmethod
-    def load(cls, fpath):
+    def load(cls, fpath, compute_dtype=None):
         """Load a phygnn model that has been saved to a pickle file.
 
         Parameters
         ----------
         fpath : str
             File path to .pkl file to load model from.
+        compute_dtype : str | None, optional
+            Optional dtype override to apply while reconstructing the saved
+            model. If None, the saved model dtype is used.
 
         Returns
         -------
@@ -539,6 +561,11 @@ class CustomNetwork(ABC):
         with open(fpath, 'rb') as f:
             model_params = pickle.load(f)
             model_params = cls._history_to_df(model_params)
+
+        if compute_dtype is not None:
+            model_params['compute_dtype'] = cls._normalize_compute_dtype(
+                compute_dtype
+            )
 
         if 'version_record' in model_params:
             version_record = model_params.pop('version_record')

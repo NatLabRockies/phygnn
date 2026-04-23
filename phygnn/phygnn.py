@@ -44,6 +44,7 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
         feature_names=None,
         output_names=None,
         name=None,
+        compute_dtype='float32',
     ):
         """
         Parameters
@@ -141,6 +142,9 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
             if phygnn is trained on a DataFrame.
         name : None | str
             Optional model name for debugging.
+        compute_dtype : str, optional
+            Per-model compute dtype used to construct TensorFlow layers.
+            Defaults to ``'float32'``.
         """
 
         super().__init__(
@@ -152,6 +156,7 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
             layers_obj=layers_obj,
             feature_names=feature_names,
             output_names=output_names,
+            compute_dtype=compute_dtype,
         )
 
         self._p_fun = p_fun if p_fun is not None else self.p_fun_dummy
@@ -438,19 +443,25 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
         if p_kwargs is None:
             p_kwargs = {}
 
-        loss = tf.constant(0.0, dtype=tf.float32)
-        nn_loss = tf.constant(0.0, dtype=tf.float32)
-        p_loss = tf.constant(0.0, dtype=tf.float32)
+        loss = tf.zeros((), dtype=tf.float32)
+        nn_loss = tf.zeros((), dtype=tf.float32)
+        p_loss = tf.zeros((), dtype=tf.float32)
 
         if self._loss_weights[0] != 0:
-            nn_loss = self._metric_fun(y_true, y_predicted)
+            nn_loss = tf.cast(
+                self._metric_fun(y_true, y_predicted),
+                tf.float32,
+            )
             msg = 'Bad shape from nn_loss fun! Must be 0D but received: {}'
             msg = msg.format(nn_loss)
             assert nn_loss.ndim == 0, msg
             loss += self._loss_weights[0] * nn_loss
 
         if self._loss_weights[1] != 0:
-            p_loss = self._p_fun(self, y_true, y_predicted, p, **p_kwargs)
+            p_loss = tf.cast(
+                self._p_fun(self, y_true, y_predicted, p, **p_kwargs),
+                tf.float32,
+            )
             msg = 'Bad shape from p_loss fun! Must be 0D but received: {}'
             msg = msg.format(p_loss)
             assert p_loss.ndim == 0, msg
@@ -463,7 +474,8 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
         )
 
         if self.kernel_reg_rate != 0:
-            loss_kernel_reg = self.kernel_reg_term * self.kernel_reg_rate
+            loss_kernel_reg = tf.cast(self.kernel_reg_term, tf.float32)
+            loss_kernel_reg *= self.kernel_reg_rate
             loss += loss_kernel_reg
             logger.debug(
                 'Kernel regularization loss: {:.2e}, '
@@ -471,7 +483,8 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
             )
 
         if self.bias_reg_rate != 0:
-            loss_bias_reg = self.bias_reg_term * self.bias_reg_rate
+            loss_bias_reg = tf.cast(self.bias_reg_term, tf.float32)
+            loss_bias_reg *= self.bias_reg_rate
             loss += loss_bias_reg
             logger.debug(
                 'Bias regularization loss: {:.2e}, Total Loss: {:.2e}'.format(

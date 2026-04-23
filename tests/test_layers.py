@@ -27,6 +27,7 @@ from phygnn.layers.custom_layers import (
     Sup3rConcatObs,
     Sup3rObsModel,
     Sup3rTransformerLayer,
+    Sup3rTransformerLayerAlibi,
     TileLayer,
     UnitConversion,
 )
@@ -816,6 +817,48 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     assert calls['time'] == 1
 
 
+def test_tokenize_encode_time_encoding_values():
+    """Test PositionEncoder time encoding against known unix timestamps."""
+    embed_dim = 8
+    x = tf.zeros((1, 1, 1, 2, 1), dtype=tf.float32)
+    time = tf.constant(
+        [[[[[1704067200.0], [1704153600.0]]]]],
+        dtype=tf.float32,
+    )
+
+    pos_enc = PositionEncoder(patch_size=1, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
+
+    doy = tf.constant([[[[[0.0], [1.0]]]]], dtype=tf.float32)
+    soy = tf.constant([[[[[0.0], [86400.0]]]]], dtype=tf.float32)
+    expected = tf.concat(
+        [
+            PositionEncoder._freq_encode(
+                doy,
+                min_period=pos_enc.min_period_temporal / 86400,
+                max_period=pos_enc.max_period_temporal / 86400,
+                d=embed_dim // 2,
+            ),
+            PositionEncoder._freq_encode(
+                soy,
+                min_period=pos_enc.min_period_temporal,
+                max_period=pos_enc.max_period_temporal,
+                d=embed_dim // 2,
+            ),
+        ],
+        axis=-1,
+    )
+    expected = tf.reshape(expected, (1, -1, embed_dim))
+
+    enc = pos_enc.encode_time(
+        x,
+        time,
+        pos_enc.min_period_temporal,
+        pos_enc.max_period_temporal,
+    )
+    np.testing.assert_allclose(enc.numpy(), expected.numpy(), atol=1e-6)
+
+
 def test_transformer_patch_size_gt1_shapes():
     """Test Tokenizer and PositionEncoder with patch_size > 1, including
     non-divisible spatial dimensions (5x7). Inputs are padded via
@@ -908,6 +951,79 @@ def test_transformer_exo_data_time_forwarding(monkeypatch):
     out = layer(x, y, exo_data=exo_data)
     np.testing.assert_allclose(out.numpy(), x.numpy(), atol=1e-6)
     assert calls == [(True, True, False)]
+
+
+def test_transformer_alibi_bfloat16_nan_branch_consistency():
+    """Sup3rTransformerLayerAlibi should keep bfloat16 dtype across both
+    the all-NaN fast path and the attention path.
+    """
+    layer = Sup3rTransformerLayerAlibi(
+        embed_dim=8,
+        key_dim=8,
+        num_heads=2,
+        features=['obs'],
+        dtype='bfloat16',
+    )
+
+    x = tf.cast(tf.random.normal((2, 4, 4, 8)), tf.bfloat16)
+    y = tf.cast(tf.random.normal((2, 4, 4, 1)), tf.bfloat16)
+    y = tf.concat(
+        [
+            tf.fill((1, 4, 4, 1), tf.cast(np.nan, tf.bfloat16)),
+            y[1:2],
+        ],
+        axis=0,
+    )
+
+    lat = tf.cast(
+        np.linspace(30, 40, 4).reshape(1, 4, 1, 1) * np.ones((2, 1, 4, 1)),
+        tf.bfloat16,
+    )
+    lon = tf.cast(
+        np.linspace(-110, -100, 4).reshape(1, 1, 4, 1)
+        * np.ones((2, 4, 1, 1)),
+        tf.bfloat16,
+    )
+    exo_data = tf.concat([lat, lon], axis=-1)
+
+    out = layer(x, y, exo_data=exo_data)
+
+    assert out.shape == x.shape
+    assert out.dtype == tf.bfloat16
+    tf.debugging.assert_equal(out[0], x[0])
+    tf.debugging.assert_all_finite(tf.cast(out[1], tf.float32), 'bad output')
+
+
+def test_transformer_alibi_bias_stays_finite_with_zero_alpha():
+    """ALiBi locality bias should stay finite even if alpha is driven to 0."""
+    layer = Sup3rTransformerLayerAlibi(
+        embed_dim=8,
+        key_dim=8,
+        num_heads=2,
+        features=['obs'],
+        dtype='bfloat16',
+    )
+
+    x = tf.cast(tf.random.normal((1, 4, 4, 8)), tf.bfloat16)
+    y = tf.cast(tf.random.normal((1, 4, 4, 1)), tf.bfloat16)
+    lat = tf.cast(
+        np.linspace(30, 40, 4).reshape(1, 4, 1, 1),
+        tf.bfloat16,
+    )
+    lon = tf.cast(
+        np.linspace(-110, -100, 4).reshape(1, 1, 4, 1),
+        tf.bfloat16,
+    )
+    lat = tf.repeat(lat, repeats=4, axis=2)
+    lon = tf.repeat(lon, repeats=4, axis=1)
+
+    layer.build((None, 4, 4, 8))
+    layer.alpha.assign(0.0)
+
+    bias = layer.get_locality_bias(x, y, lat=lat, lon=lon)
+
+    assert bias.dtype == tf.bfloat16
+    tf.debugging.assert_all_finite(tf.cast(bias, tf.float32), 'bad bias')
 
 
 def test_functional_layer():

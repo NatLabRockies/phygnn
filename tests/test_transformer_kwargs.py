@@ -31,6 +31,7 @@ def test_transformer_layer_forwards_attn_kwargs():
         key_dim=8,
         attn_kwargs={'dropout': 0.25, 'use_bias': False},
     )
+    layer.build(((None, None, 8), (None, None, 8), (None, None, 8)))
 
     assert layer.attn._dropout == pytest.approx(0.25)
     assert layer.attn._use_bias is False
@@ -44,8 +45,9 @@ def test_sup3r_transformer_layer_forwards_attn_kwargs():
         key_dim=8,
         attn_kwargs={'dropout': 0.15},
     )
+    layer.build((None, 4, 4, 8))
 
-    assert layer.transformer.attn._dropout == pytest.approx(0.15)
+    assert layer.tl.attn._dropout == pytest.approx(0.15)
 
 
 def test_sup3r_transformer_block_forwards_layer_and_attention_kwargs():
@@ -57,6 +59,7 @@ def test_sup3r_transformer_block_forwards_layer_and_attention_kwargs():
         embed_dim=24,
         attn_kwargs={'dropout': 0.05},
     )
+    block.build((None, 4, 4, 24))
 
     assert len(block.layers) == 2
     assert all(
@@ -66,7 +69,7 @@ def test_sup3r_transformer_block_forwards_layer_and_attention_kwargs():
     assert all(layer.key_dim == 12 for layer in block.layers)
     assert all(layer.num_heads == 4 for layer in block.layers)
     assert all(
-        layer.transformer.attn._dropout == pytest.approx(0.05)
+        layer.tl.attn._dropout == pytest.approx(0.05)
         for layer in block.layers
     )
 
@@ -81,10 +84,11 @@ def test_sup3r_transformer_block_uses_alibi_variant():
         transformer_kwargs={'embed_dim': 16},
         attn_kwargs={'dropout': 0.1},
     )
+    block.build((None, 4, 4, 16))
 
     assert len(block.layers) == 1
     assert isinstance(block.layers[0], Sup3rTransformerLayerAlibi)
-    assert block.layers[0].transformer.attn._dropout == pytest.approx(0.1)
+    assert block.layers[0].tl.attn._dropout == pytest.approx(0.1)
 
 
 def test_multi_head_attention_uses_fused_path_when_available(monkeypatch):
