@@ -1156,9 +1156,19 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
     arXiv:2108.12409. https://arxiv.org/abs/2108.12409
     """
 
-    def __init__(self, *args, sigma=0.01, trainable=True, **kwargs):
+    def __init__(self, *args, alpha=10, trainable=True, **kwargs):
+        """Initialize the Sup3rTransformerLayerAlibi layer.
+
+        Parameters
+        ----------
+        alpha : float, optional
+            Scaling factor for the ALiBi bias. Default is 10.
+        trainable : bool, optional
+            Whether the alpha parameter is trainable. Default is True.
+        """
+
         super().__init__(*args, **kwargs)
-        self.sigma = sigma
+        self.alpha = alpha
         self.trainable = trainable
         self.head_slopes = None
 
@@ -1173,12 +1183,12 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
         config = super().get_config().copy()
         config.update({
             'trainable': self.trainable,
-            'sigma': float(self.sigma),
+            'alpha': float(self.alpha),
         })
         return config
 
     def build(self, input_shape):
-        """Build the Sup3rCrossAlibi layer based on an input shape
+        """Build the Sup3rTransformerLayerAlibi layer based on an input shape
 
         Parameters
         ----------
@@ -1186,12 +1196,12 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
             Shape tuple of the input tensor.
         """
         super().build(input_shape)
-        self.sigma = self.add_weight(
-            name='sigma',
+        self.alpha = self.add_weight(
+            name='alpha',
             shape=[],
             trainable=self.trainable,
             dtype=tf.float32,
-            initializer=tf.keras.initializers.Constant(self.sigma),
+            initializer=tf.keras.initializers.Constant(self.alpha),
         )
         # Compute head slopes for the ALiBi bias based on the number of
         # attention heads. This follows the approach from the ALiBi paper to
@@ -1259,7 +1269,7 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
             + tf.cos(lat_q_rad) * tf.cos(lat_v_rad) * tf.sin(dlon / 2) ** 2
         )
         distance = 2 * tf.asin(tf.sqrt(a))
-        bias = -(distance**2) / (2 * self.sigma**2)
+        bias = -(distance**2) * self.alpha
 
         bias = tf.expand_dims(bias, axis=1)
         bias = tf.repeat(bias, repeats=self.num_heads, axis=1)
