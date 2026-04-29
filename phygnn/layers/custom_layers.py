@@ -56,6 +56,30 @@ def _set_keras_mask(x, mask):
         x._keras_mask = mask
 
 
+class SwiGLU(tf.keras.layers.Layer):
+    """SwiGLU activation function."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @tf.function
+    def call(self, x):
+        """Apply the SwiGLU activation function to the input tensor.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            Input tensor with shape (..., 2 * d)
+
+        Returns
+        -------
+        tf.Tensor
+            Output tensor with shape (..., d) after applying SwiGLU activation.
+        """
+        x1, x2 = tf.split(x, num_or_size_splits=2, axis=-1)
+        return x1 * tf.nn.silu(x2)
+
+
 class FlexiblePadding(tf.keras.layers.Layer):
     """Class to perform padding on tensors"""
 
@@ -792,7 +816,8 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
 
 class TransformerLayer(tf.keras.layers.Layer):
     """Custom transformer layer with multi-head attention layer that allows
-    for additive bias pre-softmax."""
+    for additive bias pre-softmax. This also uses RMS normalization instead of
+    LayerNormalization and an MLP with a SwiGLU activation function."""
 
     def __init__(self, num_heads, key_dim, attn_kwargs=None, **kwargs):
         """Initialize the transformer layer.
@@ -813,35 +838,30 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.attn_kwargs = attn_kwargs
-        self.attn = None
-        self.lq = None
-        self.lk = None
-        self.lv = None
-        self.lo = None
-        self.mlp = None
-
-    def build(self, input_shape):
-        """Build all sub-layers."""
         self.attn = MultiHeadAttention(
             num_heads=self.num_heads,
             key_dim=self.key_dim,
             **(self.attn_kwargs or {}),
         )
-        self.lq = tf.keras.layers.LayerNormalization()
-        self.lk = tf.keras.layers.LayerNormalization()
-        self.lv = tf.keras.layers.LayerNormalization()
-        self.lo = tf.keras.layers.LayerNormalization()
+        self.lq = tf.keras.layers.RMSNormalization()
+        self.lk = tf.keras.layers.RMSNormalization()
+        self.lv = tf.keras.layers.RMSNormalization()
+        self.lo = tf.keras.layers.RMSNormalization()
         self.mlp = tf.keras.Sequential([
-            tf.keras.layers.Dense(self.key_dim, activation='relu'),
+            tf.keras.layers.Dense(4 * self.key_dim),
+            SwiGLU(),
             tf.keras.layers.Dense(self.key_dim),
         ])
-        q_shape, k_shape, v_shape = input_shape
-        self.attn.build(q_shape, k_shape, v_shape)
-        self.lq.build(q_shape)
-        self.lk.build(k_shape)
-        self.lv.build(v_shape)
-        self.lo.build(q_shape)
-        self.mlp.build(q_shape)
+
+    def build(self, query_shape, key_shape, value_shape):
+        """Build all sub-layers."""
+        self.attn.build(query_shape, value_shape, key_shape)
+        self.lq.build(query_shape)
+        self.lk.build(key_shape)
+        self.lv.build(value_shape)
+        self.lo.build(query_shape)
+        self.mlp.build(query_shape)
+        super().build(query_shape)
 
     @tf.function
     def call(self, query, key, value, bias=None):
@@ -940,7 +960,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Maximum period for the temporal positional encoding.
         attn_kwargs : dict | None
             Additional keyword arguments forwarded to the internal
-            :class:`MultiHeadAttention` layer used by ``self.transformer``.
+            :class:`MultiHeadAttention` layer used by the
+            :class:`TransformerLayer` (``self.tl``).
         **kwargs
              Additional keyword arguments to pass to the parent class. This can
              include arguments like trainable and dtype.
@@ -958,11 +979,21 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.min_period_temporal = min_period_temporal
         self.max_period_temporal = max_period_temporal
         self.attn_kwargs = attn_kwargs
-        self.eq = None
-        self.ek = None
-        self.ev = None
-        self.pe = None
-        self.tl = None
+        self.eq = Embedder(embed_dim=self.embed_dim)
+        self.ek = Embedder(embed_dim=self.embed_dim)
+        self.ev = Embedder(embed_dim=self.embed_dim)
+        self.pe = PositionEncoder(
+            embed_dim=self.embed_dim,
+            min_period_spatial=self.min_period_spatial,
+            max_period_spatial=self.max_period_spatial,
+            min_period_temporal=self.min_period_temporal,
+            max_period_temporal=self.max_period_temporal,
+        )
+        self.tl = TransformerLayer(
+            key_dim=self.key_dim,
+            num_heads=self.num_heads,
+            attn_kwargs=self.attn_kwargs,
+        )
         self.final_proj = None
 
     def build(self, input_shape):
@@ -983,21 +1014,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             logger.error(msg)
             raise ValueError(msg)
 
-        self.eq = Embedder(embed_dim=self.embed_dim)
-        self.ek = Embedder(embed_dim=self.embed_dim)
-        self.ev = Embedder(embed_dim=self.embed_dim)
-        self.pe = PositionEncoder(
-            embed_dim=self.embed_dim,
-            min_period_spatial=self.min_period_spatial,
-            max_period_spatial=self.max_period_spatial,
-            min_period_temporal=self.min_period_temporal,
-            max_period_temporal=self.max_period_temporal,
-        )
-        self.tl = TransformerLayer(
-            key_dim=self.key_dim,
-            num_heads=self.num_heads,
-            attn_kwargs=self.attn_kwargs,
-        )
         q_shape, v_shape = (
             input_shape
             if all(isinstance(elem, tuple) for elem in input_shape)
@@ -1009,7 +1025,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.eq.build(q_shape)
         self.ek.build(v_shape)
         self.ev.build(v_shape)
-        self.tl.build((embed_shape, embed_shape, embed_shape))
+        self.tl.build(embed_shape, embed_shape, embed_shape)
         self.final_proj.build(embed_shape)
 
     def get_config(self):
@@ -1356,7 +1372,24 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         self.key_dim = key_dim
         self.embed_dim = embed_dim
         self.attn_kwargs = attn_kwargs
-        self.layers = None
+        transformer_cls = (
+            Sup3rTransformerLayerAlibi
+            if self.use_alibi
+            else Sup3rTransformerLayer
+        )
+        self.layers = [
+            transformer_cls(
+                **{
+                    'features': [feat],
+                    'attn_kwargs': self.attn_kwargs,
+                    'num_heads': self.num_heads,
+                    'key_dim': self.key_dim,
+                    'embed_dim': self.embed_dim,
+                    **self.transformer_kwargs,
+                }
+            )
+            for feat in self.features
+        ]
 
     @tf.function
     def call(self, x, hi_res_features=None, exo_data=None):
@@ -1402,24 +1435,9 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         input_shape : tuple
             Shape tuple of the input tensor.
         """
-        transformer_cls = (
-            Sup3rTransformerLayerAlibi
-            if self.use_alibi
-            else Sup3rTransformerLayer
-        )
-        self.layers = [
-            transformer_cls(
-                num_heads=self.num_heads,
-                key_dim=self.key_dim,
-                embed_dim=self.embed_dim,
-                features=[feat],
-                attn_kwargs=self.attn_kwargs,
-                **self.transformer_kwargs,
-            )
-            for feat in self.features
-        ]
         for layer in self.layers:
             layer.build(input_shape)
+        super().build(input_shape)
 
     def get_config(self):
         """Get config for Keras serialization."""

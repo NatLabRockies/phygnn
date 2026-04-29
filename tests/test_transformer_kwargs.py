@@ -36,6 +36,20 @@ def test_transformer_layer_forwards_attn_kwargs():
     assert layer.attn._use_bias is False
 
 
+def test_transformer_layer_forward_pass_builds_supported_mlp():
+    """TransformerLayer should build and run without unsupported
+    activations."""
+    layer = TransformerLayer(num_heads=2, key_dim=8)
+
+    query = tf.random.normal((2, 5, 8))
+    key = tf.random.normal((2, 5, 8))
+    value = tf.random.normal((2, 5, 8))
+
+    output = layer(query, key, value)
+
+    assert output.shape == query.shape
+
+
 def test_sup3r_transformer_layer_forwards_attn_kwargs():
     """Sup3rTransformerLayer should preserve attention kwargs."""
     layer = Sup3rTransformerLayer(
@@ -45,7 +59,7 @@ def test_sup3r_transformer_layer_forwards_attn_kwargs():
         attn_kwargs={'dropout': 0.15},
     )
 
-    assert layer.transformer.attn._dropout == pytest.approx(0.15)
+    assert layer.tl.attn._dropout == pytest.approx(0.15)
 
 
 def test_sup3r_transformer_block_forwards_layer_and_attention_kwargs():
@@ -66,7 +80,7 @@ def test_sup3r_transformer_block_forwards_layer_and_attention_kwargs():
     assert all(layer.key_dim == 12 for layer in block.layers)
     assert all(layer.num_heads == 4 for layer in block.layers)
     assert all(
-        layer.transformer.attn._dropout == pytest.approx(0.05)
+        layer.tl.attn._dropout == pytest.approx(0.05)
         for layer in block.layers
     )
 
@@ -84,7 +98,7 @@ def test_sup3r_transformer_block_uses_alibi_variant():
 
     assert len(block.layers) == 1
     assert isinstance(block.layers[0], Sup3rTransformerLayerAlibi)
-    assert block.layers[0].transformer.attn._dropout == pytest.approx(0.1)
+    assert block.layers[0].tl.attn._dropout == pytest.approx(0.1)
 
 
 def test_multi_head_attention_uses_fused_path_when_available(monkeypatch):
