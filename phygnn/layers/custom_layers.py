@@ -861,7 +861,6 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.lv.build(value_shape)
         self.lo.build(query_shape)
         self.mlp.build(query_shape)
-        super().build(query_shape)
 
     @tf.function
     def call(self, query, key, value, bias=None):
@@ -996,37 +995,75 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         )
         self.final_proj = None
 
-    def build(self, input_shape):
+    def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
         """Build the CrossAttentionBlock layer based on an input shape
 
         Parameters
         ----------
-        input_shape : tuple
-            Shape tuple of the input tensor.
+        x_shape : tuple
+            Shape tuple of the query tensor.
+        hi_res_feature_shape : tuple | None
+            Shape tuple of the high resolution feature tensor.
+        exo_data_shape : tuple | None
+            Shape tuple of the exogenous data tensor.
         """
-        super().build(input_shape)
-        self.rank = len(input_shape)
+        self.rank = len(x_shape)
         msg = (
             'Sup3rTransformerLayer input must be 4D or 5D, but received input '
-            f'shape: {input_shape}'
+            f'shape: {x_shape}'
         )
         if self.rank not in {4, 5}:
             logger.error(msg)
             raise ValueError(msg)
 
-        q_shape, v_shape = (
-            input_shape
-            if all(isinstance(elem, tuple) for elem in input_shape)
-            else (input_shape, (*input_shape[:-1], len(self.features)))
-        )
+        if exo_data_shape is not None:
+            exo_rank = len(exo_data_shape)
+            if exo_rank != self.rank:
+                msg = (
+                    'Sup3rTransformerLayer exo_data rank must match the '
+                    f'query rank. Received x shape {x_shape} and exo_data '
+                    f'shape {exo_data_shape}.'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
+
+            mismatched_dims = [
+                (x_dim, exo_dim)
+                for x_dim, exo_dim in zip(x_shape[:-1], exo_data_shape[:-1])
+                if x_dim is not None
+                and exo_dim is not None
+                and x_dim != exo_dim
+            ]
+            if mismatched_dims:
+                msg = (
+                    'Sup3rTransformerLayer exo_data spatial dimensions must '
+                    'match the query tensor. Received x shape '
+                    f'{x_shape} and exo_data shape {exo_data_shape}.'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
+
+            exo_features = exo_data_shape[-1]
+            if exo_features is not None and exo_features < 2:
+                msg = (
+                    'Sup3rTransformerLayer exo_data must contain at least '
+                    'latitude and longitude channels. Received exo_data '
+                    f'shape {exo_data_shape}.'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
+
+        q_shape = x_shape
+        v_shape = hi_res_feature_shape or x_shape
         embed_shape = (None, None, self.embed_dim)
-        # final projection layer to project back to input feature space
         self.final_proj = tf.keras.layers.Dense(q_shape[-1])
         self.eq.build(q_shape)
         self.ek.build(v_shape)
         self.ev.build(v_shape)
+        self.pe.build(q_shape)
         self.tl.build(embed_shape, embed_shape, embed_shape)
         self.final_proj.build(embed_shape)
+        super().build(q_shape)
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -1082,9 +1119,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         if tf.math.reduce_all(tf.math.is_nan(hr_in)):
             return tf.squeeze(x_in, axis=0)
 
-        out = self._transformer_layer(
-            x_in, hr_in, lat=lat, lon=lon, time=time
-        )
+        out = self._transformer_layer(x_in, hr_in, lat=lat, lon=lon, time=time)
 
         tf.debugging.assert_all_finite(
             out, message='Attention output contains NaN or Inf values.'
@@ -1378,16 +1413,14 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             else Sup3rTransformerLayer
         )
         self.layers = [
-            transformer_cls(
-                **{
-                    'features': [feat],
-                    'attn_kwargs': self.attn_kwargs,
-                    'num_heads': self.num_heads,
-                    'key_dim': self.key_dim,
-                    'embed_dim': self.embed_dim,
-                    **self.transformer_kwargs,
-                }
-            )
+            transformer_cls(**{
+                'features': [feat],
+                'attn_kwargs': self.attn_kwargs,
+                'num_heads': self.num_heads,
+                'key_dim': self.key_dim,
+                'embed_dim': self.embed_dim,
+                **self.transformer_kwargs,
+            })
             for feat in self.features
         ]
 
@@ -1427,17 +1460,30 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             )
         return x_in + x
 
-    def build(self, input_shape):
+    def build(
+        self,
+        x_shape,
+        hi_res_features_shape=None,
+        exo_data_shape=None,
+    ):
         """Build the block based on an input shape
 
         Parameters
         ----------
-        input_shape : tuple
-            Shape tuple of the input tensor.
+        x_shape : tuple
+            Shape tuple of the query tensor.
+        hi_res_features_shape : tuple | None
+            Shape tuple of the high resolution feature tensor stack.
+        exo_data_shape : tuple | None
+            Shape tuple of the exogenous data tensor.
         """
+        layer_hi_res_shape = None
+        if hi_res_features_shape is not None:
+            layer_hi_res_shape = (*hi_res_features_shape[:-1], 1)
+
         for layer in self.layers:
-            layer.build(input_shape)
-        super().build(input_shape)
+            layer.build(x_shape, layer_hi_res_shape, exo_data_shape)
+        super().build(x_shape)
 
     def get_config(self):
         """Get config for Keras serialization."""

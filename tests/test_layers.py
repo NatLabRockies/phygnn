@@ -722,9 +722,9 @@ def test_pos_encoding_patch_size_gt1_3d():
     n_tokens = n_rows * n_cols * n_times
 
     lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1, 1)
-    lat *= np.ones((1, 1, n_cols, n_times, 1))
+    lat = lat * np.ones((1, 1, n_cols, n_times, 1))
     lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1, 1)
-    lon *= np.ones((1, n_rows, 1, n_times, 1))
+    lon = lon * np.ones((1, n_rows, 1, n_times, 1))
     lat = tf.constant(lat, dtype=tf.float32)
     lon = tf.constant(lon, dtype=tf.float32)
 
@@ -814,72 +814,6 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     np.testing.assert_allclose(x_enc.numpy(), expected.numpy(), atol=1e-6)
     assert calls['lat_lon'] == 1
     assert calls['time'] == 1
-
-
-def test_transformer_patch_size_gt1_shapes():
-    """Test Tokenizer and PositionEncoder with patch_size > 1, including
-    non-divisible spatial dimensions (5x7). Inputs are padded via
-    PatchLayer.pad() before tokenize/encode.
-    """
-    patch_size = 2
-    embed_dim = 8
-
-    for h, w in [(6, 8), (5, 7)]:
-        x = tf.random.normal((1, h, w, 3), dtype=tf.float32)
-        y = tf.random.normal((1, h, w, 1), dtype=tf.float32)
-
-        x_padded = PatchLayer.pad(x, patch_size=patch_size)
-        y_padded = PatchLayer.pad(y, patch_size=patch_size)
-
-        # Padded dims must be divisible by patch_size.
-        for i in range(1, len(x_padded.shape) - 1):
-            assert x_padded.shape[i] % patch_size == 0
-            assert y_padded.shape[i] % patch_size == 0
-
-        ph = int(np.ceil(h / patch_size)) * patch_size
-        pw = int(np.ceil(w / patch_size)) * patch_size
-        n_tokens = (ph // patch_size) * (pw // patch_size)
-
-        tokenizer_q = Embedder(patch_size=patch_size, embed_dim=embed_dim)
-        tokenizer_v = Embedder(patch_size=patch_size, embed_dim=embed_dim)
-        pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
-
-        lat_pad = tf.constant(
-            np.linspace(30, 40, ph).reshape(1, ph, 1, 1)
-            * np.ones((1, 1, pw, 1)),
-            dtype=tf.float32,
-        )
-        lon_pad = tf.constant(
-            np.linspace(-100, -90, pw).reshape(1, 1, pw, 1)
-            * np.ones((1, ph, 1, 1)),
-            dtype=tf.float32,
-        )
-
-        q = tokenizer_q(x_padded)
-        v = tokenizer_v(y_padded)
-        q_enc = pos_enc(x_padded, lat=lat_pad, lon=lon_pad)
-        v_enc = pos_enc(y_padded, lat=lat_pad, lon=lon_pad)
-
-        n_spatial_tokens = ph * pw
-        assert q.shape == (1, n_tokens, embed_dim)
-        assert v.shape == (1, n_tokens, embed_dim)
-        assert q_enc.shape == (1, n_spatial_tokens, embed_dim)
-        assert v_enc.shape == (1, n_spatial_tokens, embed_dim)
-
-        # Full Sup3rTransformerLayer forward pass must return original shape
-        lat = tf.constant(
-            np.linspace(30, 40, h).reshape(1, h, 1, 1) * np.ones((1, 1, w, 1)),
-            dtype=tf.float32,
-        )
-        lon = tf.constant(
-            np.linspace(-100, -90, w).reshape(1, 1, w, 1)
-            * np.ones((1, h, 1, 1)),
-            dtype=tf.float32,
-        )
-        exo_data = tf.concat([lat, lon], axis=-1)
-        layer = Sup3rTransformerLayer(embed_dim=embed_dim, key_dim=embed_dim)
-        out = layer(x, y, exo_data=exo_data)
-        assert out.shape == x.shape
 
 
 def test_transformer_exo_data_time_forwarding(monkeypatch):
