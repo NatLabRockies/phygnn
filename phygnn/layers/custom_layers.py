@@ -346,6 +346,7 @@ class Embedder(PatchLayer):
         input_shape : tuple
             Shape tuple of the input tensor
         """
+        super().build(input_shape)
         if self.patch_size > 1:
             kwargs = {
                 'kernel_size': [self.patch_size] * (self.rank - 2),
@@ -599,6 +600,7 @@ class PositionEncoder(PatchLayer):
         input_shape : tuple
             Shape tuple of the input tensor
         """
+        super().build(input_shape)
         kwargs = {
             'pool_size': self.patch_size,
             'strides': self.patch_size,
@@ -861,6 +863,7 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.lv.build(value_shape)
         self.lo.build(query_shape)
         self.mlp.build(query_shape)
+        super().build(query_shape)
 
     @tf.function
     def call(self, query, key, value, bias=None):
@@ -996,7 +999,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.final_proj = None
 
     def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
-        """Build the CrossAttentionBlock layer based on an input shape
+        """Build the Sup3rTransformerLayer layer based on an input shape
 
         Parameters
         ----------
@@ -1238,15 +1241,18 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
         })
         return config
 
-    def build(self, input_shape):
-        """Build the Sup3rTransformerLayerAlibi layer based on an input shape
+    def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
+        """Build the Sup3rTransformerLayer layer based on an input shape
 
         Parameters
         ----------
-        input_shape : tuple
-            Shape tuple of the input tensor.
+        x_shape : tuple
+            Shape tuple of the query tensor.
+        hi_res_feature_shape : tuple | None
+            Shape tuple of the high resolution feature tensor.
+        exo_data_shape : tuple | None
+            Shape tuple of the exogenous data tensor.
         """
-        super().build(input_shape)
         self.alpha = self.add_weight(
             name='alpha',
             shape=[],
@@ -1269,6 +1275,7 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
             dtype=tf.float32,
             initializer=tf.keras.initializers.Constant(slopes),
         )
+        super().build(x_shape, hi_res_feature_shape, exo_data_shape)
 
     def get_locality_bias(self, x, hi_res_feature, lat, lon, time=None):
         """Helper function to compute a locality bias for the attention based
