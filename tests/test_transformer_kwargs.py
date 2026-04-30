@@ -1,13 +1,10 @@
 """Regression tests for transformer and attention kwarg forwarding."""
 
-import importlib
-
 import pytest
 import tensorflow as tf
 
 from phygnn.layers import custom_layers as custom_layers_module
 
-custom_layers_module = importlib.reload(custom_layers_module)
 MultiHeadAttention = custom_layers_module.MultiHeadAttention
 Sup3rTransformerBlock = custom_layers_module.Sup3rTransformerBlock
 Sup3rTransformerLayer = custom_layers_module.Sup3rTransformerLayer
