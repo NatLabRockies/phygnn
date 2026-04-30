@@ -11,7 +11,6 @@ import tensorflow as tf
 
 from phygnn import TfModel
 from phygnn.layers.custom_layers import (
-    Embedder,
     ExpandDims,
     FlattenAxis,
     FunctionalLayer,
@@ -19,7 +18,6 @@ from phygnn.layers.custom_layers import (
     GaussianNoiseAxis,
     LogTransform,
     MaskedSqueezeAndExcitation,
-    PatchLayer,
     PositionEncoder,
     SigLin,
     SkipConnection,
