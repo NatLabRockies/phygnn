@@ -176,6 +176,9 @@ def test_save_load():
         assert loaded.feature_names == ['a', 'b']
         assert loaded.label_names == ['c']
 
+        pgnn_fpath = os.path.join(model_fpath, 'test_model.pkl')
+        assert os.path.isfile(pgnn_fpath)
+
         with open(os.path.join(model_fpath, 'test_model.json')) as f:
             params = json.load(f)
 

@@ -460,7 +460,8 @@ class TfModel(ModelBase):
             os.makedirs(path)
 
         if TF2:
-            self.model.save(path)
+            model_path = os.path.join(path, 'model.keras')
+            self.model.save(model_path)
         if not TF2:
             tf.saved_model.save(self.model, path)
 
@@ -507,7 +508,8 @@ class TfModel(ModelBase):
             logger.error(e)
             raise OSError(e)
 
-        loaded = tf.keras.models.load_model(path)
+        model_path = os.path.join(path, 'model.keras')
+        loaded = tf.keras.models.load_model(model_path)
 
         json_path = path + 'model.json'
         with open(json_path) as f:
