@@ -1,0 +1,29 @@
+phygnn.utilities.pre\_processing.PreProcess
+===========================================
+
+.. currentmodule:: phygnn.utilities.pre_processing
+
+.. autoclass:: PreProcess
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PreProcess.check_one_hot_categories
+      ~PreProcess.normalize
+      ~PreProcess.one_hot
+      ~PreProcess.process_one_hot
+      ~PreProcess.unnormalize
+      ~PreProcess.update_names
+   
+   
+
+   
+   
+   

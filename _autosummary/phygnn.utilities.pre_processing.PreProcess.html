@@ -1,0 +1,419 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.utilities.pre_processing.PreProcess &mdash; phygnn 0.0.35.dev1+g264b3e851 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=9673985c"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="phygnn.utilities.tf_utilities" href="phygnn.utilities.tf_utilities.html" />
+    <link rel="prev" title="phygnn.utilities.pre_processing" href="phygnn.utilities.pre_processing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="phygnn.html">API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.layers.html">phygnn.layers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.get_custom_layer_objects.html">phygnn.layers.custom_layers.get_custom_layer_objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcat.html">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.Layers.html">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.tf_model.TfModel.html">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="phygnn.utilities.html">phygnn.utilities</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="reference internal" href="phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="phygnn.html">phygnn</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.utilities.html">phygnn.utilities</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a></li>
+      <li class="breadcrumb-item active">phygnn.utilities.pre_processing.PreProcess</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/NatLabRockies/phygnn/blob/main/docs/source/_autosummary/phygnn.utilities.pre_processing.PreProcess.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="phygnn-utilities-pre-processing-preprocess">
+<h1>phygnn.utilities.pre_processing.PreProcess<a class="headerlink" href="#phygnn-utilities-pre-processing-preprocess" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="phygnn.utilities.pre_processing.PreProcess">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PreProcess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/utilities/pre_processing.html#PreProcess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.utilities.pre_processing.PreProcess" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class to handle the pre-processing of feature data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>features</strong> (<em>np.ndarray | pd.DataFrame</em>) – Feature data in a 2D array or DataFrame.</p></li>
+<li><p><strong>feature_names</strong> (<em>str, optional</em>) – Feature names, used if features is an ndarray, by default None</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.utilities.pre_processing.PreProcess.check_one_hot_categories" title="phygnn.utilities.pre_processing.PreProcess.check_one_hot_categories"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_one_hot_categories</span></code></a>(one_hot_categories)</p></td>
+<td><p>Check one hot features and categories for duplicate names and against feature names if provided</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.utilities.pre_processing.PreProcess.normalize" title="phygnn.utilities.pre_processing.PreProcess.normalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize</span></code></a>(arr[, mean, stdev])</p></td>
+<td><p>Normalize features with mean at 0 and stdev of 1.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.utilities.pre_processing.PreProcess.one_hot" title="phygnn.utilities.pre_processing.PreProcess.one_hot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">one_hot</span></code></a>(features[, feature_names, ...])</p></td>
+<td><p>Process str and int columns in the feature data to one-hot vectors.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.utilities.pre_processing.PreProcess.process_one_hot" title="phygnn.utilities.pre_processing.PreProcess.process_one_hot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_one_hot</span></code></a>([convert_int, categories, ...])</p></td>
+<td><p>Process str and int columns in the feature data to one-hot vectors.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.utilities.pre_processing.PreProcess.unnormalize" title="phygnn.utilities.pre_processing.PreProcess.unnormalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unnormalize</span></code></a>(norm_arr, mean, stdev)</p></td>
+<td><p>Unnormalize data with mean at 0 and stdev of 1.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.utilities.pre_processing.PreProcess.update_names" title="phygnn.utilities.pre_processing.PreProcess.update_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_names</span></code></a>(names, categories)</p></td>
+<td><p>Update feature names with the OHE categories.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.utilities.pre_processing.PreProcess.normalize">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stdev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/utilities/pre_processing.html#PreProcess.normalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.utilities.pre_processing.PreProcess.normalize" title="Link to this definition"></a></dt>
+<dd><p>Normalize features with mean at 0 and stdev of 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>ndarray | pd.DataFrame</em>) – native data, dataframes are converted to arrays.</p></li>
+<li><p><strong>mean</strong> (<em>float | None</em>) – mean to use for normalization</p></li>
+<li><p><strong>stdev</strong> (<em>float | None</em>) – stdev to use for normalization</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>norm_arr</strong> (<em>ndarray</em>) – normalized data</p></li>
+<li><p><strong>mean</strong> (<em>np.ndarray</em>) – 1D array of mean values used for normalization with length equal to
+number of features</p></li>
+<li><p><strong>stdev</strong> (<em>np.ndarray</em>) – 1D array of stdev values used for normalization with length equal
+to number of features</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.utilities.pre_processing.PreProcess.unnormalize">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unnormalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">norm_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stdev</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/utilities/pre_processing.html#PreProcess.unnormalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.utilities.pre_processing.PreProcess.unnormalize" title="Link to this definition"></a></dt>
+<dd><p>Unnormalize data with mean at 0 and stdev of 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>norm_arr</strong> (<em>ndarray</em>) – normalized data</p></li>
+<li><p><strong>mean</strong> (<em>float</em>) – mean used for normalization</p></li>
+<li><p><strong>stdev</strong> (<em>float</em>) – stdev used for normalization</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>native_arr</strong> (<em>ndarray</em>) – native un-normalized data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.utilities.pre_processing.PreProcess.check_one_hot_categories">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_one_hot_categories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">one_hot_categories</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/utilities/pre_processing.html#PreProcess.check_one_hot_categories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.utilities.pre_processing.PreProcess.check_one_hot_categories" title="Link to this definition"></a></dt>
+<dd><p>Check one hot features and categories for duplicate names and against
+feature names if provided</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>one_hot_categories</strong> (<em>dict, optional</em>) – Features to one-hot encode using given categories</p></li>
+<li><p><strong>feature_names</strong> (<em>[type], optional</em>) – Feature names, by default None</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.utilities.pre_processing.PreProcess.update_names">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/utilities/pre_processing.html#PreProcess.update_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.utilities.pre_processing.PreProcess.update_names" title="Link to this definition"></a></dt>
+<dd><p>Update feature names with the OHE categories.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>names</strong> (<em>list | None</em>) – Feature or label names</p></li>
+<li><p><strong>categories</strong> (<em>dict</em>) – Categories to use for one hot encoding where a key is the original
+column name in the feature dataframe and value is a list of the
+possible unique values of the feature column. The value list must
+have as many or more entries as unique values in the feature
+column. This will name the feature column headers for the new
+one-hot-encoding if features is a dataframe. Empty dict or None
+results in category names being determined automatically. Format:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>{‘col_name1’<span class="classifier">[‘cat1’, ‘cat2’, ‘cat3’],</span></dt><dd><p>‘col_name2’ : [‘other_cat1’, ‘other_cat2’]}</p>
+</dd>
+</dl>
+</div></blockquote>
+</li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>names</strong> (<em>list | None</em>) – Names updated with categories</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.utilities.pre_processing.PreProcess.process_one_hot">
+<span class="sig-name descname"><span class="pre">process_one_hot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">convert_int</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_ind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/utilities/pre_processing.html#PreProcess.process_one_hot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.utilities.pre_processing.PreProcess.process_one_hot" title="Link to this definition"></a></dt>
+<dd><p>Process str and int columns in the feature data to one-hot vectors.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>convert_int</strong> (<em>bool, optional</em>) – Flag to convert integer data to one-hot vectors, by default False</p></li>
+<li><p><strong>categories</strong> (<em>dict | None, optional</em>) – Categories to use for one hot encoding where a key is the original
+column name in the feature dataframe and value is a list of the
+possible unique values of the feature column. The value list must
+have as many or more entries as unique values in the feature
+column. This will name the feature column headers for the new
+one-hot-encoding if features is a dataframe. Empty dict or None
+results in category names being determined automatically. Format:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>{‘col_name1’<span class="classifier">[‘cat1’, ‘cat2’, ‘cat3’],</span></dt><dd><p>‘col_name2’ : [‘other_cat1’, ‘other_cat2’]}</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>by default None</p>
+</li>
+<li><p><strong>return_ind</strong> (<em>bool, optional</em>) – Return one hot column indices, by default False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>processed</strong> (<em>np.ndarray | pd.DataFrame</em>) – Feature data with str and int columns removed and one-hot boolean
+vectors appended as new columns. If features is a dataframe and
+categories is input, the new one-hot columns will be named
+according to categories.</p></li>
+<li><p><strong>one_hot_ind</strong> (<em>list, optional</em>) – List of numeric column indices in the native data that are
+to-be-transformed into one-hot vectors.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.utilities.pre_processing.PreProcess.one_hot">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">one_hot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convert_int</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_ind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/utilities/pre_processing.html#PreProcess.one_hot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.utilities.pre_processing.PreProcess.one_hot" title="Link to this definition"></a></dt>
+<dd><p>Process str and int columns in the feature data to one-hot vectors.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>features</strong> (<em>np.ndarray | pd.DataFrame</em>) – Feature data in a 2D array or DataFrame.</p></li>
+<li><p><strong>feature_names</strong> (<em>str, optional</em>) – Feature names, used if features is an ndarray, by default None</p></li>
+<li><p><strong>convert_int</strong> (<em>bool, optional</em>) – Flag to convert integer data to one-hot vectors, by default False</p></li>
+<li><p><strong>categories</strong> (<em>dict | None, optional</em>) – Categories to use for one hot encoding where a key is the original
+column name in the feature dataframe and value is a list of the
+possible unique values of the feature column. The value list must
+have as many or more entries as unique values in the feature
+column. This will name the feature column headers for the new
+one-hot-encoding if features is a dataframe. Empty dict or None
+results in category names being determined automatically. Format:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>{‘col_name1’<span class="classifier">[‘cat1’, ‘cat2’, ‘cat3’],</span></dt><dd><p>‘col_name2’ : [‘other_cat1’, ‘other_cat2’]}</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>by default None</p>
+</li>
+<li><p><strong>return_ind</strong> (<em>bool, optional</em>) – Return one hot column indices, by default False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>processed</strong> (<em>np.ndarray | pd.DataFrame</em>) – Feature data with str and int columns removed and one-hot boolean
+vectors appended as new columns. If features is a dataframe and
+categories is input, the new one-hot columns will be named
+according to categories.</p></li>
+<li><p><strong>one_hot_ind</strong> (<em>list, optional</em>) – List of numeric column indices in the native data that are
+to-be-transformed into one-hot vectors.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="phygnn.utilities.pre_processing.html" class="btn btn-neutral float-left" title="phygnn.utilities.pre_processing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="phygnn.utilities.tf_utilities.html" class="btn btn-neutral float-right" title="phygnn.utilities.tf_utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

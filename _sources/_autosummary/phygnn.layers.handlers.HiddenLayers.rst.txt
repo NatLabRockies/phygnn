@@ -1,0 +1,39 @@
+phygnn.layers.handlers.HiddenLayers
+===================================
+
+.. currentmodule:: phygnn.layers.handlers
+
+.. autoclass:: HiddenLayers
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~HiddenLayers.add_layer
+      ~HiddenLayers.add_layer_by_class
+      ~HiddenLayers.add_skip_layer
+      ~HiddenLayers.compile
+      ~HiddenLayers.parse_repeats
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~HiddenLayers.bias_weights
+      ~HiddenLayers.hidden_layer_kwargs
+      ~HiddenLayers.kernel_weights
+      ~HiddenLayers.layers
+      ~HiddenLayers.skip_layers
+      ~HiddenLayers.weights
+   
+   

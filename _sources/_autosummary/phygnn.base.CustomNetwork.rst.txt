@@ -1,0 +1,42 @@
+phygnn.base.CustomNetwork
+=========================
+
+.. currentmodule:: phygnn.base
+
+.. autoclass:: CustomNetwork
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CustomNetwork.get_val_split
+      ~CustomNetwork.load
+      ~CustomNetwork.make_batches
+      ~CustomNetwork.predict
+      ~CustomNetwork.preflight_features
+      ~CustomNetwork.save
+      ~CustomNetwork.seed
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~CustomNetwork.bias_weights
+      ~CustomNetwork.kernel_weights
+      ~CustomNetwork.layers
+      ~CustomNetwork.layers_obj
+      ~CustomNetwork.model_params
+      ~CustomNetwork.version_record
+      ~CustomNetwork.weights
+   
+   

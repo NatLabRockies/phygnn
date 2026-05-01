@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.GaussianNoiseAxis
+==============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: GaussianNoiseAxis
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GaussianNoiseAxis.add_loss
+      ~GaussianNoiseAxis.add_metric
+      ~GaussianNoiseAxis.add_variable
+      ~GaussianNoiseAxis.add_weight
+      ~GaussianNoiseAxis.build
+      ~GaussianNoiseAxis.build_from_config
+      ~GaussianNoiseAxis.call
+      ~GaussianNoiseAxis.compute_mask
+      ~GaussianNoiseAxis.compute_output_shape
+      ~GaussianNoiseAxis.compute_output_spec
+      ~GaussianNoiseAxis.count_params
+      ~GaussianNoiseAxis.from_config
+      ~GaussianNoiseAxis.get_build_config
+      ~GaussianNoiseAxis.get_config
+      ~GaussianNoiseAxis.get_weights
+      ~GaussianNoiseAxis.load_own_variables
+      ~GaussianNoiseAxis.quantize
+      ~GaussianNoiseAxis.quantized_build
+      ~GaussianNoiseAxis.quantized_call
+      ~GaussianNoiseAxis.rematerialized_call
+      ~GaussianNoiseAxis.save_own_variables
+      ~GaussianNoiseAxis.set_weights
+      ~GaussianNoiseAxis.stateless_call
+      ~GaussianNoiseAxis.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~GaussianNoiseAxis.compute_dtype
+      ~GaussianNoiseAxis.dtype
+      ~GaussianNoiseAxis.dtype_policy
+      ~GaussianNoiseAxis.input
+      ~GaussianNoiseAxis.input_dtype
+      ~GaussianNoiseAxis.input_spec
+      ~GaussianNoiseAxis.losses
+      ~GaussianNoiseAxis.metrics
+      ~GaussianNoiseAxis.metrics_variables
+      ~GaussianNoiseAxis.non_trainable_variables
+      ~GaussianNoiseAxis.non_trainable_weights
+      ~GaussianNoiseAxis.output
+      ~GaussianNoiseAxis.path
+      ~GaussianNoiseAxis.quantization_mode
+      ~GaussianNoiseAxis.supports_masking
+      ~GaussianNoiseAxis.trainable
+      ~GaussianNoiseAxis.trainable_variables
+      ~GaussianNoiseAxis.trainable_weights
+      ~GaussianNoiseAxis.variable_dtype
+      ~GaussianNoiseAxis.variables
+      ~GaussianNoiseAxis.weights
+   
+   

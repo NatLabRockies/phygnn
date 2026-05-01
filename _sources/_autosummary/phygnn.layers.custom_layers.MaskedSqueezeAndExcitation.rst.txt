@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.MaskedSqueezeAndExcitation
+=======================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: MaskedSqueezeAndExcitation
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MaskedSqueezeAndExcitation.add_loss
+      ~MaskedSqueezeAndExcitation.add_metric
+      ~MaskedSqueezeAndExcitation.add_variable
+      ~MaskedSqueezeAndExcitation.add_weight
+      ~MaskedSqueezeAndExcitation.build
+      ~MaskedSqueezeAndExcitation.build_from_config
+      ~MaskedSqueezeAndExcitation.call
+      ~MaskedSqueezeAndExcitation.compute_mask
+      ~MaskedSqueezeAndExcitation.compute_output_shape
+      ~MaskedSqueezeAndExcitation.compute_output_spec
+      ~MaskedSqueezeAndExcitation.count_params
+      ~MaskedSqueezeAndExcitation.from_config
+      ~MaskedSqueezeAndExcitation.get_build_config
+      ~MaskedSqueezeAndExcitation.get_config
+      ~MaskedSqueezeAndExcitation.get_weights
+      ~MaskedSqueezeAndExcitation.load_own_variables
+      ~MaskedSqueezeAndExcitation.quantize
+      ~MaskedSqueezeAndExcitation.quantized_build
+      ~MaskedSqueezeAndExcitation.quantized_call
+      ~MaskedSqueezeAndExcitation.rematerialized_call
+      ~MaskedSqueezeAndExcitation.save_own_variables
+      ~MaskedSqueezeAndExcitation.set_weights
+      ~MaskedSqueezeAndExcitation.stateless_call
+      ~MaskedSqueezeAndExcitation.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MaskedSqueezeAndExcitation.compute_dtype
+      ~MaskedSqueezeAndExcitation.dtype
+      ~MaskedSqueezeAndExcitation.dtype_policy
+      ~MaskedSqueezeAndExcitation.input
+      ~MaskedSqueezeAndExcitation.input_dtype
+      ~MaskedSqueezeAndExcitation.input_spec
+      ~MaskedSqueezeAndExcitation.losses
+      ~MaskedSqueezeAndExcitation.metrics
+      ~MaskedSqueezeAndExcitation.metrics_variables
+      ~MaskedSqueezeAndExcitation.non_trainable_variables
+      ~MaskedSqueezeAndExcitation.non_trainable_weights
+      ~MaskedSqueezeAndExcitation.output
+      ~MaskedSqueezeAndExcitation.path
+      ~MaskedSqueezeAndExcitation.quantization_mode
+      ~MaskedSqueezeAndExcitation.supports_masking
+      ~MaskedSqueezeAndExcitation.trainable
+      ~MaskedSqueezeAndExcitation.trainable_variables
+      ~MaskedSqueezeAndExcitation.trainable_weights
+      ~MaskedSqueezeAndExcitation.variable_dtype
+      ~MaskedSqueezeAndExcitation.variables
+      ~MaskedSqueezeAndExcitation.weights
+   
+   

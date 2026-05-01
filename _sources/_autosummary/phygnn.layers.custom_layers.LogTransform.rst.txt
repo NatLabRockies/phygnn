@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.LogTransform
+=========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: LogTransform
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LogTransform.add_loss
+      ~LogTransform.add_metric
+      ~LogTransform.add_variable
+      ~LogTransform.add_weight
+      ~LogTransform.build
+      ~LogTransform.build_from_config
+      ~LogTransform.call
+      ~LogTransform.compute_mask
+      ~LogTransform.compute_output_shape
+      ~LogTransform.compute_output_spec
+      ~LogTransform.count_params
+      ~LogTransform.from_config
+      ~LogTransform.get_build_config
+      ~LogTransform.get_config
+      ~LogTransform.get_weights
+      ~LogTransform.load_own_variables
+      ~LogTransform.quantize
+      ~LogTransform.quantized_build
+      ~LogTransform.quantized_call
+      ~LogTransform.rematerialized_call
+      ~LogTransform.save_own_variables
+      ~LogTransform.set_weights
+      ~LogTransform.stateless_call
+      ~LogTransform.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LogTransform.compute_dtype
+      ~LogTransform.dtype
+      ~LogTransform.dtype_policy
+      ~LogTransform.input
+      ~LogTransform.input_dtype
+      ~LogTransform.input_spec
+      ~LogTransform.losses
+      ~LogTransform.metrics
+      ~LogTransform.metrics_variables
+      ~LogTransform.non_trainable_variables
+      ~LogTransform.non_trainable_weights
+      ~LogTransform.output
+      ~LogTransform.path
+      ~LogTransform.quantization_mode
+      ~LogTransform.supports_masking
+      ~LogTransform.trainable
+      ~LogTransform.trainable_variables
+      ~LogTransform.trainable_weights
+      ~LogTransform.variable_dtype
+      ~LogTransform.variables
+      ~LogTransform.weights
+   
+   

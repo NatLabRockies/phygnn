@@ -1,0 +1,41 @@
+phygnn.layers.handlers.Layers
+=============================
+
+.. currentmodule:: phygnn.layers.handlers
+
+.. autoclass:: Layers
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Layers.add_layer
+      ~Layers.add_layer_by_class
+      ~Layers.add_skip_layer
+      ~Layers.compile
+      ~Layers.parse_repeats
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Layers.bias_weights
+      ~Layers.hidden_layer_kwargs
+      ~Layers.input_layer_kwargs
+      ~Layers.kernel_weights
+      ~Layers.layers
+      ~Layers.output_layer_kwargs
+      ~Layers.skip_layers
+      ~Layers.weights
+   
+   

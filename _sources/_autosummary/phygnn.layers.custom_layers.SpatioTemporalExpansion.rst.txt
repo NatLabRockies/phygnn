@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.SpatioTemporalExpansion
+====================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SpatioTemporalExpansion
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SpatioTemporalExpansion.add_loss
+      ~SpatioTemporalExpansion.add_metric
+      ~SpatioTemporalExpansion.add_variable
+      ~SpatioTemporalExpansion.add_weight
+      ~SpatioTemporalExpansion.build
+      ~SpatioTemporalExpansion.build_from_config
+      ~SpatioTemporalExpansion.call
+      ~SpatioTemporalExpansion.compute_mask
+      ~SpatioTemporalExpansion.compute_output_shape
+      ~SpatioTemporalExpansion.compute_output_spec
+      ~SpatioTemporalExpansion.count_params
+      ~SpatioTemporalExpansion.from_config
+      ~SpatioTemporalExpansion.get_build_config
+      ~SpatioTemporalExpansion.get_config
+      ~SpatioTemporalExpansion.get_weights
+      ~SpatioTemporalExpansion.load_own_variables
+      ~SpatioTemporalExpansion.quantize
+      ~SpatioTemporalExpansion.quantized_build
+      ~SpatioTemporalExpansion.quantized_call
+      ~SpatioTemporalExpansion.rematerialized_call
+      ~SpatioTemporalExpansion.save_own_variables
+      ~SpatioTemporalExpansion.set_weights
+      ~SpatioTemporalExpansion.stateless_call
+      ~SpatioTemporalExpansion.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SpatioTemporalExpansion.compute_dtype
+      ~SpatioTemporalExpansion.dtype
+      ~SpatioTemporalExpansion.dtype_policy
+      ~SpatioTemporalExpansion.input
+      ~SpatioTemporalExpansion.input_dtype
+      ~SpatioTemporalExpansion.input_spec
+      ~SpatioTemporalExpansion.losses
+      ~SpatioTemporalExpansion.metrics
+      ~SpatioTemporalExpansion.metrics_variables
+      ~SpatioTemporalExpansion.non_trainable_variables
+      ~SpatioTemporalExpansion.non_trainable_weights
+      ~SpatioTemporalExpansion.output
+      ~SpatioTemporalExpansion.path
+      ~SpatioTemporalExpansion.quantization_mode
+      ~SpatioTemporalExpansion.supports_masking
+      ~SpatioTemporalExpansion.trainable
+      ~SpatioTemporalExpansion.trainable_variables
+      ~SpatioTemporalExpansion.trainable_weights
+      ~SpatioTemporalExpansion.variable_dtype
+      ~SpatioTemporalExpansion.variables
+      ~SpatioTemporalExpansion.weights
+   
+   

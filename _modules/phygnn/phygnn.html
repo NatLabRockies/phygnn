@@ -1,0 +1,907 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.phygnn &mdash; phygnn 0.0.35.dev1+g264b3e851 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=9673985c"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../_autosummary/phygnn.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../_autosummary/phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../_autosummary/phygnn.layers.html">phygnn.layers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.get_custom_layer_objects.html">phygnn.layers.custom_layers.get_custom_layer_objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.Sup3rConcat.html">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.layers.handlers.Layers.html">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../_autosummary/phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.model_interfaces.tf_model.TfModel.html">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../_autosummary/phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../_autosummary/phygnn.utilities.html">phygnn.utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../_autosummary/phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">phygnn.phygnn</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for phygnn.phygnn</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Physics Guided Neural Network</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tensorflow.keras</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimizers</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">phygnn.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">CustomNetwork</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">phygnn.utilities.loss_metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">METRICS</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PhysicsGuidedNeuralNetwork</span><span class="p">(</span><span class="n">CustomNetwork</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple Deep Neural Network with custom physical loss function.</span>
+
+<span class="sd">    Note that the phygnn model requires TensorFlow 2.x</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">p_fun</span><span class="p">,</span>
+        <span class="n">loss_weights</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+        <span class="n">n_features</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">n_labels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">hidden_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">input_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">layers_obj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;mae&#39;</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+        <span class="n">history</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">kernel_reg_rate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">kernel_reg_power</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">bias_reg_rate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">bias_reg_power</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">feature_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        p_fun : function</span>
+<span class="sd">            Physics function to guide the neural network loss function.</span>
+<span class="sd">            This fun must take (phygnn, y_true, y_predicted, p, **p_kwargs)</span>
+<span class="sd">            as arguments with datatypes (PhysicsGuidedNeuralNetwork, tf.Tensor,</span>
+<span class="sd">            np.ndarray, np.ndarray). The function must return a tf.Tensor</span>
+<span class="sd">            object with a single numeric loss value (output.ndim == 0).</span>
+<span class="sd">        loss_weights : tuple, optional</span>
+<span class="sd">            Loss weights for the neural network y_true vs. y_predicted</span>
+<span class="sd">            and for the p_fun loss, respectively. For example,</span>
+<span class="sd">            loss_weights=(0.0, 1.0) would simplify the phygnn loss function</span>
+<span class="sd">            to just the p_fun output.</span>
+<span class="sd">        n_features : int, optional</span>
+<span class="sd">            Number of input features. This should match the last dimension</span>
+<span class="sd">            of the feature training data.</span>
+<span class="sd">        n_labels : int, optional</span>
+<span class="sd">            Number of output labels. This should match the last dimension</span>
+<span class="sd">            of the label training data.</span>
+<span class="sd">        hidden_layers : list, optional</span>
+<span class="sd">            List of dictionaries of key word arguments for each hidden</span>
+<span class="sd">            layer in the NN. Dense linear layers can be input with their</span>
+<span class="sd">            activations or separately for more explicit control over the layer</span>
+<span class="sd">            ordering. For example, this is a valid input for hidden_layers that</span>
+<span class="sd">            will yield 8 hidden layers (10 layers including input+output):</span>
+<span class="sd">                [{&#39;units&#39;: 64, &#39;activation&#39;: &#39;relu&#39;, &#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;units&#39;: 64},</span>
+<span class="sd">                 {&#39;batch_normalization&#39;: {&#39;axis&#39;: -1}},</span>
+<span class="sd">                 {&#39;activation&#39;: &#39;relu&#39;},</span>
+<span class="sd">                 {&#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;class&#39;: &#39;Flatten&#39;},</span>
+<span class="sd">                 ]</span>
+<span class="sd">        input_layer : None | bool | dict</span>
+<span class="sd">            Input layer. specification. Can be a dictionary similar to</span>
+<span class="sd">            hidden_layers specifying a dense / conv / lstm layer.  Will</span>
+<span class="sd">            default to a keras InputLayer with input shape = n_features.</span>
+<span class="sd">            Can be False if the input layer will be included in the</span>
+<span class="sd">            hidden_layers input.</span>
+<span class="sd">        output_layer : None | bool | list | dict</span>
+<span class="sd">            Output layer specification. Can be a list/dict similar to</span>
+<span class="sd">            hidden_layers input specifying a dense layer with activation.</span>
+<span class="sd">            For example, for a classfication problem with a single output,</span>
+<span class="sd">            output_layer should be [{&#39;units&#39;: 1}, {&#39;activation&#39;: &#39;sigmoid&#39;}].</span>
+<span class="sd">            This defaults to a single dense layer with no activation</span>
+<span class="sd">            (best for regression problems).  Can be False if the output layer</span>
+<span class="sd">            will be included in the hidden_layers input.</span>
+<span class="sd">        layers_obj : None | phygnn.utilities.tf_layers.Layers</span>
+<span class="sd">            Optional initialized Layers object to set as the model layers</span>
+<span class="sd">            including pre-set weights. This option will override the</span>
+<span class="sd">            hidden_layers, input_layer, and output_layer arguments.</span>
+<span class="sd">        metric : str, optional</span>
+<span class="sd">            Loss metric option for the NN loss function (not the physical</span>
+<span class="sd">            loss function). Must be a valid key in phygnn.loss_metrics.METRICS</span>
+<span class="sd">            or a method in tensorflow.keras.losses that takes</span>
+<span class="sd">            (y_true, y_predicted) as arguments.</span>
+<span class="sd">        optimizer : tensorflow.keras.optimizers | dict | None</span>
+<span class="sd">            Instantiated tf.keras.optimizers object or a dict optimizer config</span>
+<span class="sd">            from tf.keras.optimizers.get_config(). None defaults to Adam.</span>
+<span class="sd">        learning_rate : float, optional</span>
+<span class="sd">            Optimizer learning rate. Not used if optimizer input arg is a</span>
+<span class="sd">            pre-initialized object or if optimizer input arg is a config dict.</span>
+<span class="sd">        history : None | pd.DataFrame, optional</span>
+<span class="sd">            Learning history if continuing a training session.</span>
+<span class="sd">        kernel_reg_rate : float, optional</span>
+<span class="sd">            Kernel regularization rate. Increasing this value above zero will</span>
+<span class="sd">            add a structural loss term to the loss function that</span>
+<span class="sd">            disincentivizes large hidden layer weights and should reduce</span>
+<span class="sd">            model complexity. Setting this to 0.0 will disable kernel</span>
+<span class="sd">            regularization.</span>
+<span class="sd">        kernel_reg_power : int, optional</span>
+<span class="sd">            Kernel regularization power. kernel_reg_power=1 is L1</span>
+<span class="sd">            regularization (lasso regression), and kernel_reg_power=2 is L2</span>
+<span class="sd">            regularization (ridge regression).</span>
+<span class="sd">        bias_reg_rate : float, optional</span>
+<span class="sd">            Bias regularization rate. Increasing this value above zero will</span>
+<span class="sd">            add a structural loss term to the loss function that</span>
+<span class="sd">            disincentivizes large hidden layer biases and should reduce</span>
+<span class="sd">            model complexity. Setting this to 0.0 will disable bias</span>
+<span class="sd">            regularization.</span>
+<span class="sd">        bias_reg_power : int, optional</span>
+<span class="sd">            Bias regularization power. bias_reg_power=1 is L1</span>
+<span class="sd">            regularization (lasso regression), and bias_reg_power=2 is L2</span>
+<span class="sd">            regularization (ridge regression).</span>
+<span class="sd">        feature_names : list | tuple | None, optional</span>
+<span class="sd">            Training feature names (strings). Mostly a convenience so that a</span>
+<span class="sd">            loaded-from-disk model will have declared feature names, making it</span>
+<span class="sd">            easier to feed in features for prediction. This will also get set</span>
+<span class="sd">            if phygnn is trained on a DataFrame.</span>
+<span class="sd">        output_names : list | tuple | None, optional</span>
+<span class="sd">            Prediction output names (strings). Mostly a convenience so that a</span>
+<span class="sd">            loaded-from-disk model will have declared output names, making it</span>
+<span class="sd">            easier to understand prediction output. This will also get set</span>
+<span class="sd">            if phygnn is trained on a DataFrame.</span>
+<span class="sd">        name : None | str</span>
+<span class="sd">            Optional model name for debugging.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
+            <span class="n">n_labels</span><span class="o">=</span><span class="n">n_labels</span><span class="p">,</span>
+            <span class="n">hidden_layers</span><span class="o">=</span><span class="n">hidden_layers</span><span class="p">,</span>
+            <span class="n">input_layer</span><span class="o">=</span><span class="n">input_layer</span><span class="p">,</span>
+            <span class="n">output_layer</span><span class="o">=</span><span class="n">output_layer</span><span class="p">,</span>
+            <span class="n">layers_obj</span><span class="o">=</span><span class="n">layers_obj</span><span class="p">,</span>
+            <span class="n">feature_names</span><span class="o">=</span><span class="n">feature_names</span><span class="p">,</span>
+            <span class="n">output_names</span><span class="o">=</span><span class="n">output_names</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_p_fun</span> <span class="o">=</span> <span class="n">p_fun</span> <span class="k">if</span> <span class="n">p_fun</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_fun_dummy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loss_weights</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metric</span> <span class="o">=</span> <span class="n">metric</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history</span> <span class="o">=</span> <span class="n">history</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_learning_rate</span> <span class="o">=</span> <span class="n">learning_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel_reg_rate</span> <span class="o">=</span> <span class="n">kernel_reg_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel_reg_power</span> <span class="o">=</span> <span class="n">kernel_reg_power</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias_reg_rate</span> <span class="o">=</span> <span class="n">bias_reg_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias_reg_power</span> <span class="o">=</span> <span class="n">bias_reg_power</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;phygnn&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_loss_weights</span><span class="p">(</span><span class="n">loss_weights</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metric</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">METRICS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_metric_fun</span> <span class="o">=</span> <span class="n">METRICS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_metric</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_metric_fun</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metric</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s1">&#39;Could not recognize error metric &quot;</span><span class="si">{}</span><span class="s1">&quot;. The following &#39;</span>
+                    <span class="s1">&#39;error metrics are available: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_metric</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">METRICS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizers</span><span class="o">.</span><span class="n">deserialize</span><span class="p">({</span>
+                <span class="s1">&#39;class_name&#39;</span><span class="p">:</span> <span class="n">optimizer</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;config&#39;</span><span class="p">:</span> <span class="n">optimizer</span><span class="p">,</span>
+            <span class="p">})</span>
+        <span class="k">elif</span> <span class="n">optimizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork.p_fun_dummy">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork.p_fun_dummy">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_fun_dummy</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_predicted</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>  <span class="c1"># noqa : ARG004</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Example dummy function for p loss calculation.</span>
+
+<span class="sd">        This dummy function does not do a real physics calculation, it just</span>
+<span class="sd">        shows the required p_fun interface and calculates a normal MAE loss</span>
+<span class="sd">        based on y_predicted and y_true.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : PhysicsGuidedNeuralNetwork</span>
+<span class="sd">            Instance of the phygnn model at the current point in training.</span>
+<span class="sd">        y_true : np.ndarray</span>
+<span class="sd">            Known y values that were given to the phygnn.fit() method.</span>
+<span class="sd">        y_predicted : tf.Tensor</span>
+<span class="sd">            Predicted y values in a &gt;=2D tensor based on x values in the</span>
+<span class="sd">            current batch.</span>
+<span class="sd">        p : np.ndarray</span>
+<span class="sd">            Supplemental physical feature data that can be used to calculate a</span>
+<span class="sd">            y_physical value to compare against y_predicted. The rows in this</span>
+<span class="sd">            array have been carried through the batching process alongside</span>
+<span class="sd">            y_true and the x-features used to create y_predicted and so can be</span>
+<span class="sd">            used 1-to-1 with the rows in y_predicted and y_true.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        p_loss : tf.Tensor</span>
+<span class="sd">            A 0D tensor physical loss value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=W0613</span>
+        <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_predicted</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork.preflight_data">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork.preflight_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">preflight_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run simple preflight checks on data shapes and data types.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Feature data in a &gt;=2D array or DataFrame. If this is a DataFrame,</span>
+<span class="sd">            the index is ignored, the columns are used with self.feature_names,</span>
+<span class="sd">            and the df is converted into a numpy array for batching and passing</span>
+<span class="sd">            to the training algorithm. Generally speaking, the data should</span>
+<span class="sd">            always have the number of observations in the first axis and the</span>
+<span class="sd">            number of features/channels in the last axis. Spatial and temporal</span>
+<span class="sd">            dimensions can be used in intermediate axes.</span>
+<span class="sd">        y : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Known output data in a &gt;=2D array or DataFrame.</span>
+<span class="sd">            Same dimension rules as x.</span>
+<span class="sd">        p : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Supplemental feature data for the physics loss function in &gt;=2D</span>
+<span class="sd">            array or DataFrame. Same dimension rules as x.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        x : np.ndarray</span>
+<span class="sd">            Feature data</span>
+<span class="sd">        y : np.ndarray</span>
+<span class="sd">            Known output data</span>
+<span class="sd">        p : np.ndarray</span>
+<span class="sd">            Supplemental feature data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_shapes</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_shapes</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_features</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_n_features</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_n_labels</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">x_msg</span> <span class="o">=</span> <span class="s1">&#39;x data has </span><span class="si">{}</span><span class="s1"> features but expected </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_features</span>
+        <span class="p">)</span>
+        <span class="n">y_msg</span> <span class="o">=</span> <span class="s1">&#39;y data has </span><span class="si">{}</span><span class="s1"> features but expected </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_labels</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_features</span><span class="p">,</span> <span class="n">x_msg</span>
+        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_labels</span><span class="p">,</span> <span class="n">y_msg</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preflight_features</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">y_cols</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span> <span class="o">=</span> <span class="n">y_cols</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s1">&#39;Cannot work with input y columns: </span><span class="si">{}</span><span class="s1">, previously set &#39;</span>
+                    <span class="s1">&#39;output names are: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y_cols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span> <span class="o">==</span> <span class="n">y_cols</span><span class="p">,</span> <span class="n">msg</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Model training history DataFrame (None if not yet trained)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame | None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_history</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kernel_reg_term</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the regularization term for the kernel regularization without</span>
+<span class="sd">        the regularization rate applied.&quot;&quot;&quot;</span>
+        <span class="n">loss_k_reg</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_weights</span><span class="p">]</span>
+        <span class="n">loss_k_reg</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_reg_power</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">loss_k_reg</span>
+        <span class="p">]</span>
+        <span class="n">loss_k_reg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">([</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">loss_k_reg</span>
+        <span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">loss_k_reg</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bias_reg_term</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the regularization term for the bias regularization without</span>
+<span class="sd">        the regularization rate applied.&quot;&quot;&quot;</span>
+        <span class="n">loss_b_reg</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_weights</span><span class="p">]</span>
+        <span class="n">loss_b_reg</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_reg_power</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">loss_b_reg</span><span class="p">]</span>
+        <span class="n">loss_b_reg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">([</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">loss_b_reg</span>
+        <span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">loss_b_reg</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Model parameters, used to save model to disc</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">model_params</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_params</span>
+        <span class="n">model_params</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="s1">&#39;p_fun&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_fun</span><span class="p">,</span>
+            <span class="s1">&#39;loss_weights&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loss_weights</span><span class="p">,</span>
+            <span class="s1">&#39;metric&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metric</span><span class="p">,</span>
+            <span class="s1">&#39;optimizer&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span><span class="o">.</span><span class="n">get_config</span><span class="p">(),</span>
+            <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_learning_rate</span><span class="p">,</span>
+            <span class="s1">&#39;layers_obj&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers_obj</span><span class="p">,</span>
+            <span class="s1">&#39;history&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">,</span>
+            <span class="s1">&#39;kernel_reg_rate&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_reg_rate</span><span class="p">,</span>
+            <span class="s1">&#39;kernel_reg_power&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_reg_power</span><span class="p">,</span>
+            <span class="s1">&#39;bias_reg_rate&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_reg_rate</span><span class="p">,</span>
+            <span class="s1">&#39;bias_reg_power&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_reg_power</span><span class="p">,</span>
+        <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">model_params</span>
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork.preflight_p_fun">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork.preflight_p_fun">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">preflight_p_fun</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">p_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a pre-flight check making sure the p_fun is differentiable.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">p_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">GradientTape</span><span class="p">()</span> <span class="k">as</span> <span class="n">tape</span><span class="p">:</span>
+            <span class="n">y_predicted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">to_numpy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">p_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_fun</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_predicted</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">**</span><span class="n">p_kwargs</span><span class="p">)</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="n">tape</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">p_loss</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">tf</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">p_loss</span><span class="p">):</span>
+                <span class="n">emsg</span> <span class="o">=</span> <span class="s1">&#39;Loss output from p_fun() must be a tensor!&#39;</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">emsg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">emsg</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">p_loss</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">emsg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s1">&#39;Loss output from p_fun() should be a scalar tensor &#39;</span>
+                    <span class="s1">&#39;but received a tensor with shape </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p_loss</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">emsg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">emsg</span><span class="p">)</span>
+
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">grad</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">emsg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s1">&#39;The input p_fun was not differentiable! &#39;</span>
+                    <span class="s1">&#39;Please use only tensor math in the p_fun.&#39;</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">emsg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">emsg</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;p_fun passed preflight check.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork.reset_history">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork.reset_history">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Erase previous training history without resetting trained weights&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork.set_loss_weights">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork.set_loss_weights">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_loss_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_weights</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set new loss weights</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        loss_weights : tuple</span>
+<span class="sd">            Loss weights for the neural network y_true vs y_predicted</span>
+<span class="sd">            and for the p_fun loss, respectively. For example,</span>
+<span class="sd">            loss_weights=(0.0, 1.0) would simplify the phygnn loss function</span>
+<span class="sd">            to just the p_fun output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">loss_weights</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;Sum of loss_weights must be &gt; 0!&#39;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_weights</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;loss_weights can only have two values!&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loss_weights</span> <span class="o">=</span> <span class="n">loss_weights</span></div>
+
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork.calc_loss">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork.calc_loss">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calc_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_predicted</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">p_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the loss function by comparing y_true to model-predicted y</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        y_true : np.ndarray</span>
+<span class="sd">            Known output data in a &gt;=2D array.</span>
+<span class="sd">        y_predicted : tf.Tensor</span>
+<span class="sd">            Model-predicted output data in a &gt;=2D tensor.</span>
+<span class="sd">        p : np.ndarray</span>
+<span class="sd">            Supplemental feature data for the physics loss function in &gt;=2D</span>
+<span class="sd">            array</span>
+<span class="sd">        p_kwargs : None | dict</span>
+<span class="sd">            Optional kwargs for the physical loss function self._p_fun.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        loss : tf.tensor</span>
+<span class="sd">            Sum of the NN loss function comparing the y_predicted against</span>
+<span class="sd">            y_true and the physical loss function (self._p_fun) with</span>
+<span class="sd">            respective weights applied.</span>
+<span class="sd">        nn_loss : tf.tensor</span>
+<span class="sd">            Standard NN training loss comparing y to y_predicted.</span>
+<span class="sd">        p_loss : tf.tensor</span>
+<span class="sd">            Physics loss from p_fun.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">p_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">nn_loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">p_loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loss_weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">nn_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metric_fun</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_predicted</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Bad shape from nn_loss fun! Must be 0D but received: </span><span class="si">{}</span><span class="s1">&#39;</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nn_loss</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">nn_loss</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">msg</span>
+            <span class="n">loss</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loss_weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">nn_loss</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loss_weights</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">p_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_fun</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_predicted</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="o">**</span><span class="n">p_kwargs</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Bad shape from p_loss fun! Must be 0D but received: </span><span class="si">{}</span><span class="s1">&#39;</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p_loss</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">p_loss</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">msg</span>
+            <span class="n">loss</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loss_weights</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">p_loss</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;NN Loss: </span><span class="si">{:.2e}</span><span class="s1">, P Loss: </span><span class="si">{:.2e}</span><span class="s1">, Total Loss: </span><span class="si">{:.2e}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">nn_loss</span><span class="p">,</span> <span class="n">p_loss</span><span class="p">,</span> <span class="n">loss</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_reg_rate</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">loss_kernel_reg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_reg_term</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_reg_rate</span>
+            <span class="n">loss</span> <span class="o">+=</span> <span class="n">loss_kernel_reg</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;Kernel regularization loss: </span><span class="si">{:.2e}</span><span class="s1">, &#39;</span>
+                <span class="s1">&#39;Total Loss: </span><span class="si">{:.2e}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">loss_kernel_reg</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_reg_rate</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">loss_bias_reg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_reg_term</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_reg_rate</span>
+            <span class="n">loss</span> <span class="o">+=</span> <span class="n">loss_bias_reg</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;Bias regularization loss: </span><span class="si">{:.2e}</span><span class="s1">, Total Loss: </span><span class="si">{:.2e}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">loss_bias_reg</span><span class="p">,</span> <span class="n">loss</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">is_nan</span><span class="p">(</span><span class="n">loss</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;phygnn calculated a NaN loss value!&#39;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ArithmeticError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="n">nn_loss</span><span class="p">,</span> <span class="n">p_loss</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">p_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the gradient based on a mini-batch of x and y_true data.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">GradientTape</span><span class="p">()</span> <span class="k">as</span> <span class="n">tape</span><span class="p">:</span>
+            <span class="n">y_predicted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">to_numpy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">loss</span><span class="p">,</span> <span class="n">nn_loss</span><span class="p">,</span> <span class="n">p_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_loss</span><span class="p">(</span>
+                <span class="n">y_true</span><span class="p">,</span> <span class="n">y_predicted</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">p_kwargs</span>
+            <span class="p">)</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="n">tape</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">grad</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">nn_loss</span><span class="p">,</span> <span class="n">p_loss</span>
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork.run_gradient_descent">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork.run_gradient_descent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_gradient_descent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">p_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run gradient descent for one mini-batch of (x, y_true)</span>
+<span class="sd">        and adjust NN weights.&quot;&quot;&quot;</span>
+        <span class="n">grad</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">nn_loss</span><span class="p">,</span> <span class="n">p_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_grad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">p_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span><span class="o">.</span><span class="n">apply_gradients</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="n">nn_loss</span><span class="p">,</span> <span class="n">p_loss</span></div>
+
+
+<div class="viewcode-block" id="PhysicsGuidedNeuralNetwork.fit">
+<a class="viewcode-back" href="../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork.fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">,</span>
+        <span class="n">p</span><span class="p">,</span>
+        <span class="n">n_batch</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_epoch</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">p_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">run_preflight</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the neural network to data from x and y.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Feature data in a &gt;=2D array or DataFrame. If this is a DataFrame,</span>
+<span class="sd">            the index is ignored, the columns are used with self.feature_names,</span>
+<span class="sd">            and the df is converted into a numpy array for batching and passing</span>
+<span class="sd">            to the training algorithm. Generally speaking, the data should</span>
+<span class="sd">            always have the number of observations in the first axis and the</span>
+<span class="sd">            number of features/channels in the last axis. Spatial and temporal</span>
+<span class="sd">            dimensions can be used in intermediate axes.</span>
+<span class="sd">        y : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Known output data in a &gt;=2D array or DataFrame.</span>
+<span class="sd">            Same dimension rules as x.</span>
+<span class="sd">        p : np.ndarray | pd.DataFrame</span>
+<span class="sd">            Supplemental feature data for the physics loss function in &gt;=2D</span>
+<span class="sd">            array or DataFrame. Same dimension rules as x.</span>
+<span class="sd">        n_batch : int | None</span>
+<span class="sd">            Number of times to update the NN weights per epoch (number of</span>
+<span class="sd">            mini-batches). The training data will be split into this many</span>
+<span class="sd">            mini-batches and the NN will train on each mini-batch, update</span>
+<span class="sd">            weights, then move onto the next mini-batch.</span>
+<span class="sd">        batch_size : int | None</span>
+<span class="sd">            Number of training samples per batch. This input is redundant to</span>
+<span class="sd">            n_batch and will not be used if n_batch is not None.</span>
+<span class="sd">        n_epoch : int</span>
+<span class="sd">            Number of times to iterate on the training data.</span>
+<span class="sd">        shuffle : bool</span>
+<span class="sd">            Flag to randomly subset the validation data and batch selection</span>
+<span class="sd">            from x, y, and p.</span>
+<span class="sd">        validation_split : float</span>
+<span class="sd">            Fraction of x, y, and p to use for validation.</span>
+<span class="sd">        p_kwargs : None | dict</span>
+<span class="sd">            Optional kwargs for the physical loss function self._p_fun.</span>
+<span class="sd">        run_preflight : bool</span>
+<span class="sd">            Flag to run preflight checks.</span>
+<span class="sd">        return_diagnostics : bool</span>
+<span class="sd">            Flag to return training diagnostics dictionary.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        diagnostics : dict</span>
+<span class="sd">            Namespace of training parameters that can be used for diagnostics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preflight_data</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+        <span class="n">epochs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_epoch</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_history</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                <span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+                    <span class="s1">&#39;elapsed_time&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;training_loss&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;training_nn_loss&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;training_p_loss&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;validation_loss&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;validation_nn_loss&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;validation_p_loss&#39;</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;epoch&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">epochs</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">val_splits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_val_split</span><span class="p">(</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="n">shuffle</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="n">validation_split</span>
+        <span class="p">)</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">x_val</span> <span class="o">=</span> <span class="n">val_splits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">y</span><span class="p">,</span> <span class="n">y_val</span> <span class="o">=</span> <span class="n">val_splits</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">p</span><span class="p">,</span> <span class="n">p_val</span> <span class="o">=</span> <span class="n">val_splits</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loss_weights</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">run_preflight</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">preflight_p_fun</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_val</span><span class="p">,</span> <span class="n">p_val</span><span class="p">,</span> <span class="n">p_kwargs</span><span class="p">)</span>
+
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="n">epochs</span><span class="p">:</span>
+            <span class="n">t_batch_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_batches</span><span class="p">(</span>
+                <span class="n">x</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">,</span>
+                <span class="n">p</span><span class="p">,</span>
+                <span class="n">n_batch</span><span class="o">=</span><span class="n">n_batch</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">shuffle</span><span class="o">=</span><span class="n">shuffle</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">v_batch_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_batches</span><span class="p">(</span>
+                <span class="n">x_val</span><span class="p">,</span>
+                <span class="n">y_val</span><span class="p">,</span>
+                <span class="n">p_val</span><span class="p">,</span>
+                <span class="n">n_batch</span><span class="o">=</span><span class="n">n_batch</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">e_tr_loss</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">e_tr_nn_loss</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">e_tr_p_loss</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="n">e_val_loss</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">e_val_nn_loss</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">e_val_p_loss</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="n">x_batch</span><span class="p">,</span> <span class="n">y_batch</span><span class="p">,</span> <span class="n">p_batch</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">t_batch_iter</span><span class="p">):</span>
+                <span class="n">b_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_gradient_descent</span><span class="p">(</span>
+                    <span class="n">x_batch</span><span class="p">,</span> <span class="n">y_batch</span><span class="p">,</span> <span class="n">p_batch</span><span class="p">,</span> <span class="n">p_kwargs</span>
+                <span class="p">)</span>
+                <span class="n">b_tr_loss</span><span class="p">,</span> <span class="n">b_tr_nn_loss</span><span class="p">,</span> <span class="n">b_tr_p_loss</span> <span class="o">=</span> <span class="n">b_out</span>
+                <span class="n">e_tr_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_tr_loss</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+                <span class="n">e_tr_nn_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_tr_nn_loss</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+                <span class="n">e_tr_p_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_tr_p_loss</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s1">&#39;Epoch </span><span class="si">{}</span><span class="s1"> batch </span><span class="si">{}</span><span class="s1"> train loss: </span><span class="si">{:.2e}</span><span class="s1"> for &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">epoch</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">b_tr_loss</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">x_batch</span><span class="p">,</span> <span class="n">y_batch</span><span class="p">,</span> <span class="n">p_batch</span> <span class="ow">in</span> <span class="n">v_batch_iter</span><span class="p">:</span>
+                <span class="n">y_val_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_batch</span><span class="p">,</span> <span class="n">to_numpy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_loss</span><span class="p">(</span><span class="n">y_batch</span><span class="p">,</span> <span class="n">y_val_pred</span><span class="p">,</span> <span class="n">p_batch</span><span class="p">,</span> <span class="n">p_kwargs</span><span class="p">)</span>
+                <span class="n">b_val_loss</span><span class="p">,</span> <span class="n">b_val_nn_loss</span><span class="p">,</span> <span class="n">b_val_p_loss</span> <span class="o">=</span> <span class="n">out</span>
+                <span class="n">e_val_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_val_loss</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+                <span class="n">e_val_nn_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_val_nn_loss</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+                <span class="n">e_val_p_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_val_p_loss</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+
+            <span class="n">e_tr_loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">e_tr_loss</span><span class="p">)</span>
+            <span class="n">e_tr_nn_loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">e_tr_nn_loss</span><span class="p">)</span>
+            <span class="n">e_tr_p_loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">e_tr_p_loss</span><span class="p">)</span>
+            <span class="n">e_val_loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">e_val_loss</span><span class="p">)</span>
+            <span class="n">e_val_nn_loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">e_val_nn_loss</span><span class="p">)</span>
+            <span class="n">e_val_p_loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">e_val_p_loss</span><span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s1">&#39;Epoch </span><span class="si">{}</span><span class="s1"> train loss: </span><span class="si">{:.2e}</span><span class="s1"> val loss: </span><span class="si">{:.2e}</span><span class="s1"> for &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">epoch</span><span class="p">,</span> <span class="n">e_tr_loss</span><span class="p">,</span> <span class="n">e_val_loss</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;elapsed_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;training_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_tr_loss</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;training_nn_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_tr_nn_loss</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;training_p_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_tr_p_loss</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;validation_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_val_loss</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;validation_nn_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_val_nn_loss</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;validation_p_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_val_p_loss</span>
+
+        <span class="n">diagnostics</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
+            <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span>
+            <span class="s1">&#39;p&#39;</span><span class="p">:</span> <span class="n">p</span><span class="p">,</span>
+            <span class="s1">&#39;x_val&#39;</span><span class="p">:</span> <span class="n">x_val</span><span class="p">,</span>
+            <span class="s1">&#39;y_val&#39;</span><span class="p">:</span> <span class="n">y_val</span><span class="p">,</span>
+            <span class="s1">&#39;p_val&#39;</span><span class="p">:</span> <span class="n">p_val</span><span class="p">,</span>
+            <span class="s1">&#39;history&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">return_diagnostics</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">diagnostics</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

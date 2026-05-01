@@ -1,0 +1,36 @@
+phygnn.utilities.loss\_metrics
+==============================
+
+.. automodule:: phygnn.utilities.loss_metrics
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      binary_crossentropy
+      mae
+      mbe
+      mse
+      relative_mae
+      relative_mbe
+      relative_mse
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

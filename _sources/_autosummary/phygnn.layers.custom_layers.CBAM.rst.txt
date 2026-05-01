@@ -1,0 +1,75 @@
+phygnn.layers.custom\_layers.CBAM
+=================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: CBAM
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CBAM.add_loss
+      ~CBAM.add_metric
+      ~CBAM.add_variable
+      ~CBAM.add_weight
+      ~CBAM.build
+      ~CBAM.build_from_config
+      ~CBAM.call
+      ~CBAM.channel_attention
+      ~CBAM.compute_mask
+      ~CBAM.compute_output_shape
+      ~CBAM.compute_output_spec
+      ~CBAM.count_params
+      ~CBAM.from_config
+      ~CBAM.get_build_config
+      ~CBAM.get_config
+      ~CBAM.get_weights
+      ~CBAM.load_own_variables
+      ~CBAM.quantize
+      ~CBAM.quantized_build
+      ~CBAM.quantized_call
+      ~CBAM.rematerialized_call
+      ~CBAM.save_own_variables
+      ~CBAM.set_weights
+      ~CBAM.spatiotemporal_attention
+      ~CBAM.stateless_call
+      ~CBAM.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~CBAM.compute_dtype
+      ~CBAM.dtype
+      ~CBAM.dtype_policy
+      ~CBAM.input
+      ~CBAM.input_dtype
+      ~CBAM.input_spec
+      ~CBAM.losses
+      ~CBAM.metrics
+      ~CBAM.metrics_variables
+      ~CBAM.non_trainable_variables
+      ~CBAM.non_trainable_weights
+      ~CBAM.output
+      ~CBAM.path
+      ~CBAM.quantization_mode
+      ~CBAM.supports_masking
+      ~CBAM.trainable
+      ~CBAM.trainable_variables
+      ~CBAM.trainable_weights
+      ~CBAM.variable_dtype
+      ~CBAM.variables
+      ~CBAM.weights
+   
+   

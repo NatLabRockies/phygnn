@@ -1,0 +1,795 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.layers.handlers &mdash; phygnn 0.0.35.dev1+g264b3e851 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=9673985c"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/phygnn.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.layers.html">phygnn.layers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.get_custom_layer_objects.html">phygnn.layers.custom_layers.get_custom_layer_objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rConcat.html">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.layers.handlers.Layers.html">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.model_interfaces.tf_model.TfModel.html">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.html">phygnn.utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.pre_processing.PreProcess.html">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_autosummary/phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">phygnn.layers.handlers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for phygnn.layers.handlers</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Tensorflow Layers Handlers</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tensorflow.keras.layers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Activation</span><span class="p">,</span>
+    <span class="n">BatchNormalization</span><span class="p">,</span>
+    <span class="n">Dense</span><span class="p">,</span>
+    <span class="n">Dropout</span><span class="p">,</span>
+    <span class="n">InputLayer</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">phygnn.layers.custom_layers</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">phygnn.layers.custom_layers</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkipConnection</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="HiddenLayers">
+<a class="viewcode-back" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html#phygnn.layers.handlers.HiddenLayers">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">HiddenLayers</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to handle TensorFlow hidden layers</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_layers</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        hidden_layers : list</span>
+<span class="sd">            List of dictionaries of key word arguments for each hidden</span>
+<span class="sd">            layer in the NN. Dense linear layers can be input with their</span>
+<span class="sd">            activations or separately for more explicit control over the layer</span>
+<span class="sd">            ordering. For example, this is a valid input for hidden_layers that</span>
+<span class="sd">            will yield 7 hidden layers:</span>
+<span class="sd">                [{&#39;units&#39;: 64, &#39;activation&#39;: &#39;relu&#39;, &#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;units&#39;: 64},</span>
+<span class="sd">                 {&#39;batch_normalization&#39;: {&#39;axis&#39;: -1}},</span>
+<span class="sd">                 {&#39;activation&#39;: &#39;relu&#39;},</span>
+<span class="sd">                 {&#39;dropout&#39;: 0.01}]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hidden_layers</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_repeats</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> with </span><span class="si">{}</span><span class="s1"> hidden layers&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">msg</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get layer at given index</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        idx : int</span>
+<span class="sd">            index of layer to extract</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tensorflow.keras.layers</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>
+
+        <span class="n">layer</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_i</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">layer</span>
+
+<div class="viewcode-block" id="HiddenLayers.parse_repeats">
+<a class="viewcode-back" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html#phygnn.layers.handlers.HiddenLayers.parse_repeats">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_repeats</span><span class="p">(</span><span class="n">hidden_layers</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse repeat layers. Must have &quot;repeat&quot; and &quot;n&quot; to repeat one</span>
+<span class="sd">        or more layers.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        hidden_layers : list</span>
+<span class="sd">            Hidden layer kwargs including possibly entries with</span>
+<span class="sd">            {&#39;n&#39;: 2, &#39;repeat&#39;: [{...}, {...}]} that will duplicate the list sub</span>
+<span class="sd">            entry n times.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        hidden_layers : list</span>
+<span class="sd">            Hidden layer kwargs exploded for &#39;repeat&#39; entries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">hidden_layers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;repeat&#39;</span> <span class="ow">in</span> <span class="n">layer</span> <span class="ow">and</span> <span class="s1">&#39;n&#39;</span> <span class="ow">in</span> <span class="n">layer</span><span class="p">:</span>
+                <span class="n">repeat</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;repeat&#39;</span><span class="p">)</span>
+                <span class="n">repeat</span> <span class="o">=</span> <span class="p">[</span><span class="n">repeat</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">repeat</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">repeat</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                    <span class="n">out</span> <span class="o">+=</span> <span class="n">repeat</span>
+
+            <span class="k">elif</span> <span class="s1">&#39;repeat&#39;</span> <span class="ow">in</span> <span class="n">layer</span> <span class="ow">and</span> <span class="s1">&#39;n&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">layer</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s1">&#39;Keyword &quot;repeat&quot; was found in layer but &quot;n&quot; was not: &#39;</span>
+                    <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">layers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        TensorFlow keras layers</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">skip_layers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a dictionary of unique SkipConnection objects in the layers list</span>
+<span class="sd">        keyed by SkipConnection name.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">SkipConnection</span><span class="p">):</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">layer</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hidden_layer_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List of dictionaries of key word arguments for each hidden</span>
+<span class="sd">        layer in the NN. This is a copy of the hidden_layers input arg</span>
+<span class="sd">        that can be used to reconstruct the network.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a list of layer weights for gradient calculations.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="c1"># Include gamma and beta weights for BatchNormalization</span>
+            <span class="c1"># but do not include moving mean/stdev</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">BatchNormalization</span><span class="p">):</span>
+                <span class="n">weights</span> <span class="o">+=</span> <span class="n">layer</span><span class="o">.</span><span class="n">variables</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+
+            <span class="k">elif</span> <span class="n">layer</span><span class="o">.</span><span class="n">trainable</span><span class="p">:</span>
+                <span class="n">weights</span> <span class="o">+=</span> <span class="n">layer</span><span class="o">.</span><span class="n">trainable_weights</span>
+
+        <span class="k">return</span> <span class="n">weights</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kernel_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a list of the NN kernel weights (tensors)</span>
+
+<span class="sd">        (can be used for kernel regularization).</span>
+
+<span class="sd">        Does not include input layer or dropout layers.</span>
+<span class="sd">        Does include the output layer.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">Dense</span><span class="p">):</span>
+                <span class="n">weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">weights</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bias_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a list of the NN bias weights (tensors)</span>
+
+<span class="sd">        (can be used for bias regularization).</span>
+
+<span class="sd">        Does not include input layer or dropout layers.</span>
+<span class="sd">        Does include the output layer.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">Dense</span><span class="p">):</span>
+                <span class="n">weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">weights</span>
+
+<div class="viewcode-block" id="HiddenLayers.add_skip_layer">
+<a class="viewcode-back" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html#phygnn.layers.handlers.HiddenLayers.add_skip_layer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_skip_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;add&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a skip layer, looking for a prior skip connection start point if</span>
+<span class="sd">        already in the layer list.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Unique string identifier of the skip connection. The skip endpoint</span>
+<span class="sd">            should have the same name.</span>
+<span class="sd">        method : str</span>
+<span class="sd">            Method to use for combining skip start data and skip end data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_layers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skip_layers</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SkipConnection</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">method</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="HiddenLayers.add_layer_by_class">
+<a class="viewcode-back" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html#phygnn.layers.handlers.HiddenLayers.add_layer_by_class">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_layer_by_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a new layer by the class name, either from</span>
+<span class="sd">        phygnn.layers.custom_layers or tf.keras.layers</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        class_name : str</span>
+<span class="sd">            Class name from phygnn.layers.custom_layers or tf.keras.layers</span>
+<span class="sd">        kwargs : dict</span>
+<span class="sd">            Key word arguments to initialize the class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">layer_class</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s1">&#39;Need layer &quot;class&quot; definition as string to retrieve &#39;</span>
+            <span class="s1">&#39;from phygnn.layers.custom_layers or from &#39;</span>
+            <span class="s1">&#39;tensorflow.keras.layers, but received: </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="nb">type</span><span class="p">(</span><span class="n">class_name</span><span class="p">),</span> <span class="n">class_name</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="n">msg</span>
+
+        <span class="c1"># prioritize phygnn custom classes</span>
+        <span class="n">layer_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">phygnn</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">custom_layers</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">layer_class</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">layer_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">layer_class</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s1">&#39;Could not retrieve layer class &quot;</span><span class="si">{}</span><span class="s1">&quot; from &#39;</span>
+                <span class="s1">&#39;phygnn.layers.custom_layers or from &#39;</span>
+                <span class="s1">&#39;tensorflow.keras.layers&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">class_name</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># If a layer has a &quot;hidden_layers&quot; argument it&#39;s assumed that</span>
+        <span class="c1"># &quot;layer_class&quot; holds a nested set of hidden layers</span>
+        <span class="k">if</span> <span class="s1">&#39;hidden_layers&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">hl</span> <span class="o">=</span> <span class="n">HiddenLayers</span><span class="p">(</span><span class="n">hidden_layers</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;hidden_layers&#39;</span><span class="p">))</span>
+            <span class="n">layer</span> <span class="o">=</span> <span class="n">layer_class</span><span class="p">(</span><span class="n">hidden_layers</span><span class="o">=</span><span class="n">hl</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">layer_class</span> <span class="o">==</span> <span class="n">SkipConnection</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_skip_layer</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer_class</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="HiddenLayers.add_layer">
+<a class="viewcode-back" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html#phygnn.layers.handlers.HiddenLayers.add_layer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a hidden layer to the DNN.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        layer_kwargs : dict</span>
+<span class="sd">            Dictionary of key word arguments for list layer. For example,</span>
+<span class="sd">            any of the following are valid inputs:</span>
+<span class="sd">                {&#39;units&#39;: 64, &#39;activation&#39;: &#39;relu&#39;, &#39;dropout&#39;: 0.05}</span>
+<span class="sd">                {&#39;units&#39;: 64, &#39;name&#39;: &#39;relu1&#39;}</span>
+<span class="sd">                {&#39;activation&#39;: &#39;relu&#39;}</span>
+<span class="sd">                {&#39;batch_normalization&#39;: {&#39;axis&#39;: -1}}</span>
+<span class="sd">                {&#39;dropout&#39;: 0.1}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">layer_kws</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">layer_kwargs</span><span class="p">)</span>
+
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">layer_kws</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">class_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_layer_by_class</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="o">**</span><span class="n">layer_kws</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">activation_arg</span> <span class="o">=</span> <span class="n">layer_kws</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;activation&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">dropout_rate</span> <span class="o">=</span> <span class="n">layer_kws</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;dropout&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">batch_norm_kwargs</span> <span class="o">=</span> <span class="n">layer_kws</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;batch_normalization&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">dense_units</span> <span class="o">=</span> <span class="n">layer_kws</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="n">dense_layer</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">bn_layer</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">a_layer</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">drop_layer</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">dense_units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">dense_layer</span> <span class="o">=</span> <span class="n">Dense</span><span class="p">(</span><span class="n">dense_units</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">batch_norm_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">bn_layer</span> <span class="o">=</span> <span class="n">BatchNormalization</span><span class="p">(</span><span class="o">**</span><span class="n">batch_norm_kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">activation_arg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">a_layer</span> <span class="o">=</span> <span class="n">Activation</span><span class="p">(</span><span class="n">activation_arg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dropout_rate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">drop_layer</span> <span class="o">=</span> <span class="n">Dropout</span><span class="p">(</span><span class="n">dropout_rate</span><span class="p">)</span>
+
+            <span class="c1"># This ensures proper default ordering of layers if requested</span>
+            <span class="c1"># together.</span>
+            <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="p">[</span><span class="n">dense_layer</span><span class="p">,</span> <span class="n">bn_layer</span><span class="p">,</span> <span class="n">a_layer</span><span class="p">,</span> <span class="n">drop_layer</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">layer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HiddenLayers.compile">
+<a class="viewcode-back" href="../../../_autosummary/phygnn.layers.handlers.HiddenLayers.html#phygnn.layers.handlers.HiddenLayers.compile">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">hidden_layers</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add hidden layers to model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : tensorflow.keras</span>
+<span class="sd">            Model to add hidden layers too</span>
+<span class="sd">        hidden_layers : list</span>
+<span class="sd">            List of dictionaries of key word arguments for each hidden</span>
+<span class="sd">            layer in the NN. Dense linear layers can be input with their</span>
+<span class="sd">            activations or separately for more explicit control over the layer</span>
+<span class="sd">            ordering. For example, this is a valid input for hidden_layers that</span>
+<span class="sd">            will yield 7 hidden layers:</span>
+<span class="sd">                [{&#39;units&#39;: 64, &#39;activation&#39;: &#39;relu&#39;, &#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;units&#39;: 64},</span>
+<span class="sd">                 {&#39;batch_normalization&#39;: {&#39;axis&#39;: -1}},</span>
+<span class="sd">                 {&#39;activation&#39;: &#39;relu&#39;},</span>
+<span class="sd">                 {&#39;dropout&#39;: 0.01}]</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model : tensorflow.keras</span>
+<span class="sd">            Model with layers added</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hidden_layers</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">hidden_layers</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">hidden_layers</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">model</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Layers">
+<a class="viewcode-back" href="../../../_autosummary/phygnn.layers.handlers.Layers.html#phygnn.layers.handlers.Layers">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Layers</span><span class="p">(</span><span class="n">HiddenLayers</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to handle TensorFlow layers</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n_features</span><span class="p">,</span>
+        <span class="n">n_labels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">hidden_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">input_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_features : int</span>
+<span class="sd">            Number of features (inputs) to train the model on</span>
+<span class="sd">        n_labels : int, optional</span>
+<span class="sd">            Number of labels (outputs) to the model, by default 1</span>
+<span class="sd">        hidden_layers : list | None, optional</span>
+<span class="sd">            List of dictionaries of key word arguments for each hidden</span>
+<span class="sd">            layer in the NN. Dense linear layers can be input with their</span>
+<span class="sd">            activations or separately for more explicit control over the layer</span>
+<span class="sd">            ordering. For example, this is a valid input for hidden_layers that</span>
+<span class="sd">            will yield 8 hidden layers (10 layers including input+output):</span>
+<span class="sd">                [{&#39;units&#39;: 64, &#39;activation&#39;: &#39;relu&#39;, &#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;units&#39;: 64},</span>
+<span class="sd">                 {&#39;batch_normalization&#39;: {&#39;axis&#39;: -1}},</span>
+<span class="sd">                 {&#39;activation&#39;: &#39;relu&#39;},</span>
+<span class="sd">                 {&#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;class&#39;: &#39;Flatten&#39;},</span>
+<span class="sd">                 ]</span>
+<span class="sd">            by default None which will lead to a single linear layer</span>
+<span class="sd">        input_layer : None | bool | dict</span>
+<span class="sd">            Input layer. specification. Can be a dictionary similar to</span>
+<span class="sd">            hidden_layers specifying a dense / conv / lstm layer.  Will</span>
+<span class="sd">            default to a keras InputLayer with input shape = n_features.</span>
+<span class="sd">            Can be False if the input layer will be included in the</span>
+<span class="sd">            hidden_layers input.</span>
+<span class="sd">        output_layer : None | bool | list | dict</span>
+<span class="sd">            Output layer specification. Can be a list/dict similar to</span>
+<span class="sd">            hidden_layers input specifying a dense layer with activation.</span>
+<span class="sd">            For example, for a classfication problem with a single output,</span>
+<span class="sd">            output_layer should be [{&#39;units&#39;: 1}, {&#39;activation&#39;: &#39;sigmoid&#39;}].</span>
+<span class="sd">            This defaults to a single dense layer with no activation</span>
+<span class="sd">            (best for regression problems).  Can be False if the output layer</span>
+<span class="sd">            will be included in the hidden_layers input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_features</span> <span class="o">=</span> <span class="n">n_features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_labels</span> <span class="o">=</span> <span class="n">n_labels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input_layer_kwargs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">input_layer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">output_layer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">hidden_layers</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_repeats</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_input_layer</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">hidden_layers</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hidden_layers_kwargs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_output_layer</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_input_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an input layer, defaults to tf.layers.InputLayer&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_layer_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">InputLayer</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_features</span><span class="p">,))]</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_layer_kwargs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_layer_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Input layer spec needs to be a dict but received: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_layer_kwargs</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_layer_kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_output_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an output layer, defaults to tf.layers.Dense without</span>
+<span class="sd">        activation&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_labels</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s1">&#39;Output layer spec needs to be a dict or list but &#39;</span>
+                    <span class="s1">&#39;received: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span><span class="p">))</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">input_layer_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dictionary of key word arguments for the input layer.</span>
+<span class="sd">        This is a copy of the input_layer input arg</span>
+<span class="sd">        that can be used to reconstruct the network.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_layer_kwargs</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_layer_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dictionary of key word arguments for the output layer.</span>
+<span class="sd">        This is a copy of the output_layer input arg</span>
+<span class="sd">        that can be used to reconstruct the network.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_layer_kwargs</span>
+
+<div class="viewcode-block" id="Layers.compile">
+<a class="viewcode-back" href="../../../_autosummary/phygnn.layers.handlers.Layers.html#phygnn.layers.handlers.Layers.compile">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">n_features</span><span class="p">,</span>
+        <span class="n">n_labels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">hidden_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">input_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build all layers needed for model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : tensorflow.keras.Sequential</span>
+<span class="sd">            Model to add layers too</span>
+<span class="sd">        n_features : int</span>
+<span class="sd">            Number of features (inputs) to train the model on</span>
+<span class="sd">        n_labels : int, optional</span>
+<span class="sd">            Number of labels (outputs) to the model, by default 1</span>
+<span class="sd">        hidden_layers : list | None, optional</span>
+<span class="sd">            List of dictionaries of key word arguments for each hidden</span>
+<span class="sd">            layer in the NN. Dense linear layers can be input with their</span>
+<span class="sd">            activations or separately for more explicit control over the layer</span>
+<span class="sd">            ordering. For example, this is a valid input for hidden_layers that</span>
+<span class="sd">            will yield 7 hidden layers (9 layers total):</span>
+<span class="sd">                [{&#39;units&#39;: 64, &#39;activation&#39;: &#39;relu&#39;, &#39;dropout&#39;: 0.01},</span>
+<span class="sd">                 {&#39;units&#39;: 64},</span>
+<span class="sd">                 {&#39;batch_normalization&#39;: {&#39;axis&#39;: -1}},</span>
+<span class="sd">                 {&#39;activation&#39;: &#39;relu&#39;},</span>
+<span class="sd">                 {&#39;dropout&#39;: 0.01}]</span>
+<span class="sd">            by default None which will lead to a single linear layer</span>
+<span class="sd">        input_layer : None | bool | InputLayer</span>
+<span class="sd">            Keras input layer. Will default to an InputLayer with</span>
+<span class="sd">            input shape = n_features.</span>
+<span class="sd">            Can be False if the input layer will be included in the</span>
+<span class="sd">            hidden_layers input.</span>
+<span class="sd">        output_layer : None | bool | list | dict</span>
+<span class="sd">            Output layer specification. Can be a list/dict similar to</span>
+<span class="sd">            hidden_layers input specifying a dense layer with activation.</span>
+<span class="sd">            For example, for a classfication problem with a single output,</span>
+<span class="sd">            output_layer should be [{&#39;units&#39;: 1}, {&#39;activation&#39;: &#39;sigmoid&#39;}]</span>
+<span class="sd">            This defaults to a single dense layer with no activation</span>
+<span class="sd">            (best for regression problems).  Can be False if the output layer</span>
+<span class="sd">            will be included in the hidden_layers input.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model : tensorflow.keras</span>
+<span class="sd">            Model with layers added</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">layers</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">n_features</span><span class="p">,</span>
+            <span class="n">n_labels</span><span class="o">=</span><span class="n">n_labels</span><span class="p">,</span>
+            <span class="n">hidden_layers</span><span class="o">=</span><span class="n">hidden_layers</span><span class="p">,</span>
+            <span class="n">input_layer</span><span class="o">=</span><span class="n">input_layer</span><span class="p">,</span>
+            <span class="n">output_layer</span><span class="o">=</span><span class="n">output_layer</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">model</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.UnitConversion
+===========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: UnitConversion
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~UnitConversion.add_loss
+      ~UnitConversion.add_metric
+      ~UnitConversion.add_variable
+      ~UnitConversion.add_weight
+      ~UnitConversion.build
+      ~UnitConversion.build_from_config
+      ~UnitConversion.call
+      ~UnitConversion.compute_mask
+      ~UnitConversion.compute_output_shape
+      ~UnitConversion.compute_output_spec
+      ~UnitConversion.count_params
+      ~UnitConversion.from_config
+      ~UnitConversion.get_build_config
+      ~UnitConversion.get_config
+      ~UnitConversion.get_weights
+      ~UnitConversion.load_own_variables
+      ~UnitConversion.quantize
+      ~UnitConversion.quantized_build
+      ~UnitConversion.quantized_call
+      ~UnitConversion.rematerialized_call
+      ~UnitConversion.save_own_variables
+      ~UnitConversion.set_weights
+      ~UnitConversion.stateless_call
+      ~UnitConversion.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~UnitConversion.compute_dtype
+      ~UnitConversion.dtype
+      ~UnitConversion.dtype_policy
+      ~UnitConversion.input
+      ~UnitConversion.input_dtype
+      ~UnitConversion.input_spec
+      ~UnitConversion.losses
+      ~UnitConversion.metrics
+      ~UnitConversion.metrics_variables
+      ~UnitConversion.non_trainable_variables
+      ~UnitConversion.non_trainable_weights
+      ~UnitConversion.output
+      ~UnitConversion.path
+      ~UnitConversion.quantization_mode
+      ~UnitConversion.supports_masking
+      ~UnitConversion.trainable
+      ~UnitConversion.trainable_variables
+      ~UnitConversion.trainable_weights
+      ~UnitConversion.variable_dtype
+      ~UnitConversion.variables
+      ~UnitConversion.weights
+   
+   

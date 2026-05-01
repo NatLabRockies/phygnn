@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.SkipConnection
+===========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SkipConnection
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SkipConnection.add_loss
+      ~SkipConnection.add_metric
+      ~SkipConnection.add_variable
+      ~SkipConnection.add_weight
+      ~SkipConnection.build
+      ~SkipConnection.build_from_config
+      ~SkipConnection.call
+      ~SkipConnection.compute_mask
+      ~SkipConnection.compute_output_shape
+      ~SkipConnection.compute_output_spec
+      ~SkipConnection.count_params
+      ~SkipConnection.from_config
+      ~SkipConnection.get_build_config
+      ~SkipConnection.get_config
+      ~SkipConnection.get_weights
+      ~SkipConnection.load_own_variables
+      ~SkipConnection.quantize
+      ~SkipConnection.quantized_build
+      ~SkipConnection.quantized_call
+      ~SkipConnection.rematerialized_call
+      ~SkipConnection.save_own_variables
+      ~SkipConnection.set_weights
+      ~SkipConnection.stateless_call
+      ~SkipConnection.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SkipConnection.compute_dtype
+      ~SkipConnection.dtype
+      ~SkipConnection.dtype_policy
+      ~SkipConnection.input
+      ~SkipConnection.input_dtype
+      ~SkipConnection.input_spec
+      ~SkipConnection.losses
+      ~SkipConnection.metrics
+      ~SkipConnection.metrics_variables
+      ~SkipConnection.non_trainable_variables
+      ~SkipConnection.non_trainable_weights
+      ~SkipConnection.output
+      ~SkipConnection.path
+      ~SkipConnection.quantization_mode
+      ~SkipConnection.supports_masking
+      ~SkipConnection.trainable
+      ~SkipConnection.trainable_variables
+      ~SkipConnection.trainable_weights
+      ~SkipConnection.variable_dtype
+      ~SkipConnection.variables
+      ~SkipConnection.weights
+   
+   

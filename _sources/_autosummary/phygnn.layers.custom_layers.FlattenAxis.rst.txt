@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.FlattenAxis
+========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: FlattenAxis
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FlattenAxis.add_loss
+      ~FlattenAxis.add_metric
+      ~FlattenAxis.add_variable
+      ~FlattenAxis.add_weight
+      ~FlattenAxis.build
+      ~FlattenAxis.build_from_config
+      ~FlattenAxis.call
+      ~FlattenAxis.compute_mask
+      ~FlattenAxis.compute_output_shape
+      ~FlattenAxis.compute_output_spec
+      ~FlattenAxis.count_params
+      ~FlattenAxis.from_config
+      ~FlattenAxis.get_build_config
+      ~FlattenAxis.get_config
+      ~FlattenAxis.get_weights
+      ~FlattenAxis.load_own_variables
+      ~FlattenAxis.quantize
+      ~FlattenAxis.quantized_build
+      ~FlattenAxis.quantized_call
+      ~FlattenAxis.rematerialized_call
+      ~FlattenAxis.save_own_variables
+      ~FlattenAxis.set_weights
+      ~FlattenAxis.stateless_call
+      ~FlattenAxis.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FlattenAxis.compute_dtype
+      ~FlattenAxis.dtype
+      ~FlattenAxis.dtype_policy
+      ~FlattenAxis.input
+      ~FlattenAxis.input_dtype
+      ~FlattenAxis.input_spec
+      ~FlattenAxis.losses
+      ~FlattenAxis.metrics
+      ~FlattenAxis.metrics_variables
+      ~FlattenAxis.non_trainable_variables
+      ~FlattenAxis.non_trainable_weights
+      ~FlattenAxis.output
+      ~FlattenAxis.path
+      ~FlattenAxis.quantization_mode
+      ~FlattenAxis.supports_masking
+      ~FlattenAxis.trainable
+      ~FlattenAxis.trainable_variables
+      ~FlattenAxis.trainable_weights
+      ~FlattenAxis.variable_dtype
+      ~FlattenAxis.variables
+      ~FlattenAxis.weights
+   
+   

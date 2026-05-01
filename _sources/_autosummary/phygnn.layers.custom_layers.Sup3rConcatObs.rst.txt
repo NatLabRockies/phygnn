@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.Sup3rConcatObs
+===========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: Sup3rConcatObs
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Sup3rConcatObs.add_loss
+      ~Sup3rConcatObs.add_metric
+      ~Sup3rConcatObs.add_variable
+      ~Sup3rConcatObs.add_weight
+      ~Sup3rConcatObs.build
+      ~Sup3rConcatObs.build_from_config
+      ~Sup3rConcatObs.call
+      ~Sup3rConcatObs.compute_mask
+      ~Sup3rConcatObs.compute_output_shape
+      ~Sup3rConcatObs.compute_output_spec
+      ~Sup3rConcatObs.count_params
+      ~Sup3rConcatObs.from_config
+      ~Sup3rConcatObs.get_build_config
+      ~Sup3rConcatObs.get_config
+      ~Sup3rConcatObs.get_weights
+      ~Sup3rConcatObs.load_own_variables
+      ~Sup3rConcatObs.quantize
+      ~Sup3rConcatObs.quantized_build
+      ~Sup3rConcatObs.quantized_call
+      ~Sup3rConcatObs.rematerialized_call
+      ~Sup3rConcatObs.save_own_variables
+      ~Sup3rConcatObs.set_weights
+      ~Sup3rConcatObs.stateless_call
+      ~Sup3rConcatObs.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Sup3rConcatObs.compute_dtype
+      ~Sup3rConcatObs.dtype
+      ~Sup3rConcatObs.dtype_policy
+      ~Sup3rConcatObs.input
+      ~Sup3rConcatObs.input_dtype
+      ~Sup3rConcatObs.input_spec
+      ~Sup3rConcatObs.losses
+      ~Sup3rConcatObs.metrics
+      ~Sup3rConcatObs.metrics_variables
+      ~Sup3rConcatObs.non_trainable_variables
+      ~Sup3rConcatObs.non_trainable_weights
+      ~Sup3rConcatObs.output
+      ~Sup3rConcatObs.path
+      ~Sup3rConcatObs.quantization_mode
+      ~Sup3rConcatObs.supports_masking
+      ~Sup3rConcatObs.trainable
+      ~Sup3rConcatObs.trainable_variables
+      ~Sup3rConcatObs.trainable_weights
+      ~Sup3rConcatObs.variable_dtype
+      ~Sup3rConcatObs.variables
+      ~Sup3rConcatObs.weights
+   
+   

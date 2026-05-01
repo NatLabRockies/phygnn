@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.Sup3rObsModel
+==========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: Sup3rObsModel
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Sup3rObsModel.add_loss
+      ~Sup3rObsModel.add_metric
+      ~Sup3rObsModel.add_variable
+      ~Sup3rObsModel.add_weight
+      ~Sup3rObsModel.build
+      ~Sup3rObsModel.build_from_config
+      ~Sup3rObsModel.call
+      ~Sup3rObsModel.compute_mask
+      ~Sup3rObsModel.compute_output_shape
+      ~Sup3rObsModel.compute_output_spec
+      ~Sup3rObsModel.count_params
+      ~Sup3rObsModel.from_config
+      ~Sup3rObsModel.get_build_config
+      ~Sup3rObsModel.get_config
+      ~Sup3rObsModel.get_weights
+      ~Sup3rObsModel.load_own_variables
+      ~Sup3rObsModel.quantize
+      ~Sup3rObsModel.quantized_build
+      ~Sup3rObsModel.quantized_call
+      ~Sup3rObsModel.rematerialized_call
+      ~Sup3rObsModel.save_own_variables
+      ~Sup3rObsModel.set_weights
+      ~Sup3rObsModel.stateless_call
+      ~Sup3rObsModel.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Sup3rObsModel.compute_dtype
+      ~Sup3rObsModel.dtype
+      ~Sup3rObsModel.dtype_policy
+      ~Sup3rObsModel.input
+      ~Sup3rObsModel.input_dtype
+      ~Sup3rObsModel.input_spec
+      ~Sup3rObsModel.losses
+      ~Sup3rObsModel.metrics
+      ~Sup3rObsModel.metrics_variables
+      ~Sup3rObsModel.non_trainable_variables
+      ~Sup3rObsModel.non_trainable_weights
+      ~Sup3rObsModel.output
+      ~Sup3rObsModel.path
+      ~Sup3rObsModel.quantization_mode
+      ~Sup3rObsModel.supports_masking
+      ~Sup3rObsModel.trainable
+      ~Sup3rObsModel.trainable_variables
+      ~Sup3rObsModel.trainable_weights
+      ~Sup3rObsModel.variable_dtype
+      ~Sup3rObsModel.variables
+      ~Sup3rObsModel.weights
+   
+   

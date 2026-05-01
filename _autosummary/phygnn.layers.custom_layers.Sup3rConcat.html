@@ -1,0 +1,777 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>phygnn.layers.custom_layers.Sup3rConcat &mdash; phygnn 0.0.35.dev1+g264b3e851 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=9673985c"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="phygnn.layers.custom_layers.Sup3rConcatObs" href="phygnn.layers.custom_layers.Sup3rConcatObs.html" />
+    <link rel="prev" title="phygnn.layers.custom_layers.Sup3rAdder" href="phygnn.layers.custom_layers.Sup3rAdder.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            phygnn
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../misc/installation_usage.html">Installation and Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../misc/installation.html">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#simple-install">Simple Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../misc/installation.html#developer-install">Developer Install</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="phygnn.html">API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="phygnn.base.html">phygnn.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.CustomNetwork.html">phygnn.base.CustomNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.CustomNetwork.html#phygnn.base.CustomNetwork"><code class="docutils literal notranslate"><span class="pre">CustomNetwork</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.base.GradientUtils.html">phygnn.base.GradientUtils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.base.GradientUtils.html#phygnn.base.GradientUtils"><code class="docutils literal notranslate"><span class="pre">GradientUtils</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="phygnn.layers.html">phygnn.layers</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.get_custom_layer_objects.html">phygnn.layers.custom_layers.get_custom_layer_objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.CBAM.html">phygnn.layers.custom_layers.CBAM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.ExpandDims.html">phygnn.layers.custom_layers.ExpandDims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlattenAxis.html">phygnn.layers.custom_layers.FlattenAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FlexiblePadding.html">phygnn.layers.custom_layers.FlexiblePadding</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.FunctionalLayer.html">phygnn.layers.custom_layers.FunctionalLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianAveragePooling2D.html">phygnn.layers.custom_layers.GaussianAveragePooling2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.GaussianNoiseAxis.html">phygnn.layers.custom_layers.GaussianNoiseAxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.LogTransform.html">phygnn.layers.custom_layers.LogTransform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.MaskedSqueezeAndExcitation.html">phygnn.layers.custom_layers.MaskedSqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SigLin.html">phygnn.layers.custom_layers.SigLin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SkipConnection.html">phygnn.layers.custom_layers.SkipConnection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatialExpansion.html">phygnn.layers.custom_layers.SpatialExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SpatioTemporalExpansion.html">phygnn.layers.custom_layers.SpatioTemporalExpansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.SqueezeAndExcitation.html">phygnn.layers.custom_layers.SqueezeAndExcitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rAdder.html">phygnn.layers.custom_layers.Sup3rAdder</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">phygnn.layers.custom_layers.Sup3rConcat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rConcatObs.html">phygnn.layers.custom_layers.Sup3rConcatObs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.Sup3rObsModel.html">phygnn.layers.custom_layers.Sup3rObsModel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.TileLayer.html">phygnn.layers.custom_layers.TileLayer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.custom_layers.UnitConversion.html">phygnn.layers.custom_layers.UnitConversion</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.layers.handlers.html">phygnn.layers.handlers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.HiddenLayers.html">phygnn.layers.handlers.HiddenLayers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.layers.handlers.Layers.html">phygnn.layers.handlers.Layers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.model_interfaces.html">phygnn.model_interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.base_model.html">phygnn.model_interfaces.base_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.base_model.ModelBase.html">phygnn.model_interfaces.base_model.ModelBase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.html">phygnn.model_interfaces.phygnn_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.phygnn_model.PhygnnModel.html">phygnn.model_interfaces.phygnn_model.PhygnnModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.model_interfaces.tf_model.html">phygnn.model_interfaces.tf_model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.model_interfaces.tf_model.TfModel.html">phygnn.model_interfaces.tf_model.TfModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.phygnn.html">phygnn.phygnn</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html">phygnn.phygnn.PhysicsGuidedNeuralNetwork</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.phygnn.PhysicsGuidedNeuralNetwork.html#phygnn.phygnn.PhysicsGuidedNeuralNetwork"><code class="docutils literal notranslate"><span class="pre">PhysicsGuidedNeuralNetwork</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="phygnn.utilities.html">phygnn.utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.loss_metrics.html">phygnn.utilities.loss_metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.binary_crossentropy.html">phygnn.utilities.loss_metrics.binary_crossentropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mae.html">phygnn.utilities.loss_metrics.mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mbe.html">phygnn.utilities.loss_metrics.mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.mse.html">phygnn.utilities.loss_metrics.mse</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mae.html">phygnn.utilities.loss_metrics.relative_mae</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mbe.html">phygnn.utilities.loss_metrics.relative_mbe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.loss_metrics.relative_mse.html">phygnn.utilities.loss_metrics.relative_mse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.pre_processing.html">phygnn.utilities.pre_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.pre_processing.PreProcess.html">phygnn.utilities.pre_processing.PreProcess</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="phygnn.utilities.tf_utilities.html">phygnn.utilities.tf_utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.idw_fill.html">phygnn.utilities.tf_utilities.idw_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.mean_fill.html">phygnn.utilities.tf_utilities.mean_fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_isin.html">phygnn.utilities.tf_utilities.tf_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="phygnn.utilities.tf_utilities.tf_log10.html">phygnn.utilities.tf_utilities.tf_log10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">phygnn</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="phygnn.html">phygnn</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.layers.html">phygnn.layers</a></li>
+          <li class="breadcrumb-item"><a href="phygnn.layers.custom_layers.html">phygnn.layers.custom_layers</a></li>
+      <li class="breadcrumb-item active">phygnn.layers.custom_layers.Sup3rConcat</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/NatLabRockies/phygnn/blob/main/docs/source/_autosummary/phygnn.layers.custom_layers.Sup3rConcat.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="phygnn-layers-custom-layers-sup3rconcat">
+<h1>phygnn.layers.custom_layers.Sup3rConcat<a class="headerlink" href="#phygnn-layers-custom-layers-sup3rconcat" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Sup3rConcat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/layers/custom_layers.html#Sup3rConcat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Layer</span></code></p>
+<p>Layer to concatenate a high-resolution feature to a sup3r model in the
+middle of a super resolution forward pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str | None</em>) – Unique str identifier for the concat layer. Usually the name of the
+hi-resolution feature used in the concatenation.</p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.add_loss" title="phygnn.layers.custom_layers.Sup3rConcat.add_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_loss</span></code></a>(loss)</p></td>
+<td><p>Can be called inside of the <cite>call()</cite> method to add a scalar loss.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_metric</span></code>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.add_variable" title="phygnn.layers.custom_layers.Sup3rConcat.add_variable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_variable</span></code></a>(shape, initializer[, dtype, ...])</p></td>
+<td><p>Add a weight variable to the layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.add_weight" title="phygnn.layers.custom_layers.Sup3rConcat.add_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_weight</span></code></a>([shape, initializer, dtype, ...])</p></td>
+<td><p>Add a weight variable to the layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">build</span></code>(input_shape)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.build_from_config" title="phygnn.layers.custom_layers.Sup3rConcat.build_from_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_from_config</span></code></a>(config)</p></td>
+<td><p>Builds the layer's states with the supplied config dict.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.call" title="phygnn.layers.custom_layers.Sup3rConcat.call"><code class="xref py py-obj docutils literal notranslate"><span class="pre">call</span></code></a>(x, hi_res_feature)</p></td>
+<td><p>Concatenates a hi-resolution feature to the input tensor x in the middle of a sup3r resolution network.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_mask</span></code>(inputs, previous_mask)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_output_shape</span></code>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_output_spec</span></code>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.count_params" title="phygnn.layers.custom_layers.Sup3rConcat.count_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count_params</span></code></a>()</p></td>
+<td><p>Count the total number of scalars composing the weights.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.from_config" title="phygnn.layers.custom_layers.Sup3rConcat.from_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_config</span></code></a>(config)</p></td>
+<td><p>Creates an operation from its config.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.get_build_config" title="phygnn.layers.custom_layers.Sup3rConcat.get_build_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_build_config</span></code></a>()</p></td>
+<td><p>Returns a dictionary with the layer's input shape.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.get_config" title="phygnn.layers.custom_layers.Sup3rConcat.get_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_config</span></code></a>()</p></td>
+<td><p>Returns the config of the object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.get_weights" title="phygnn.layers.custom_layers.Sup3rConcat.get_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_weights</span></code></a>()</p></td>
+<td><p>Return the values of <cite>layer.weights</cite> as a list of NumPy arrays.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.load_own_variables" title="phygnn.layers.custom_layers.Sup3rConcat.load_own_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_own_variables</span></code></a>(store)</p></td>
+<td><p>Loads the state of the layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantize</span></code>(mode[, type_check, config])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantized_build</span></code>(input_shape, mode)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantized_call</span></code>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.rematerialized_call" title="phygnn.layers.custom_layers.Sup3rConcat.rematerialized_call"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rematerialized_call</span></code></a>(layer_call, *args, **kwargs)</p></td>
+<td><p>Enable rematerialization dynamically for layer's call method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.save_own_variables" title="phygnn.layers.custom_layers.Sup3rConcat.save_own_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_own_variables</span></code></a>(store)</p></td>
+<td><p>Saves the state of the layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.set_weights" title="phygnn.layers.custom_layers.Sup3rConcat.set_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_weights</span></code></a>(weights)</p></td>
+<td><p>Sets the values of <cite>layer.weights</cite> from a list of NumPy arrays.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.stateless_call" title="phygnn.layers.custom_layers.Sup3rConcat.stateless_call"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stateless_call</span></code></a>(trainable_variables, ...[, ...])</p></td>
+<td><p>Call the layer without any side effects.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">symbolic_call</span></code>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.compute_dtype" title="phygnn.layers.custom_layers.Sup3rConcat.compute_dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_dtype</span></code></a></p></td>
+<td><p>The dtype of the computations performed by the layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.dtype" title="phygnn.layers.custom_layers.Sup3rConcat.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a></p></td>
+<td><p>Alias of <cite>layer.variable_dtype</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype_policy</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.input" title="phygnn.layers.custom_layers.Sup3rConcat.input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input</span></code></a></p></td>
+<td><p>Retrieves the input tensor(s) of a symbolic operation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.input_dtype" title="phygnn.layers.custom_layers.Sup3rConcat.input_dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_dtype</span></code></a></p></td>
+<td><p>The dtype layer inputs should be converted to.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_spec</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.losses" title="phygnn.layers.custom_layers.Sup3rConcat.losses"><code class="xref py py-obj docutils literal notranslate"><span class="pre">losses</span></code></a></p></td>
+<td><p>List of scalar losses from <cite>add_loss</cite>, regularizers and sublayers.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.metrics" title="phygnn.layers.custom_layers.Sup3rConcat.metrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">metrics</span></code></a></p></td>
+<td><p>List of all metrics.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.metrics_variables" title="phygnn.layers.custom_layers.Sup3rConcat.metrics_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">metrics_variables</span></code></a></p></td>
+<td><p>List of all metric variables.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.non_trainable_variables" title="phygnn.layers.custom_layers.Sup3rConcat.non_trainable_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">non_trainable_variables</span></code></a></p></td>
+<td><p>List of all non-trainable layer state.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.non_trainable_weights" title="phygnn.layers.custom_layers.Sup3rConcat.non_trainable_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">non_trainable_weights</span></code></a></p></td>
+<td><p>List of all non-trainable weight variables of the layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.output" title="phygnn.layers.custom_layers.Sup3rConcat.output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output</span></code></a></p></td>
+<td><p>Retrieves the output tensor(s) of a layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.path" title="phygnn.layers.custom_layers.Sup3rConcat.path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">path</span></code></a></p></td>
+<td><p>The path of the layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.quantization_mode" title="phygnn.layers.custom_layers.Sup3rConcat.quantization_mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantization_mode</span></code></a></p></td>
+<td><p>The quantization mode of this layer, <cite>None</cite> if not quantized.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.supports_masking" title="phygnn.layers.custom_layers.Sup3rConcat.supports_masking"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_masking</span></code></a></p></td>
+<td><p>Whether this layer supports computing a mask using <cite>compute_mask</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.trainable" title="phygnn.layers.custom_layers.Sup3rConcat.trainable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trainable</span></code></a></p></td>
+<td><p>Settable boolean, whether this layer should be trainable or not.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.trainable_variables" title="phygnn.layers.custom_layers.Sup3rConcat.trainable_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trainable_variables</span></code></a></p></td>
+<td><p>List of all trainable layer state.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.trainable_weights" title="phygnn.layers.custom_layers.Sup3rConcat.trainable_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trainable_weights</span></code></a></p></td>
+<td><p>List of all trainable weight variables of the layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.variable_dtype" title="phygnn.layers.custom_layers.Sup3rConcat.variable_dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">variable_dtype</span></code></a></p></td>
+<td><p>The dtype of the state (weights) of the layer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.variables" title="phygnn.layers.custom_layers.Sup3rConcat.variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">variables</span></code></a></p></td>
+<td><p>List of all layer state, including random seeds.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#phygnn.layers.custom_layers.Sup3rConcat.weights" title="phygnn.layers.custom_layers.Sup3rConcat.weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weights</span></code></a></p></td>
+<td><p>List of all weight variables of the layer.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.call">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hi_res_feature</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/phygnn/layers/custom_layers.html#Sup3rConcat.call"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.call" title="Link to this definition"></a></dt>
+<dd><p>Concatenates a hi-resolution feature to the input tensor x in the
+middle of a sup3r resolution network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>tf.Tensor</em>) – Input tensor</p></li>
+<li><p><strong>hi_res_feature</strong> (<em>tf.Tensor | np.ndarray</em>) – This should be a 4D array for spatial enhancement model or 5D array
+for a spatiotemporal enhancement model (obs, spatial_1, spatial_2,
+(temporal), features) that can be concatenated to x.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>x</strong> (<em>tf.Tensor</em>) – Output tensor with the hi_res_feature added to x.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.__call__" title="Link to this definition"></a></dt>
+<dd><p>Call self as a function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.add_loss">
+<span class="sig-name descname"><span class="pre">add_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.add_loss" title="Link to this definition"></a></dt>
+<dd><p>Can be called inside of the <cite>call()</cite> method to add a scalar loss.</p>
+<p>Example:</p>
+<p><a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python
+class MyLayer(Layer):</p>
+<blockquote>
+<div><p>…
+def call(self, x):</p>
+<blockquote>
+<div><p>self.add_loss(ops.sum(x))
+return x</p>
+</div></blockquote>
+</div></blockquote>
+<p><a href="#id5"><span class="problematic" id="id6">``</span></a><a href="#id7"><span class="problematic" id="id8">`</span></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.add_variable">
+<span class="sig-name descname"><span class="pre">add_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initializer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autocast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.add_variable" title="Link to this definition"></a></dt>
+<dd><p>Add a weight variable to the layer.</p>
+<p>Alias of <cite>add_weight()</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.add_weight">
+<span class="sig-name descname"><span class="pre">add_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initializer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autocast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aggregation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_with_gradient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.add_weight" title="Link to this definition"></a></dt>
+<dd><p>Add a weight variable to the layer.</p>
+<dl>
+<dt>Args:</dt><dd><dl class="simple">
+<dt>shape: Shape tuple for the variable. Must be fully-defined</dt><dd><p>(no <cite>None</cite> entries). Defaults to <cite>()</cite> (scalar) if unspecified.</p>
+</dd>
+<dt>initializer: Initializer object to use to populate the initial</dt><dd><p>variable value, or string name of a built-in initializer
+(e.g. <cite>“random_normal”</cite>). If unspecified, defaults to
+<cite>“glorot_uniform”</cite> for floating-point variables and to <cite>“zeros”</cite>
+for all other types (e.g. int, bool).</p>
+</dd>
+<dt>dtype: Dtype of the variable to create, e.g. <cite>“float32”</cite>. If</dt><dd><p>unspecified, defaults to the layer’s variable dtype
+(which itself defaults to <cite>“float32”</cite> if unspecified).</p>
+</dd>
+<dt>trainable: Boolean, whether the variable should be trainable via</dt><dd><p>backprop or whether its updates are managed manually. Defaults
+to <cite>True</cite>.</p>
+</dd>
+<dt>autocast: Boolean, whether to autocast layers variables when</dt><dd><p>accessing them. Defaults to <cite>True</cite>.</p>
+</dd>
+<dt>regularizer: Regularizer object to call to apply penalty on the</dt><dd><p>weight. These penalties are summed into the loss function
+during optimization. Defaults to <cite>None</cite>.</p>
+</dd>
+<dt>constraint: Contrainst object to call on the variable after any</dt><dd><p>optimizer update, or string name of a built-in constraint.
+Defaults to <cite>None</cite>.</p>
+</dd>
+<dt>aggregation: Optional string, one of <cite>None</cite>, <cite>“none”</cite>, <cite>“mean”</cite>,</dt><dd><p><cite>“sum”</cite> or <cite>“only_first_replica”</cite>. Annotates the variable with
+the type of multi-replica aggregation to be used for this
+variable when writing custom data parallel training loops.
+Defaults to <cite>“none”</cite>.</p>
+</dd>
+<dt>overwrite_with_gradient: Boolean, whether to overwrite the variable</dt><dd><p>with the computed gradient. This is useful for float8 training.
+Defaults to <cite>False</cite>.</p>
+</dd>
+</dl>
+<p>name: String name of the variable. Useful for debugging purposes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.build_from_config">
+<span class="sig-name descname"><span class="pre">build_from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.build_from_config" title="Link to this definition"></a></dt>
+<dd><p>Builds the layer’s states with the supplied config dict.</p>
+<p>By default, this method calls the <cite>build(config[“input_shape”])</cite> method,
+which creates weights based on the layer’s input shape in the supplied
+config. If your config contains other information needed to load the
+layer’s state, you should override this method.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>config: Dict containing the input shape associated with this layer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.compute_dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compute_dtype</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.compute_dtype" title="Link to this definition"></a></dt>
+<dd><p>The dtype of the computations performed by the layer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.count_params">
+<span class="sig-name descname"><span class="pre">count_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.count_params" title="Link to this definition"></a></dt>
+<dd><p>Count the total number of scalars composing the weights.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>An integer count.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.dtype" title="Link to this definition"></a></dt>
+<dd><p>Alias of <cite>layer.variable_dtype</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.from_config" title="Link to this definition"></a></dt>
+<dd><p>Creates an operation from its config.</p>
+<p>This method is the reverse of <cite>get_config</cite>, capable of instantiating the
+same operation from the config dictionary.</p>
+<p>Note: If you override this method, you might receive a serialized dtype
+config, which is a <cite>dict</cite>. You can deserialize it as follows:</p>
+<p><a href="#id9"><span class="problematic" id="id10">``</span></a><a href="#id11"><span class="problematic" id="id12">`</span></a>python
+if “dtype” in config and isinstance(config[“dtype”], dict):</p>
+<blockquote>
+<div><p>policy = dtype_policies.deserialize(config[“dtype”])</p>
+</div></blockquote>
+<p><a href="#id13"><span class="problematic" id="id14">``</span></a><a href="#id15"><span class="problematic" id="id16">`</span></a></p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>config: A Python dictionary, typically the output of <cite>get_config</cite>.</p>
+</dd>
+<dt>Returns:</dt><dd><p>An operation instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.get_build_config">
+<span class="sig-name descname"><span class="pre">get_build_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.get_build_config" title="Link to this definition"></a></dt>
+<dd><p>Returns a dictionary with the layer’s input shape.</p>
+<p>This method returns a config dict that can be used by
+<cite>build_from_config(config)</cite> to create all states (e.g. Variables and
+Lookup tables) needed by the layer.</p>
+<p>By default, the config only contains the input shape that the layer
+was built with. If you’re writing a custom layer that creates state in
+an unusual way, you should override this method to make sure this state
+is already created when Keras attempts to load its value upon model
+loading.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A dict containing the input shape associated with the layer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.get_config" title="Link to this definition"></a></dt>
+<dd><p>Returns the config of the object.</p>
+<p>An object config is a Python dictionary (serializable)
+containing the information needed to re-instantiate it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.get_weights">
+<span class="sig-name descname"><span class="pre">get_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.get_weights" title="Link to this definition"></a></dt>
+<dd><p>Return the values of <cite>layer.weights</cite> as a list of NumPy arrays.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.input">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.input" title="Link to this definition"></a></dt>
+<dd><p>Retrieves the input tensor(s) of a symbolic operation.</p>
+<p>Only returns the tensor(s) corresponding to the <em>first time</em>
+the operation was called.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Input tensor or list of input tensors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.input_dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_dtype</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.input_dtype" title="Link to this definition"></a></dt>
+<dd><p>The dtype layer inputs should be converted to.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.load_own_variables">
+<span class="sig-name descname"><span class="pre">load_own_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">store</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.load_own_variables" title="Link to this definition"></a></dt>
+<dd><p>Loads the state of the layer.</p>
+<p>You can override this method to take full control of how the state of
+the layer is loaded upon calling <cite>keras.models.load_model()</cite>.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>store: Dict from which the state of the model will be loaded.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.losses">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">losses</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.losses" title="Link to this definition"></a></dt>
+<dd><p>List of scalar losses from <cite>add_loss</cite>, regularizers and sublayers.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.metrics">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metrics</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.metrics" title="Link to this definition"></a></dt>
+<dd><p>List of all metrics.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.metrics_variables">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metrics_variables</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.metrics_variables" title="Link to this definition"></a></dt>
+<dd><p>List of all metric variables.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.non_trainable_variables">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">non_trainable_variables</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.non_trainable_variables" title="Link to this definition"></a></dt>
+<dd><p>List of all non-trainable layer state.</p>
+<p>This extends <cite>layer.non_trainable_weights</cite> to include all state used by
+the layer including state for metrics and <a href="#id17"><span class="problematic" id="id18">`</span></a>SeedGenerator`s.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.non_trainable_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">non_trainable_weights</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.non_trainable_weights" title="Link to this definition"></a></dt>
+<dd><p>List of all non-trainable weight variables of the layer.</p>
+<p>These are the weights that should not be updated by the optimizer during
+training. Unlike, <cite>layer.non_trainable_variables</cite> this excludes metric
+state and random seeds.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.output">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.output" title="Link to this definition"></a></dt>
+<dd><p>Retrieves the output tensor(s) of a layer.</p>
+<p>Only returns the tensor(s) corresponding to the <em>first time</em>
+the operation was called.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Output tensor or list of output tensors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.path" title="Link to this definition"></a></dt>
+<dd><p>The path of the layer.</p>
+<p>If the layer has not been built yet, it will be <cite>None</cite>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.quantization_mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">quantization_mode</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.quantization_mode" title="Link to this definition"></a></dt>
+<dd><p>The quantization mode of this layer, <cite>None</cite> if not quantized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.rematerialized_call">
+<span class="sig-name descname"><span class="pre">rematerialized_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layer_call</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.rematerialized_call" title="Link to this definition"></a></dt>
+<dd><p>Enable rematerialization dynamically for layer’s call method.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>layer_call: The original <cite>call</cite> method of a layer.</p>
+</dd>
+<dt>Returns:</dt><dd><p>Rematerialized layer’s <cite>call</cite> method.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.save_own_variables">
+<span class="sig-name descname"><span class="pre">save_own_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">store</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.save_own_variables" title="Link to this definition"></a></dt>
+<dd><p>Saves the state of the layer.</p>
+<p>You can override this method to take full control of how the state of
+the layer is saved upon calling <cite>model.save()</cite>.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>store: Dict where the state of the model will be saved.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.set_weights">
+<span class="sig-name descname"><span class="pre">set_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.set_weights" title="Link to this definition"></a></dt>
+<dd><p>Sets the values of <cite>layer.weights</cite> from a list of NumPy arrays.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.stateless_call">
+<span class="sig-name descname"><span class="pre">stateless_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainable_variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_trainable_variables</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_losses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.stateless_call" title="Link to this definition"></a></dt>
+<dd><p>Call the layer without any side effects.</p>
+<dl>
+<dt>Args:</dt><dd><p>trainable_variables: List of trainable variables of the model.
+non_trainable_variables: List of non-trainable variables of the</p>
+<blockquote>
+<div><p>model.</p>
+</div></blockquote>
+<p><a href="#id19"><span class="problematic" id="id20">*</span></a>args: Positional arguments to be passed to <cite>call()</cite>.
+return_losses: If <cite>True</cite>, <cite>stateless_call()</cite> will return the list of</p>
+<blockquote>
+<div><p>losses created during <cite>call()</cite> as part of its return values.</p>
+</div></blockquote>
+<p><a href="#id21"><span class="problematic" id="id22">**</span></a>kwargs: Keyword arguments to be passed to <cite>call()</cite>.</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>A tuple. By default, returns <cite>(outputs, non_trainable_variables)</cite>.</dt><dd><p>If <cite>return_losses = True</cite>, then returns
+<cite>(outputs, non_trainable_variables, losses)</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>Note: <cite>non_trainable_variables</cite> include not only non-trainable weights
+such as <cite>BatchNormalization</cite> statistics, but also RNG seed state
+(if there are any random operations part of the layer, such as dropout),
+and <cite>Metric</cite> state (if there are any metrics attached to the layer).
+These are all elements of state of the layer.</p>
+<p>Example:</p>
+<p><a href="#id23"><span class="problematic" id="id24">``</span></a><a href="#id25"><span class="problematic" id="id26">`</span></a>python
+model = …
+data = …
+trainable_variables = model.trainable_variables
+non_trainable_variables = model.non_trainable_variables
+# Call the model with zero side effects
+outputs, non_trainable_variables = model.stateless_call(</p>
+<blockquote>
+<div><p>trainable_variables,
+non_trainable_variables,
+data,</p>
+</div></blockquote>
+<p>)
+# Attach the updated state to the model
+# (until you do this, the model is still in its pre-call state).
+for ref_var, value in zip(</p>
+<blockquote>
+<div><p>model.non_trainable_variables, non_trainable_variables</p>
+</div></blockquote>
+<dl class="simple">
+<dt>):</dt><dd><p>ref_var.assign(value)</p>
+</dd>
+</dl>
+<p><a href="#id27"><span class="problematic" id="id28">``</span></a><a href="#id29"><span class="problematic" id="id30">`</span></a></p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.supports_masking">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_masking</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.supports_masking" title="Link to this definition"></a></dt>
+<dd><p>Whether this layer supports computing a mask using <cite>compute_mask</cite>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.trainable">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trainable</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.trainable" title="Link to this definition"></a></dt>
+<dd><p>Settable boolean, whether this layer should be trainable or not.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.trainable_variables">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trainable_variables</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.trainable_variables" title="Link to this definition"></a></dt>
+<dd><p>List of all trainable layer state.</p>
+<p>This is equivalent to <cite>layer.trainable_weights</cite>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.trainable_weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trainable_weights</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.trainable_weights" title="Link to this definition"></a></dt>
+<dd><p>List of all trainable weight variables of the layer.</p>
+<p>These are the weights that get updated by the optimizer during training.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.variable_dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">variable_dtype</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.variable_dtype" title="Link to this definition"></a></dt>
+<dd><p>The dtype of the state (weights) of the layer.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.variables">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">variables</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.variables" title="Link to this definition"></a></dt>
+<dd><p>List of all layer state, including random seeds.</p>
+<p>This extends <cite>layer.weights</cite> to include all state used by the layer
+including <a href="#id31"><span class="problematic" id="id32">`</span></a>SeedGenerator`s.</p>
+<p>Note that metrics variables are not included here, use
+<cite>metrics_variables</cite> to visit all the metric variables.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="phygnn.layers.custom_layers.Sup3rConcat.weights">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">weights</span></span><a class="headerlink" href="#phygnn.layers.custom_layers.Sup3rConcat.weights" title="Link to this definition"></a></dt>
+<dd><p>List of all weight variables of the layer.</p>
+<p>Unlike, <cite>layer.variables</cite> this excludes metric state and random seeds.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="phygnn.layers.custom_layers.Sup3rAdder.html" class="btn btn-neutral float-left" title="phygnn.layers.custom_layers.Sup3rAdder" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="phygnn.layers.custom_layers.Sup3rConcatObs.html" class="btn btn-neutral float-right" title="phygnn.layers.custom_layers.Sup3rConcatObs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Alliance for Energy Innovation, LLC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
