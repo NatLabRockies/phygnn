@@ -821,7 +821,9 @@ class TransformerLayer(tf.keras.layers.Layer):
     for additive bias pre-softmax. This also uses RMS normalization instead of
     LayerNormalization and an MLP with a SwiGLU activation function."""
 
-    def __init__(self, num_heads, key_dim, attn_kwargs=None, **kwargs):
+    def __init__(
+        self, num_heads, key_dim, attn_kwargs=None, norm_on=True, **kwargs
+    ):
         """Initialize the transformer layer.
 
         Parameters
@@ -833,6 +835,10 @@ class TransformerLayer(tf.keras.layers.Layer):
         attn_kwargs : dict | None
             Additional keyword arguments forwarded to the internal
             :class:`MultiHeadAttention` layer.
+        norm_on : bool
+            Whether to apply RMS normalization to the input and output. This is
+            typically set to True when the transformer layer is the first layer
+            in the model to normalize the raw input features before attention.
         **kwargs
             Additional keyword arguments passed to ``tf.keras.layers.Layer``.
         """
@@ -840,15 +846,21 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.attn_kwargs = attn_kwargs
+        self.norm_on = norm_on
         self.attn = MultiHeadAttention(
             num_heads=self.num_heads,
             key_dim=self.key_dim,
             **(self.attn_kwargs or {}),
         )
-        self.lq = tf.keras.layers.RMSNormalization()
-        self.lk = tf.keras.layers.RMSNormalization()
-        self.lv = tf.keras.layers.RMSNormalization()
-        self.lo = tf.keras.layers.RMSNormalization()
+        layer_norm_cls = (
+            tf.keras.layers.RMSNormalization
+            if self.norm_on
+            else tf.keras.layers.Identity
+        )
+        self.lq = layer_norm_cls()
+        self.lk = layer_norm_cls()
+        self.lv = layer_norm_cls()
+        self.lo = layer_norm_cls()
         self.mlp = tf.keras.Sequential([
             tf.keras.layers.Dense(4 * self.key_dim),
             SwiGLU(),
@@ -934,6 +946,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         min_period_temporal=1,
         max_period_temporal=864000,
         attn_kwargs=None,
+        norm_on=True,
         **kwargs,
     ):
         """
@@ -964,6 +977,11 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Additional keyword arguments forwarded to the internal
             :class:`MultiHeadAttention` layer used by the
             :class:`TransformerLayer` (``self.tl``).
+        norm_on : bool
+            Whether to apply RMS normalization to the input and output of the
+            transformer layer. This is typically set to True when the
+            transformer layer is the first layer in the model to normalize the
+            raw input features before attention.
         **kwargs
              Additional keyword arguments to pass to the parent class. This can
              include arguments like trainable and dtype.
@@ -995,6 +1013,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             key_dim=self.key_dim,
             num_heads=self.num_heads,
             attn_kwargs=self.attn_kwargs,
+            norm_on=norm_on
         )
         self.final_proj = None
 
@@ -1210,18 +1229,24 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
     arXiv:2108.12409. https://arxiv.org/abs/2108.12409
     """
 
-    def __init__(self, *args, alpha=10, trainable=True, **kwargs):
+    def __init__(
+        self, *args, alpha=1e6, trainable=True, norm_on=False, **kwargs
+    ):
         """Initialize the Sup3rTransformerLayerAlibi layer.
 
         Parameters
         ----------
         alpha : float, optional
-            Scaling factor for the ALiBi bias. Default is 10.
+            Scaling factor for the ALiBi bias. Default is 1e6.
         trainable : bool, optional
             Whether the alpha parameter is trainable. Default is True.
+        norm_on : bool, optional
+            Whether to apply RMS normalization to the input and output. Default
+            is False. ALiBi is designed to work without positional encodings,
+            and normalization can interfere with the bias.
         """
 
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, norm_on=norm_on, **kwargs)
         self.alpha = alpha
         self.trainable = trainable
         self.head_slopes = None
