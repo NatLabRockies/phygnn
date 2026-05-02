@@ -52,8 +52,8 @@ tensorflow = {version = "~=2.16.1", channel = "conda-forge"}
 [project.optional-dependencies]
 dev = [
   "build>=0.5",
-  "flake8",
   "pre-commit",
+  "ruff>=0.4",
   "pylint"
 ]
 doc = [
@@ -76,7 +76,7 @@ repository = "https://github.com/NatLabRockies/phygnn"
 line-length = 79
 indent-width = 4
 
-target-version = "py38"
+target-version = "py39"
 exclude = [
   "CSV",
   "ref.*?py"
@@ -236,10 +236,10 @@ max-complexity = 12
 ]
 
 [tool.ruff.lint.pylint]
-max-args =10 # (PLR0913) Maximum number of arguments for function / method
-max-bool-expr =10 # ( PLR0916) Boolean in a single if statement
-max-branches=12 # (PLR0912) branches allowed for a function or method body
-max-locals=15 # (PLR0912) local variables allowed for a function or method body
+max-args = 10 # (PLR0913) Maximum number of arguments for function / method
+max-bool-expr = 10 # ( PLR0916) Boolean in a single if statement
+max-branches = 12 # (PLR0912) branches allowed for a function or method body
+max-locals = 15 # (PLR0912) local variables allowed for a function or method body
 max-nested-blocks = 5 # (PLR1702) nested blocks within a function or method body
 max-public-methods = 20 # (R0904) public methods allowed for a class
 max-returns = 6 # (PLR0911) return statements for a function or method body
@@ -263,7 +263,7 @@ version_file = "phygnn/_version.py"
 version_scheme = "guess-next-dev"
 fallback_version = "0.0.34"
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge", "anaconda", "main"]
 platforms = ["osx-arm64", "linux-64"]
 

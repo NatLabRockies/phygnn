@@ -176,7 +176,7 @@ class ModelBase(ABC):
     @property
     def label_names(self):
         """
-        label variable names
+        Label variable names
 
         Returns
         -------
@@ -285,7 +285,7 @@ class ModelBase(ABC):
     @property
     def label_means(self):
         """
-        label means, used for (un)normalization
+        Label means, used for (un)normalization
 
         Returns
         -------
@@ -302,7 +302,7 @@ class ModelBase(ABC):
     @property
     def label_stdevs(self):
         """
-        label stdevs, used for (un)normalization
+        Label stdevs, used for (un)normalization
 
         Returns
         -------
@@ -359,7 +359,7 @@ class ModelBase(ABC):
     @property
     def one_hot_categories(self):
         """
-        categories to use for one-hot encoding
+        Categories to use for one-hot encoding
 
         Returns
         -------
@@ -1023,7 +1023,7 @@ class ModelBase(ABC):
         if self.normalize_labels:
             prediction = self.unnormalize(prediction, names=self.label_names)
 
-        if table and len(prediction.shape) in (1, 2):
+        if table and len(prediction.shape) in {1, 2}:
             prediction = pd.DataFrame(prediction, columns=self.label_names)
 
         return prediction
