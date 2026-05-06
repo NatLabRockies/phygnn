@@ -201,10 +201,9 @@ class PatchLayer(tf.keras.layers.Layer):
         """Helper function to mask output tokens based on NaN values in the
         input tensor.
         """
-        if self.patch_size == 1:
-            nan_any = tf.math.reduce_any(tf.math.is_nan(x), axis=-1)
-            valid_mask = tf.math.logical_not(nan_any)
-            out = tf.boolean_mask(out, valid_mask)
+        nan_any = tf.math.reduce_any(tf.math.is_nan(x), axis=-1)
+        valid_mask = tf.math.logical_not(nan_any)
+        out = tf.boolean_mask(out, valid_mask)
         tf.debugging.assert_all_finite(
             out, message='Masked output contains NaN or Inf values.'
         )
@@ -637,6 +636,13 @@ class PositionEncoder(PatchLayer):
             Positional encoding tensor with shape (batch_size, n_tokens,
             embed_dim)
         """
+        if self.patch_size > 1:
+            x = self._pool_layer(x)
+            lat = self._pool_layer(lat)
+            lon = self._pool_layer(lon)
+            if time is not None:
+                time = self._pool_layer(time)
+
         x_enc = self.encode_lat_lon(
             x, lat, lon, self.min_period_spatial, self.max_period_spatial
         )
@@ -650,6 +656,7 @@ class PositionEncoder(PatchLayer):
         """Get config for Keras serialization."""
         config = super().get_config()
         config.update({
+            'patch_size': self.patch_size,
             'embed_dim': self.embed_dim,
             'min_period_spatial': self.min_period_spatial,
             'max_period_spatial': self.max_period_spatial,
@@ -1013,7 +1020,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             key_dim=self.key_dim,
             num_heads=self.num_heads,
             attn_kwargs=self.attn_kwargs,
-            norm_input=norm_input
+            norm_input=norm_input,
         )
         self.final_proj = None
 
@@ -1104,7 +1111,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         })
         return config
 
-    def _call(self, x, hi_res_feature, idx, lat, lon, time=None):
+    def _call(self, x, hi_res_feature, idx, lat=None, lon=None, time=None):
         """Call transformer layer for a single batch member. This is necessary
         to handle different NaN patterns across batch members in the case of
         sparse observation data.
@@ -1134,8 +1141,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         """
         x_in = x[idx : idx + 1]
         hr_in = hi_res_feature[idx : idx + 1]
-        lat = lat[idx : idx + 1]
-        lon = lon[idx : idx + 1]
+        lat = None if lat is None else lat[idx : idx + 1]
+        lon = None if lon is None else lon[idx : idx + 1]
         time = None if time is None else time[idx : idx + 1]
 
         if tf.math.reduce_all(tf.math.is_nan(hr_in)):
@@ -1194,8 +1201,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         if hi_res_feature is None:
             return x
 
-        lat = exo_data[..., 0:1]
-        lon = exo_data[..., 1:2]
+        lat = None if exo_data is None else exo_data[..., 0:1]
+        lon = None if exo_data is None else exo_data[..., 1:2]
         time = (
             None
             if exo_data is None or exo_data.shape[-1] < 3
@@ -1483,6 +1490,9 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             Output tensor of the attention block after passing through all
             layers in the stack.
         """
+        if hi_res_features is None:
+            return x
+
         x_in = x
         for i, layer in enumerate(self.layers):
             x = layer(
