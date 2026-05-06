@@ -825,8 +825,7 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
 
 class TransformerLayer(tf.keras.layers.Layer):
     """Custom transformer layer with multi-head attention layer that allows
-    for additive bias pre-softmax. This also uses RMS normalization instead of
-    LayerNormalization and an MLP with a SwiGLU activation function."""
+    for additive bias pre-softmax."""
 
     def __init__(
         self, num_heads, key_dim, attn_kwargs=None, norm_input=True, **kwargs
@@ -843,7 +842,7 @@ class TransformerLayer(tf.keras.layers.Layer):
             Additional keyword arguments forwarded to the internal
             :class:`MultiHeadAttention` layer.
         norm_input : bool
-            Whether to apply RMS normalization to the input. This is
+            Whether to apply LayerNormalization to the input. This is
             typically set to True when the transformer layer is the first layer
             in the model to normalize the raw input features before attention.
         **kwargs
@@ -860,17 +859,16 @@ class TransformerLayer(tf.keras.layers.Layer):
             **(self.attn_kwargs or {}),
         )
         layer_norm_cls = (
-            tf.keras.layers.RMSNormalization
+            tf.keras.layers.LayerNormalization
             if self.norm_input
             else tf.keras.layers.Identity
         )
         self.lq = layer_norm_cls()
         self.lk = layer_norm_cls()
         self.lv = layer_norm_cls()
-        self.lo = tf.keras.layers.RMSNormalization()
+        self.lo = tf.keras.layers.LayerNormalization()
         self.mlp = tf.keras.Sequential([
-            tf.keras.layers.Dense(4 * self.key_dim),
-            SwiGLU(),
+            tf.keras.layers.Dense(2 * self.key_dim, activation='relu'),
             tf.keras.layers.Dense(self.key_dim),
         ])
 
