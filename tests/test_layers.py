@@ -675,20 +675,12 @@ def test_pos_encoding_patch_size_gt1_2d():
     pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
     pos_enc.build(x.shape)
 
-    n_tokens = n_rows * n_cols
+    n_tokens = n_rows * n_cols // (patch_size**2)
 
-    lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1) * np.ones((
-        1,
-        1,
-        n_cols,
-        1,
-    ))
-    lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1) * np.ones((
-        1,
-        n_rows,
-        1,
-        1,
-    ))
+    lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1)
+    lat = lat * np.ones((1, 1, n_cols, 1))
+    lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1)
+    lon = lon * np.ones((1, n_rows, 1, 1))
     lat = tf.constant(lat, dtype=tf.float32)
     lon = tf.constant(lon, dtype=tf.float32)
 
@@ -696,7 +688,9 @@ def test_pos_encoding_patch_size_gt1_2d():
     assert enc.shape == (1, n_tokens, embed_dim)
 
     # Different rows must produce different encodings
-    enc_spatial = tf.reshape(enc, (1, n_rows, n_cols, embed_dim))
+    enc_spatial = tf.reshape(
+        enc, (1, n_rows // patch_size, n_cols // patch_size, embed_dim)
+    )
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(
             enc_spatial[0, 0, 0].numpy(),
@@ -717,7 +711,7 @@ def test_pos_encoding_patch_size_gt1_3d():
     pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
     pos_enc.build(x.shape)
 
-    n_tokens = n_rows * n_cols * n_times
+    n_tokens = n_rows * n_cols * n_times // (patch_size**3)
 
     lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1, 1)
     lat = lat * np.ones((1, 1, n_cols, n_times, 1))
@@ -730,7 +724,16 @@ def test_pos_encoding_patch_size_gt1_3d():
     assert enc.shape == (1, n_tokens, embed_dim)
 
     # Different spatial positions must produce different encodings
-    enc_spatial = tf.reshape(enc, (1, n_rows, n_cols, n_times, embed_dim))
+    enc_spatial = tf.reshape(
+        enc,
+        (
+            1,
+            n_rows // patch_size,
+            n_cols // patch_size,
+            n_times // patch_size,
+            embed_dim,
+        ),
+    )
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(
             enc_spatial[0, 0, 0, 0].numpy(),
