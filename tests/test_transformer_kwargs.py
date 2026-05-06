@@ -21,12 +21,12 @@ def _patch_fused_attention(monkeypatch, dot_product_attention):
     )
 
 
-def test_transformer_layer_forwards_attn_kwargs():
+def test_transformer_layer_forwards_attention_kwargs():
     """TransformerLayer should pass attention kwargs to MultiHeadAttention."""
     layer = TransformerLayer(
         num_heads=2,
         key_dim=8,
-        attn_kwargs={'dropout': 0.25, 'use_bias': False},
+        attention_kwargs={'dropout': 0.25, 'use_bias': False},
     )
 
     assert layer.attn._dropout == pytest.approx(0.25)
@@ -47,13 +47,13 @@ def test_transformer_layer_forward_pass_builds_supported_mlp():
     assert output.shape == query.shape
 
 
-def test_sup3r_transformer_layer_forwards_attn_kwargs():
+def test_sup3r_transformer_layer_forwards_attention_kwargs():
     """Sup3rTransformerLayer should preserve attention kwargs."""
     layer = Sup3rTransformerLayer(
         embed_dim=16,
         num_heads=2,
         key_dim=8,
-        attn_kwargs={'dropout': 0.15},
+        attention_kwargs={'dropout': 0.15},
     )
 
     assert layer.tl.attn._dropout == pytest.approx(0.15)
@@ -66,7 +66,7 @@ def test_sup3r_transformer_block_forwards_layer_and_attention_kwargs():
         num_heads=4,
         key_dim=12,
         embed_dim=24,
-        attn_kwargs={'dropout': 0.05},
+        attention_kwargs={'dropout': 0.05},
     )
 
     assert len(block.layers) == 2
@@ -90,7 +90,7 @@ def test_sup3r_transformer_block_uses_alibi_variant():
         num_heads=2,
         key_dim=8,
         transformer_kwargs={'embed_dim': 16},
-        attn_kwargs={'dropout': 0.1},
+        attention_kwargs={'dropout': 0.1},
     )
 
     assert len(block.layers) == 1

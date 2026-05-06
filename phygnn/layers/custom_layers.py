@@ -823,12 +823,235 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         return attention_output, attention_scores
 
 
+class WindowedMultiHeadAttention(MultiHeadAttention):
+    """MultiHeadAttention with overlapping spatial windowing.
+
+    Partitions query tokens into non-overlapping spatial windows, expands
+    each window by ``overlap`` pixels on each side to form the key/value
+    neighborhood, runs attention per window, and reassembles the output.
+
+    This reduces peak memory from O(n_q * n_v) to
+    O(n_q * (window_size + 2*overlap)^2) while preserving locality
+    information from ALiBi bias (or any additive pre-softmax bias).
+
+    Parameters
+    ----------
+    window_size : int
+        Side length of the non-overlapping query window in spatial pixels.
+    overlap : int
+        Number of pixels each window is expanded on each side to form
+        the key/value context region.
+    num_heads : int
+        Number of attention heads.
+    key_dim : int
+        Dimension of each attention head.
+    **kwargs
+        Additional keyword arguments forwarded to ``MultiHeadAttention``.
+
+    Example::
+        layer = WindowedMultiHeadAttention(
+            window_size=8, overlap=2, num_heads=4, key_dim=64
+        )
+        output = layer(
+            query, value,
+            bias=alibi_bias,
+            query_spatial_shape=(32, 32),
+            kv_spatial_shape=(64, 64),
+        )
+    """
+
+    def __init__(self, window_size, overlap, num_heads, key_dim, **kwargs):
+        super().__init__(num_heads=num_heads, key_dim=key_dim, **kwargs)
+        self.window_size = window_size
+        self.overlap = overlap
+
+    @tf.function
+    def call(
+        self,
+        query,
+        value,
+        key=None,
+        attention_mask=None,
+        return_attention_scores=False,
+        training=None,
+        use_causal_mask=False,
+        bias=None,
+        query_spatial_shape=None,
+        kv_spatial_shape=None,
+    ):
+        """Run windowed attention.
+
+        Parameters
+        ----------
+        query : tf.Tensor
+            (batch, n_q, features)
+        value : tf.Tensor
+            (batch, n_v, features)
+        key : tf.Tensor | None
+            (batch, n_v, features). Defaults to value.
+        bias : tf.Tensor | None
+            Additive pre-softmax bias (batch, heads, n_q, n_v) or None.
+        query_spatial_shape : tuple(int, int)
+            (H_q, W_q) spatial grid dimensions for the query tokens.
+        kv_spatial_shape : tuple(int, int)
+            (H_v, W_v) spatial grid dimensions for the key/value tokens.
+        attention_mask : tf.Tensor | None
+            Not supported for windowed attention; must be None.
+        return_attention_scores : bool
+            Not supported for windowed attention; must be False.
+        training : bool | None
+            Training flag forwarded to dropout.
+        use_causal_mask : bool
+            Not supported for windowed attention; must be False.
+
+        Returns
+        -------
+        output : tf.Tensor
+            (batch, n_q, features)
+        """
+        if key is None:
+            key = value
+
+        h_q, w_q = query_spatial_shape
+        h_v, w_v = kv_spatial_shape
+
+        # Scale factors for cross-attention geometry
+        s_h = h_v / h_q
+        s_w = w_v / w_q
+
+        # Compute window grid: number of windows along each axis
+        n_win_h = (h_q + self.window_size - 1) // self.window_size
+        n_win_w = (w_q + self.window_size - 1) // self.window_size
+
+        outputs = tf.TensorArray(
+            dtype=query.dtype,
+            size=n_win_h * n_win_w,
+            dynamic_size=False,
+            infer_shape=False,
+        )
+        # Track query indices per window for final reassembly
+        q_indices_list = tf.TensorArray(
+            dtype=tf.int32,
+            size=n_win_h * n_win_w,
+            dynamic_size=False,
+            infer_shape=False,
+        )
+
+        win_idx = 0
+        for wi in tf.range(n_win_h):
+            for wj in tf.range(n_win_w):
+                # Query window bounds in query spatial grid
+                q_r_start = wi * self.window_size
+                q_r_end = tf.minimum(q_r_start + self.window_size, h_q)
+                q_c_start = wj * self.window_size
+                q_c_end = tf.minimum(q_c_start + self.window_size, w_q)
+
+                # Gather query token indices (row-major flattened)
+                q_rows = tf.range(q_r_start, q_r_end)
+                q_cols = tf.range(q_c_start, q_c_end)
+                q_grid = tf.reshape(
+                    q_rows[:, None] * w_q + q_cols[None, :], [-1]
+                )
+
+                # KV region bounds (scaled + overlap, clamped)
+                kv_r_start = (
+                    tf.cast(tf.cast(q_r_start, tf.float32) * s_h, tf.int32)
+                    - self.overlap
+                )
+                kv_r_end = (
+                    tf.cast(tf.cast(q_r_end, tf.float32) * s_h, tf.int32)
+                    + self.overlap
+                )
+                kv_c_start = (
+                    tf.cast(tf.cast(q_c_start, tf.float32) * s_w, tf.int32)
+                    - self.overlap
+                )
+                kv_c_end = (
+                    tf.cast(tf.cast(q_c_end, tf.float32) * s_w, tf.int32)
+                    + self.overlap
+                )
+
+                kv_r_start = tf.maximum(kv_r_start, 0)
+                kv_r_end = tf.minimum(kv_r_end, h_v)
+                kv_c_start = tf.maximum(kv_c_start, 0)
+                kv_c_end = tf.minimum(kv_c_end, w_v)
+
+                kv_rows = tf.range(kv_r_start, kv_r_end)
+                kv_cols = tf.range(kv_c_start, kv_c_end)
+                kv_grid = tf.reshape(
+                    kv_rows[:, None] * w_v + kv_cols[None, :], [-1]
+                )
+
+                # Gather tokens for this window
+                q_win = tf.gather(query, q_grid, axis=1)
+                k_win = tf.gather(key, kv_grid, axis=1)
+                v_win = tf.gather(value, kv_grid, axis=1)
+
+                # Slice bias if provided
+                if bias is not None:
+                    # bias shape: (B, H, n_q, n_v)
+                    bias_win = tf.gather(bias, q_grid, axis=2)
+                    bias_win = tf.gather(bias_win, kv_grid, axis=3)
+                else:
+                    bias_win = None
+
+                # Run attention for this window
+                out_win = super().call(
+                    query=q_win,
+                    value=v_win,
+                    key=k_win,
+                    training=training,
+                    bias=bias_win,
+                )
+
+                # Transpose to (tokens, batch, feat) so variable token dim
+                # is first — required for TensorArray.concat()
+                out_win = tf.transpose(out_win, [1, 0, 2])
+                outputs = outputs.write(win_idx, out_win)
+                q_indices_list = q_indices_list.write(win_idx, q_grid)
+                win_idx += 1
+
+        # Reassemble: concat along token dimension
+        # all_outputs: (total_tokens, batch, feat)
+        all_outputs = outputs.concat()
+        all_indices = q_indices_list.concat()  # (total_tokens,)
+
+        # Transpose back to (batch, total_tokens, feat)
+        all_outputs = tf.transpose(all_outputs, [1, 0, 2])
+
+        # Reorder tokens to original sequence order
+        sort_order = tf.argsort(all_indices)
+        output = tf.gather(all_outputs, sort_order, axis=1)
+
+        # Restore shape lost by TensorArray operations. Use tf.reshape
+        # with tf.shape(query) to propagate dynamic shape correctly
+        # inside @tf.function tracing.
+        output = tf.reshape(output, tf.shape(query))
+
+        return output
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({
+            'window_size': self.window_size,
+            'overlap': self.overlap,
+        })
+        return config
+
+
 class TransformerLayer(tf.keras.layers.Layer):
     """Custom transformer layer with multi-head attention layer that allows
     for additive bias pre-softmax."""
 
     def __init__(
-        self, num_heads, key_dim, attn_kwargs=None, norm_input=True, **kwargs
+        self,
+        num_heads,
+        key_dim,
+        attention_kwargs=None,
+        norm_input=True,
+        attention_type='full',
+        **kwargs,
     ):
         """Initialize the transformer layer.
 
@@ -838,25 +1061,33 @@ class TransformerLayer(tf.keras.layers.Layer):
             Number of attention heads.
         key_dim : int
             Size of each attention head.
-        attn_kwargs : dict | None
+        attention_kwargs : dict | None
             Additional keyword arguments forwarded to the internal
-            :class:`MultiHeadAttention` layer.
+            attention layer. When ``attention_type='windowed'`` this must
+            include ``window_size`` and ``overlap`` keys.
         norm_input : bool
             Whether to apply LayerNormalization to the input. This is
             typically set to True when the transformer layer is the first layer
             in the model to normalize the raw input features before attention.
+        attention_type : str
+            Type of attention mechanism to use. Options are ``'full'``
+            (default) for standard multi-head attention, or ``'windowed'``
+            for overlapping spatial window attention which reduces memory
+            usage for long sequences.
         **kwargs
             Additional keyword arguments passed to ``tf.keras.layers.Layer``.
         """
         super().__init__(**kwargs)
         self.num_heads = num_heads
         self.key_dim = key_dim
-        self.attn_kwargs = attn_kwargs
+        self.attention_kwargs = attention_kwargs
         self.norm_input = norm_input
-        self.attn = MultiHeadAttention(
-            num_heads=self.num_heads,
-            key_dim=self.key_dim,
-            **(self.attn_kwargs or {}),
+        self.attention_type = attention_type
+
+        attn_cls = (
+            WindowedMultiHeadAttention
+            if attention_type == 'windowed'
+            else MultiHeadAttention
         )
         layer_norm_cls = (
             tf.keras.layers.LayerNormalization
@@ -866,6 +1097,11 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.lq = layer_norm_cls()
         self.lk = layer_norm_cls()
         self.lv = layer_norm_cls()
+        self.attn = attn_cls(
+            num_heads=self.num_heads,
+            key_dim=self.key_dim,
+            **(self.attention_kwargs or {}),
+        )
         self.lo = tf.keras.layers.LayerNormalization()
         self.mlp = tf.keras.Sequential([
             tf.keras.layers.Dense(2 * self.key_dim, activation='relu'),
@@ -883,7 +1119,15 @@ class TransformerLayer(tf.keras.layers.Layer):
         super().build(query_shape)
 
     @tf.function
-    def call(self, query, key, value, bias=None):
+    def call(
+        self,
+        query,
+        key,
+        value,
+        bias=None,
+        query_spatial_shape=None,
+        kv_spatial_shape=None,
+    ):
         """Call transformer layer with multi-head attention output.
 
         Note
@@ -905,11 +1149,21 @@ class TransformerLayer(tf.keras.layers.Layer):
             Optional bias tensor to add to the attention scores before softmax.
             Must be broadcastable to shape (batch_size, num_heads, seq_q,
             seq_k).
+        query_spatial_shape : tuple(int, int) | None
+            (H_q, W_q) spatial dimensions of the query grid. Required when
+            ``attention_type='windowed'``.
+        kv_spatial_shape : tuple(int, int) | None
+            (H_v, W_v) spatial dimensions of the key/value grid. Required
+            when ``attention_type='windowed'``.
         """
         q = self.lq(query)
         k = self.lk(key)
         v = self.lv(value)
-        attn = self.attn(query=q, key=k, value=v, bias=bias)
+        kwargs = dict(query=q, key=k, value=v, bias=bias)
+        if self.attention_type == 'windowed':
+            kwargs['query_spatial_shape'] = query_spatial_shape
+            kwargs['kv_spatial_shape'] = kv_spatial_shape
+        attn = self.attn(**kwargs)
         out = self.lo(query + attn)
         return q + self.mlp(out)
 
@@ -919,7 +1173,8 @@ class TransformerLayer(tf.keras.layers.Layer):
         config.update({
             'num_heads': self.num_heads,
             'key_dim': self.key_dim,
-            'attn_kwargs': self.attn_kwargs,
+            'attention_kwargs': self.attention_kwargs,
+            'attention_type': self.attention_type,
         })
         return config
 
@@ -950,8 +1205,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         max_period_spatial=2,
         min_period_temporal=1,
         max_period_temporal=864000,
-        attn_kwargs=None,
+        attention_kwargs=None,
         norm_input=True,
+        attention_type='full',
         **kwargs,
     ):
         """
@@ -978,15 +1234,18 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Minimum period for the temporal positional encoding.
         max_period_temporal : float
             Maximum period for the temporal positional encoding.
-        attn_kwargs : dict | None
+        attention_kwargs : dict | None
             Additional keyword arguments forwarded to the internal
-            :class:`MultiHeadAttention` layer used by the
-            :class:`TransformerLayer` (``self.tl``).
+            attention layer. When ``attention_type='windowed'`` this must
+            include ``window_size`` and ``overlap`` keys.
         norm_input : bool
             Whether to apply RMS normalization to the input of the transformer
             layer. This is typically set to True when the transformer layer is
             the first layer in the model to normalize the raw input features
             before attention.
+        attention_type : str
+            Type of attention: ``'full'`` or ``'windowed'``. Forwarded to
+            :class:`TransformerLayer`.
         **kwargs
              Additional keyword arguments to pass to the parent class. This can
              include arguments like trainable and dtype.
@@ -1003,7 +1262,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.max_period_spatial = max_period_spatial
         self.min_period_temporal = min_period_temporal
         self.max_period_temporal = max_period_temporal
-        self.attn_kwargs = attn_kwargs
+        self.attention_kwargs = attention_kwargs
+        self.attention_type = attention_type
         self.eq = Embedder(embed_dim=self.embed_dim)
         self.ek = Embedder(embed_dim=self.embed_dim)
         self.ev = Embedder(embed_dim=self.embed_dim)
@@ -1017,8 +1277,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.tl = TransformerLayer(
             key_dim=self.key_dim,
             num_heads=self.num_heads,
-            attn_kwargs=self.attn_kwargs,
+            attention_kwargs=self.attention_kwargs,
             norm_input=norm_input,
+            attention_type=self.attention_type,
         )
         self.final_proj = None
 
@@ -1105,7 +1366,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'max_period_spatial': self.max_period_spatial,
             'min_period_temporal': self.min_period_temporal,
             'max_period_temporal': self.max_period_temporal,
-            'attn_kwargs': self.attn_kwargs,
+            'attention_kwargs': self.attention_kwargs,
+            'attention_type': self.attention_type,
         })
         return config
 
@@ -1165,7 +1427,19 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         k += self.pe(hr_in, lat=lat, lon=lon, time=time)
         v += self.pe(hr_in, lat=lat, lon=lon, time=time)
 
-        out = self.tl(query=q, key=k, value=v)
+        # Spatial shapes needed for windowed attention
+        q_shape = x_in.shape
+        kv_shape = hr_in.shape
+        query_spatial_shape = (q_shape[1], q_shape[2])
+        kv_spatial_shape = (kv_shape[1], kv_shape[2])
+
+        out = self.tl(
+            query=q,
+            key=k,
+            value=v,
+            query_spatial_shape=query_spatial_shape,
+            kv_spatial_shape=kv_spatial_shape,
+        )
         out = self.final_proj(out)
         return tf.reshape(out, tf.shape(x_in))
 
@@ -1372,7 +1646,21 @@ class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
 
         # use locality bias instead of positional encodings
         bias = self.get_locality_bias(x_in, hr_in, lat=lat, lon=lon, time=time)
-        out = self.tl(query=q, key=k, value=v, bias=bias)
+
+        # Spatial shapes needed for windowed attention
+        q_shape = x_in.shape
+        kv_shape = hr_in.shape
+        query_spatial_shape = (q_shape[1], q_shape[2])
+        kv_spatial_shape = (kv_shape[1], kv_shape[2])
+
+        out = self.tl(
+            query=q,
+            key=k,
+            value=v,
+            bias=bias,
+            query_spatial_shape=query_spatial_shape,
+            kv_spatial_shape=kv_spatial_shape,
+        )
         out = self.final_proj(out)
         return tf.reshape(out, tf.shape(x_in))
 
@@ -1389,8 +1677,9 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         key_dim=64,
         embed_dim=64,
         use_alibi=False,
+        attention_type='full',
         transformer_kwargs=None,
-        attn_kwargs=None,
+        attention_kwargs=None,
         **kwargs,
     ):
         """
@@ -1424,11 +1713,16 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             will be used for the layers in the block. If False, the standard
             Sup3rTransformerLayer with positional encoding will be used.
             Default is False.
+        attention_type : str
+            Type of attention mechanism. 'full' for standard full attention,
+            'windowed' for overlapping windowed attention that reduces memory
+            usage. When 'windowed', window_size and overlap should be
+            specified in attention_kwargs. Default is 'full'.
         transformer_kwargs : dict | None
             Keyword arguments forwarded to each transformer layer in the
             block. This is the place to set transformer-layer options like
             ``embed_dim``, ``key_dim``, or positional encoding periods.
-        attn_kwargs : dict | None
+        attention_kwargs : dict | None
             Additional keyword arguments forwarded to the internal
             :class:`MultiHeadAttention` layer for each transformer layer.
         **kwargs
@@ -1440,10 +1734,11 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         self.exo_features = exo_features or []
         self.transformer_kwargs = dict(transformer_kwargs or {})
         self.use_alibi = use_alibi
+        self.attention_type = attention_type
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.embed_dim = embed_dim
-        self.attn_kwargs = attn_kwargs
+        self.attention_kwargs = attention_kwargs
         transformer_cls = (
             Sup3rTransformerLayerAlibi
             if self.use_alibi
@@ -1452,7 +1747,8 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         self.layers = [
             transformer_cls(**{
                 'features': [feat],
-                'attn_kwargs': self.attn_kwargs,
+                'attention_kwargs': self.attention_kwargs,
+                'attention_type': self.attention_type,
                 'num_heads': self.num_heads,
                 'key_dim': self.key_dim,
                 'embed_dim': self.embed_dim,
@@ -1535,8 +1831,9 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             'key_dim': self.key_dim,
             'embed_dim': self.embed_dim,
             'use_alibi': self.use_alibi,
+            'attention_type': self.attention_type,
             'transformer_kwargs': self.transformer_kwargs,
-            'attn_kwargs': self.attn_kwargs,
+            'attention_kwargs': self.attention_kwargs,
         })
         return config
 
