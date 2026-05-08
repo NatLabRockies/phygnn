@@ -2,6 +2,7 @@
 """Custom tf layers."""
 
 import logging
+from dataclasses import dataclass
 
 import numpy as np
 import tensorflow as tf
@@ -37,6 +38,29 @@ def _register_custom_layer_objects():
 def _dot_product_attention(*args, **kwargs):
     """Call the Keras 3 fused dot-product attention op."""
     return tf.keras.ops.dot_product_attention(*args, **kwargs)
+
+
+@dataclass(frozen=True)
+class WindowGeometry:
+    """Computed layout for one windowed-attention call."""
+
+    batch_size: tf.Tensor
+    query_height: int | tf.Tensor
+    query_width: int | tf.Tensor
+    kv_height: int | tf.Tensor
+    kv_width: int | tf.Tensor
+    window_size: int | tf.Tensor
+    tile_size: int | tf.Tensor
+    radius: int | tf.Tensor
+    query_height_padding: int | tf.Tensor
+    query_width_padding: int | tf.Tensor
+    padded_query_height: int | tf.Tensor
+    padded_query_width: int | tf.Tensor
+    n_window_rows: int | tf.Tensor
+    n_window_cols: int | tf.Tensor
+    n_windows: int | tf.Tensor
+    tile_tokens: int | tf.Tensor
+    pad_spec: tf.Tensor
 
 
 def _get_keras_mask(x):
@@ -176,147 +200,11 @@ class FlexiblePadding(tf.keras.layers.Layer):
         return config
 
 
-class PatchLayer(tf.keras.layers.Layer):
-    """Layer with patchification functionality."""
-
-    def __init__(self, name=None, patch_size=1, **kwargs):
-        """Initialize the PatchLayer layer.
-
-        Parameters
-        ----------
-        name : str | None
-            Name of layer.
-        patch_size : int
-            Height, width, and depth of tokens. Default is 1 for pixel-wise
-            tokenization.
-        **kwargs : dict
-            Additional keyword arguments passed to
-            ``tf.keras.layers.Layer``.
-        """
-        super().__init__(name=name, **kwargs)
-        self.patch_size = patch_size
-        self.rank = None
-
-    def _mask(self, x, out):
-        """Helper function to mask output tokens based on NaN values in the
-        input tensor.
-        """
-        nan_any = tf.math.reduce_any(tf.math.is_nan(x), axis=-1)
-        valid_mask = tf.math.logical_not(nan_any)
-        out = tf.boolean_mask(out, valid_mask)
-        tf.debugging.assert_all_finite(
-            out, message='Masked output contains NaN or Inf values.'
-        )
-        return out
-
-    def build(self, input_shape):
-        """Build the PatchLayer layer based on an input shape
-
-        Parameters
-        ----------
-        input_shape : tuple
-            Shape tuple of the input tensor
-        """
-        self.rank = len(input_shape)
-
-        if self.rank not in {4, 5}:
-            msg = (
-                f'Input tensor must be 4D or 5D, but got {self.rank}D tensor.'
-            )
-            logger.error(msg)
-            raise ValueError(msg)
-
-    def get_config(self):
-        """Get config for Keras serialization."""
-        config = super().get_config()
-        config.update({'patch_size': self.patch_size})
-        return config
-
-    @classmethod
-    def _get_padding(cls, x_shape, patch_size=1):
-        """Helper function to get the padding for the input tensor based on the
-        patch size. This is necessary to ensure that the spatial dimensions of
-        the input tensor are divisible by the patch size for tokenization.
-
-        Parameters
-        ----------
-        x_shape : tf.TensorShape
-            Shape of the unpadded 4D or 5D input tensor.
-        patch_size : int
-            Height, width, and depth of patches. This is used to determine the
-            amount of padding needed for each spatial dimension. Default is 1
-            for pixel-wise tokenization.
-        """
-        pads = [[0, 0]]  # batch
-        for i in range(1, len(x_shape) - 1):
-            rem = x_shape[i] % patch_size
-            pad = (patch_size - rem) % patch_size
-            pads.append([pad // 2, pad - pad // 2])
-        pads.append([0, 0])  # features
-        return pads
-
-    @classmethod
-    def pad(cls, x, patch_size=1):
-        """Pad spatial dimensions of ``x`` so they are evenly
-        divisible by ``patch_size``.
-
-        Parameters
-        ----------
-        x : tf.Tensor
-            4D or 5D input tensor.
-        patch_size : int
-            Height, width, and depth of patches.
-
-        Returns
-        -------
-        x_padded : tf.Tensor
-            Tensor with each grid axis reflection padded so that they are
-            evenly divisible by ``patch_size``.
-        """
-        if patch_size == 1:
-            return x
-        pads = cls._get_padding(tf.shape(x), patch_size=patch_size)
-        return tf.pad(x, pads, mode='reflect')
-
-    @classmethod
-    def crop(cls, x_shape, out, patch_size=1):
-        """Remove the padding added by :meth:`pad` so
-        the output matches the original (unpadded) spatial shape.
-
-        Parameters
-        ----------
-        x_shape : tf.TensorShape
-            Shape of the original (unpadded) input tensor. This is used to get
-            the original spatial shape to crop to.
-        out : tf.Tensor
-            Tensor whose spatial dims may be larger than target.
-        patch_size : int
-            Height, width, and depth of patches. This is used to determine the
-            amount of padding that was added to the input tensor.
-
-        Returns
-        -------
-        out : tf.Tensor
-            Tensor cropped to x_shape.
-        """
-        if patch_size == 1:
-            return out
-        pads = cls._get_padding(x_shape, patch_size=patch_size)
-        # Convert pads to a tensor so cropping works with dynamic shapes.
-        pads_tensor = tf.convert_to_tensor(pads, dtype=tf.int32)
-        # pads_tensor has shape [rank, 2]: [pad_before, pad_after] per axis.
-        begin = pads_tensor[:, 0]
-        end = pads_tensor[:, 1]
-        input_shape = tf.shape(out)
-        size = input_shape - begin - end
-        return tf.slice(out, begin, size)
-
-
-class Embedder(PatchLayer):
-    """Embedding layer."""
+class PatchEncoder(tf.keras.layers.Layer):
+    """Project spatial inputs into token features."""
 
     def __init__(self, name=None, patch_size=1, embed_dim=64, **kwargs):
-        """Initialize the Embedding layer.
+        """Initialize the PatchEncoder layer.
 
         Parameters
         ----------
@@ -329,23 +217,26 @@ class Embedder(PatchLayer):
             Dimension of the embedding. This determines the size of the output
             tokens after tokenization. Default is 64.
         **kwargs : dict
-            Additional keyword arguments passed to the
-            :class:`PatchLayer` base class.
+            Additional keyword arguments passed to
+            ``tf.keras.layers.Layer``.
         """
-        super().__init__(name=name, patch_size=patch_size, **kwargs)
-        self.embed_layer = None
+        super().__init__(name=name, **kwargs)
+        self.proj_layer = None
+        self.avg_pool = None
+        self.valid_pool = None
         self.embed_dim = embed_dim
+        self.patch_size = patch_size
         self.rank = None
 
     def build(self, input_shape):
-        """Build the Embedding layer based on an input shape
+        """Build the PatchEncoder layer based on an input shape
 
         Parameters
         ----------
         input_shape : tuple
             Shape tuple of the input tensor
         """
-        super().build(input_shape)
+        self.rank = len(input_shape)
         if self.patch_size > 1:
             kwargs = {
                 'kernel_size': [self.patch_size] * (self.rank - 2),
@@ -353,47 +244,191 @@ class Embedder(PatchLayer):
                 'filters': self.embed_dim,
                 'padding': 'valid',
             }
-            self.embed_layer = (
+            pool_kwargs = {
+                'pool_size': self.patch_size,
+                'strides': self.patch_size,
+                'padding': 'valid',
+            }
+            self.proj_layer = (
                 tf.keras.layers.Conv2D(**kwargs)
                 if self.rank == 4
                 else tf.keras.layers.Conv3D(**kwargs)
             )
+            self.avg_pool = (
+                tf.keras.layers.AveragePooling2D(**pool_kwargs)
+                if self.rank == 4
+                else tf.keras.layers.AveragePooling3D(**pool_kwargs)
+            )
+            self.valid_pool = (
+                tf.keras.layers.MaxPooling2D(**pool_kwargs)
+                if self.rank == 4
+                else tf.keras.layers.MaxPooling3D(**pool_kwargs)
+            )
         else:
-            self.embed_layer = tf.keras.layers.Dense(
+            self.proj_layer = tf.keras.layers.Dense(
                 self.embed_dim, use_bias=False
             )
-        self.embed_layer.build(input_shape)
+        self.proj_layer.build(input_shape)
+        super().build(input_shape)
 
-    @tf.function
     def call(self, x):
         """Embed inputs for attention blocks.
 
         Parameters
         ----------
         x : tf.Tensor
-            4D or 5D input tensor. This can be sparse with some NaN values,
-            or gapless.
+            4D or 5D input tensor. NaN values should be replaced with 0
+            before calling this layer.
 
         Returns
         -------
         x_emb : tf.Tensor
-            Embedded tensor with shape (batch_size, n_tokens, embed_dim)
+            Embedded tensor with same spatial dimensions as input but
+            last dimension = embed_dim.
         """
-        x_emb = self._mask(x, x)
-        x_emb = self.embed_layer(x_emb)
+        return self.proj_layer(x)
 
-        # batch members can have different NaN patterns in general so this
-        # reshape could fail if batch_size > 1
-        return tf.reshape(x_emb, (tf.shape(x)[0], -1, self.embed_dim))
+    def prepare_sparse_tensor(self, x, lat=None, lon=None):
+        """Prepare sparse spatial inputs for patch encoding.
+
+        NaNs are filled patchwise so partially observed patches remain usable.
+        The returned mask marks token positions that are fully NaN.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D sparse input tensor.
+        lat : tf.Tensor | None
+            Optional latitude grid to pool to token resolution.
+        lon : tf.Tensor | None
+            Optional longitude grid to pool to token resolution.
+
+        Returns
+        -------
+        x_clean : tf.Tensor
+            Sparse input with NaNs filled patchwise.
+        nan_mask : tf.Tensor
+            Boolean token mask where True marks fully invalid patches.
+        pooled_lat : tf.Tensor | None
+            Latitude pooled to token resolution when patching is active.
+        pooled_lon : tf.Tensor | None
+            Longitude pooled to token resolution when patching is active.
+        """
+        pixel_valid = ~tf.math.reduce_any(tf.math.is_nan(x), axis=-1)
+        x_clean = self._fill_patchwise_nans(x)
+        nan_mask = ~pixel_valid
+
+        if self.patch_size == 1:
+            return x_clean, nan_mask, lat, lon
+
+        token_valid = tf.cast(pixel_valid[..., tf.newaxis], tf.float32)
+        token_valid = self.valid_pool(token_valid) > 0
+        nan_mask = ~tf.squeeze(token_valid, axis=-1)
+        pooled_lat = None if lat is None else self.avg_pool(lat)
+        pooled_lon = None if lon is None else self.avg_pool(lon)
+        return x_clean, nan_mask, pooled_lat, pooled_lon
+
+    def _fill_patchwise_nans(self, x):
+        """Fill NaNs with the mean of valid values inside each patch."""
+        x_zero = tf.where(tf.math.is_nan(x), 0.0, x)
+        if self.patch_size == 1:
+            return x_zero
+
+        valid = tf.cast(~tf.math.is_nan(x), x.dtype)
+        patch_mean = self.avg_pool(x_zero)
+        patch_valid = self.avg_pool(valid)
+        patch_mean = tf.math.divide_no_nan(patch_mean, patch_valid)
+
+        spatial_axes = range(1, self.rank - 1)
+        upsampled = patch_mean
+        for axis in spatial_axes:
+            upsampled = tf.repeat(upsampled, self.patch_size, axis=axis)
+
+        target_shape = tf.shape(x)
+        current_shape = tf.shape(upsampled)
+        paddings = [[0, 0]]
+        for axis in spatial_axes:
+            paddings.append([0, target_shape[axis] - current_shape[axis]])
+        paddings.append([0, 0])
+        upsampled = tf.pad(upsampled, paddings)
+
+        return tf.where(tf.math.is_nan(x), upsampled, x)
 
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
-        config.update({'embed_dim': self.embed_dim})
+        config.update({
+            'patch_size': self.patch_size,
+            'embed_dim': self.embed_dim,
+        })
         return config
 
 
-class PositionEncoder(PatchLayer):
+class PatchDecoder(tf.keras.layers.Layer):
+    """Project token features back to the query feature grid."""
+
+    def __init__(
+        self,
+        name=None,
+        patch_size=1,
+        output_dim=None,
+        **kwargs,
+    ):
+        """Initialize the PatchDecoder layer.
+
+        Parameters
+        ----------
+        name : str | None
+            Name of layer.
+        patch_size : int
+            Height, width, and depth of attention patches.
+        output_dim : int | None
+            Number of output features after decoding.
+        **kwargs : dict
+            Additional keyword arguments passed to
+            ``tf.keras.layers.Layer``.
+        """
+        super().__init__(name=name, **kwargs)
+        self.patch_size = patch_size
+        self.output_dim = output_dim
+        self.rank = None
+        self.proj_layer = None
+
+    def build(self, input_shape):
+        """Build the PatchDecoder layer based on an input shape."""
+        self.rank = len(input_shape)
+        if self.patch_size > 1:
+            kwargs = {
+                'filters': self.output_dim,
+                'kernel_size': [self.patch_size] * (self.rank - 2),
+                'strides': [self.patch_size] * (self.rank - 2),
+                'padding': 'valid',
+            }
+            self.proj_layer = (
+                tf.keras.layers.Conv2DTranspose(**kwargs)
+                if self.rank == 4
+                else tf.keras.layers.Conv3DTranspose(**kwargs)
+            )
+        else:
+            self.proj_layer = tf.keras.layers.Dense(self.output_dim)
+        self.proj_layer.build(input_shape)
+        super().build(input_shape)
+
+    def call(self, x):
+        """Decode token features back into the query feature space."""
+        return self.proj_layer(x)
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({
+            'patch_size': self.patch_size,
+            'output_dim': self.output_dim,
+        })
+        return config
+
+
+class PositionEncoder(tf.keras.layers.Layer):
     """Positional encoding layer."""
 
     def __init__(
@@ -421,26 +456,18 @@ class PositionEncoder(PatchLayer):
             Dimension of the embedding. This determines the size of the output
             tokens after encoding. Default is 64.
         min_period_spatial : float
-            Minimum period in degrees for the positional encoding. This is
-            typically set to a value like 1e-5 to ensure that the positional
-            encoding captures high frequency information.
+            Minimum period in degrees for the positional encoding.
         max_period_spatial : float
-            Maximum period in degrees for the positional encoding. This is
-            typically set to a value like 5 to ensure that the positional
-            encoding captures low frequency information.
+            Maximum period in degrees for the positional encoding.
         min_period_temporal : float
-            Minimum period in seconds for the positional encoding. This is
-            typically set to a value like 1 to ensure that the positional
-            encoding captures high frequency information.
+            Minimum period in seconds for the positional encoding.
         max_period_temporal : float
-            Maximum period in seconds for the positional encoding. This is
-            typically set to a value like 864000 to ensure that the positional
-            encoding captures low frequency information.
+            Maximum period in seconds for the positional encoding.
         **kwargs : dict
-            Additional keyword arguments passed to the
-            :class:`PatchLayer` base class.
+            Additional keyword arguments passed to
+            ``tf.keras.layers.Layer``.
         """
-        super().__init__(name=name, patch_size=patch_size, **kwargs)
+        super().__init__(name=name, **kwargs)
         self._pool_layer = None
         self.patch_size = patch_size
         self.embed_dim = embed_dim
@@ -458,16 +485,13 @@ class PositionEncoder(PatchLayer):
         Parameters
         ----------
         k : tf.Tensor
-            Tensor of positions to encode. This can be indices, latitudes,
-            longitudes, times, etc. The "units" of k must be the same as
-            min/max periods. Must have 4D or 5D shape (..., 1).
+            Tensor of positions to encode.
         min_period : float
-            Minimum period (spatial or temporal) for the positional encoding.
+            Minimum period for the positional encoding.
         max_period : float
-            Maximum period (spatial or temporal) for the positional encoding.
+            Maximum period for the positional encoding.
         d : int
-            Dimension of the positional encoding. This should match the
-            embed_dim of the attention block.
+            Dimension of the positional encoding.
         """
         assert d % 2 == 0, (
             'Embedding dimension must be even for sin/cos encoding.'
@@ -476,7 +500,7 @@ class PositionEncoder(PatchLayer):
         max_freq = 2 * np.pi / min_period
         freqs = tf.linspace(min_freq, max_freq, d // 2)
         theta = tf.cast(freqs, k.dtype) * k
-        return tf.stack([tf.sin(theta), tf.cos(theta)], axis=-1)
+        return tf.concat([tf.sin(theta), tf.cos(theta)], axis=-1)
 
     @staticmethod
     def _compute_doy_soy(time):
@@ -509,25 +533,20 @@ class PositionEncoder(PatchLayer):
         Parameters
         ----------
         x : tf.Tensor
-            Input tensor to encode. Must have 4D or 5D shape (..., 1). This is
-            only used to get the batch and spatial dimensions for the output
-            encoding.
+            Input tensor used for shape reference.
         lat : tf.Tensor
-            Tensor of latitudes to encode. Must have 4D or 5D shape (..., 1).
-            Latitude should be in degrees from -90 to 90.
+            Latitude tensor (..., 1) in degrees.
         lon : tf.Tensor
-            Tensor of longitudes to encode. Must have 4D or 5D shape (..., 1).
-            Longitude should be in degrees from -180 to 180.
+            Longitude tensor (..., 1) in degrees.
         min_period : float
-            Minimum period in degrees for the positional encoding.
+            Minimum period in degrees.
         max_period : float
-            Maximum period in degrees for the positional encoding.
+            Maximum period in degrees.
 
         Returns
         -------
         lat_lon_enc : tf.Tensor
-            Positional encoding tensor for latitude and longitude with shape
-            (..., d)
+            Positional encoding with shape (batch, n_tokens, embed_dim)
         """
         assert self.embed_dim % 4 == 0, (
             'Embedding dimension must be divisible by 4 for latitude and '
@@ -546,8 +565,7 @@ class PositionEncoder(PatchLayer):
             max_period=max_period,
         )
         out = tf.concat([lat_enc, lon_enc], axis=-1)
-        out = self._mask(x, out)
-        return tf.reshape(out, (tf.shape(x)[0], -1, self.embed_dim))
+        return out
 
     def encode_time(self, x, time, min_period, max_period):
         """Sinusoidal positional encoding for time.
@@ -555,21 +573,18 @@ class PositionEncoder(PatchLayer):
         Parameters
         ----------
         x : tf.Tensor
-            Input tensor to encode. Must have 4D or 5D shape (..., 1). This is
-            only used to get the batch and spatial dimensions for the output
-            encoding.
+            Input tensor used for shape reference.
         time : tf.Tensor
-            Tensor of datetime values to encode. Must have 4D or 5D shape (...,
-            1).
+            Tensor of datetime values (..., 1).
         min_period : float
-            Minimum period in seconds for the positional encoding.
+            Minimum period in seconds.
         max_period : float
-            Maximum period in seconds for the positional encoding.
+            Maximum period in seconds.
 
         Returns
         -------
         time_enc : tf.Tensor
-            Positional encoding tensor for time with shape (..., d)
+            Positional encoding with shape (batch, n_tokens, embed_dim)
         """
         assert self.embed_dim % 4 == 0, (
             'Embedding dimension must be divisible by 4 for time encoding.'
@@ -588,8 +603,7 @@ class PositionEncoder(PatchLayer):
             soy, min_period, max_period, d=self.embed_dim // 2
         )
         out = tf.concat([doy_enc, soy_enc], axis=-1)
-        out = self._mask(x, out)
-        return tf.reshape(out, (tf.shape(x)[0], -1, self.embed_dim))
+        return out
 
     def build(self, input_shape):
         """Build the Positional Encoding layer based on an input shape
@@ -599,7 +613,7 @@ class PositionEncoder(PatchLayer):
         input_shape : tuple
             Shape tuple of the input tensor
         """
-        super().build(input_shape)
+        self.rank = len(input_shape)
         kwargs = {
             'pool_size': self.patch_size,
             'strides': self.patch_size,
@@ -610,6 +624,7 @@ class PositionEncoder(PatchLayer):
             if self.rank == 4
             else tf.keras.layers.AveragePooling3D(**kwargs)
         )
+        super().build(input_shape)
 
     @tf.function
     def call(self, x, lat, lon, time=None):
@@ -618,23 +633,18 @@ class PositionEncoder(PatchLayer):
         Parameters
         ----------
         x : tf.Tensor
-            4D or 5D input tensor. This can be sparse with some NaN values,
-            or gapless.
+            4D or 5D input tensor used for shape reference.
         lat : tf.Tensor
-            Tensor of latitudes for positional encoding. Must have 4D or 5D
-            shape (..., 1).
+            Latitude tensor (..., 1) in degrees.
         lon : tf.Tensor
-            Tensor of longitudes for positional encoding. Must have 4D or 5D
-            shape (..., 1).
+            Longitude tensor (..., 1) in degrees.
         time : tf.Tensor | None
-            Tensor of datetime values for positional encoding. Must have 4D or
-            5D shape (..., 1). If None, time encoding will not be included.
+            Time tensor (..., 1). If None, time encoding is skipped.
 
         Returns
         -------
         x_enc : tf.Tensor
-            Positional encoding tensor with shape (batch_size, n_tokens,
-            embed_dim)
+            Positional encoding tensor (batch, n_tokens, embed_dim)
         """
         if self.patch_size > 1:
             x = self._pool_layer(x)
@@ -827,20 +837,27 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
     """MultiHeadAttention with overlapping spatial windowing.
 
     Partitions query tokens into non-overlapping spatial windows, expands
-    each window by ``overlap`` pixels on each side to form the key/value
-    neighborhood, runs attention per window, and reassembles the output.
+    each execution block into a larger key/value tile, runs attention per
+    block, and reassembles the output.
 
     This reduces peak memory from O(n_q * n_v) to
-    O(n_q * (window_size + 2*overlap)^2) while preserving locality
+    O(n_q * (window_size + 2 * radius)^2) while preserving locality
     information from ALiBi bias (or any additive pre-softmax bias).
 
     Parameters
     ----------
     window_size : int
-        Side length of the non-overlapping query window in spatial pixels.
-    overlap : int
-        Number of pixels each window is expanded on each side to form
-        the key/value context region.
+        Side length of the non-overlapping query execution block in token
+        units.
+        When patch encoding is active upstream, each token represents a
+        ``patch_size x patch_size`` spatial region.
+        ``window_size=1`` is supported but operationally discouraged because
+        it creates one halo tile per query token, which is typically poor for
+        runtime and memory efficiency.
+    radius : int
+        Symmetric halo radius, in token units, added on each side of the
+        query window when reading the key/value tile. The effective tile side
+        length is ``window_size + 2 * radius``.
     num_heads : int
         Number of attention heads.
     key_dim : int
@@ -850,7 +867,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 
     Example::
         layer = WindowedMultiHeadAttention(
-            window_size=8, overlap=2, num_heads=4, key_dim=64
+            window_size=8, radius=20, num_heads=4, key_dim=64
         )
         output = layer(
             query, value,
@@ -860,10 +877,473 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         )
     """
 
-    def __init__(self, window_size, overlap, num_heads, key_dim, **kwargs):
+    def __init__(
+        self,
+        window_size=None,
+        radius=None,
+        num_heads=1,
+        key_dim=64,
+        alibi_scale=0.0,
+        **kwargs,
+    ):
         super().__init__(num_heads=num_heads, key_dim=key_dim, **kwargs)
         self.window_size = window_size
-        self.overlap = overlap
+        self.radius = radius
+        self.alibi_scale = float(alibi_scale)
+        self.use_alibi = self.alibi_scale > 0
+        self.head_slopes = None
+        self._built_window_size = None
+
+        if self.window_size is None:
+            if self.radius is not None:
+                msg = 'radius must be None when window_size is None.'
+                logger.error(msg)
+                raise ValueError(msg)
+        else:
+            if self.radius is None:
+                msg = 'radius is required when window_size is set.'
+                logger.error(msg)
+                raise ValueError(msg)
+            if self.radius < 0:
+                msg = 'radius must be >= 0.'
+                logger.error(msg)
+                raise ValueError(msg)
+
+    def build(self, query_shape, value_shape, key_shape=None):
+        """Build projection layers with 3D shapes.
+
+        ``super().call()`` always receives 3D windowed tensors
+        ``(B*n_win, tokens, C)`` regardless of input rank, so the
+        internal projection layers must be built for ndim=3.
+        """
+        feat = query_shape[-1]
+        shape_3d = (None, None, feat)
+        super().build(shape_3d, shape_3d, key_shape=shape_3d)
+
+        if self.use_alibi:
+            x = 2 ** (8 / self._num_heads)
+            slopes = np.array(
+                [1 / (x ** (i + 1)) for i in range(self._num_heads)],
+                dtype=np.float32,
+            ).reshape(1, self._num_heads, 1, 1)
+            self.head_slopes = self.add_weight(
+                name='head_slopes',
+                shape=slopes.shape,
+                trainable=False,
+                dtype=tf.float32,
+                initializer=tf.keras.initializers.Constant(slopes),
+            )
+
+    def _get_window_geometry(self, query, key):
+        """Get the full geometry for one windowed-attention call.
+
+        This also caps ``window_size`` to the available spatial extent
+        and caches the capped value when static shapes are known.
+        """
+        batch_size = tf.shape(query)[0]
+        query_height = query.shape[1]
+        query_width = query.shape[2]
+        kv_height = key.shape[1]
+        kv_width = key.shape[2]
+
+        if self._built_window_size is not None:
+            window_size = self._built_window_size
+        elif None in (query_height, query_width, kv_height, kv_width):
+            query_height = tf.shape(query)[1]
+            query_width = tf.shape(query)[2]
+            kv_height = tf.shape(key)[1]
+            kv_width = tf.shape(key)[2]
+            window_size = self.window_size
+        else:
+            window_size = min(
+                self.window_size,
+                int(query_height),
+                int(query_width),
+                int(kv_height),
+                int(kv_width),
+            )
+            self._built_window_size = window_size
+
+        radius = self.radius
+        tile_size = window_size + 2 * radius
+
+        query_height_padding = (
+            window_size - query_height % window_size
+        ) % window_size
+        query_width_padding = (
+            window_size - query_width % window_size
+        ) % window_size
+        padded_query_height = query_height + query_height_padding
+        padded_query_width = query_width + query_width_padding
+        n_window_rows = padded_query_height // window_size
+        n_window_cols = padded_query_width // window_size
+        n_windows = n_window_rows * n_window_cols
+
+        tile_tokens = tile_size * tile_size
+
+        total_height = window_size * (n_window_rows - 1) + tile_size
+        total_width = window_size * (n_window_cols - 1) + tile_size
+        extra_height = tf.maximum(0, total_height - (kv_height + 2 * radius))
+        extra_width = tf.maximum(0, total_width - (kv_width + 2 * radius))
+        pad_spec = tf.stack([
+            tf.stack([0, 0]),
+            tf.stack([radius, radius + extra_height]),
+            tf.stack([radius, radius + extra_width]),
+            tf.stack([0, 0]),
+        ])
+
+        return WindowGeometry(
+            batch_size=batch_size,
+            query_height=query_height,
+            query_width=query_width,
+            kv_height=kv_height,
+            kv_width=kv_width,
+            window_size=window_size,
+            tile_size=tile_size,
+            radius=radius,
+            query_height_padding=query_height_padding,
+            query_width_padding=query_width_padding,
+            padded_query_height=padded_query_height,
+            padded_query_width=padded_query_width,
+            n_window_rows=n_window_rows,
+            n_window_cols=n_window_cols,
+            n_windows=n_windows,
+            tile_tokens=tile_tokens,
+            pad_spec=pad_spec,
+        )
+
+    def _partition_windows(
+        self,
+        tensor_4d,
+        geometry,
+    ):
+        """Reshape ``(B, H, W, C)`` into ``(B*n_win, ws*ws, C)`` windows.
+
+        Pads spatial dimensions to a multiple of ``window_size``, then
+        reshapes into non-overlapping tiles.
+        """
+        c = tf.shape(tensor_4d)[-1]
+        padding = [
+            [0, 0],
+            [0, geometry.query_height_padding],
+            [0, geometry.query_width_padding],
+            [0, 0],
+        ]
+        t = tf.pad(tensor_4d, padding)
+        dims = [
+            geometry.batch_size,
+            geometry.n_window_rows,
+            geometry.window_size,
+            geometry.n_window_cols,
+            geometry.window_size,
+            c,
+        ]
+        t = tf.transpose(tf.reshape(t, dims), [0, 1, 3, 2, 4, 5])
+        dims = [
+            geometry.batch_size * geometry.n_windows,
+            geometry.window_size * geometry.window_size,
+            c,
+        ]
+        return tf.reshape(t, dims)
+
+    def _extract_overlap_patches(
+        self,
+        tensor_4d,
+        geometry,
+    ):
+        """Pad ``(B, H, W, C)`` and extract overlapping patches.
+
+        Returns
+        -------
+        tf.Tensor
+            ``(B * n_windows, tile_tokens, C)``
+        """
+        c = tf.shape(tensor_4d)[-1]
+        padded = tf.pad(tensor_4d, geometry.pad_spec)
+        patches = tf.image.extract_patches(
+            padded,
+            sizes=[1, geometry.tile_size, geometry.tile_size, 1],
+            strides=[1, geometry.window_size, geometry.window_size, 1],
+            rates=[1, 1, 1, 1],
+            padding='VALID',
+        )
+        dims = [
+            geometry.batch_size * geometry.n_windows,
+            geometry.tile_tokens,
+            c,
+        ]
+        return tf.reshape(patches, dims)
+
+    def _build_window_mask(
+        self,
+        kv_nan_mask,
+        dtype,
+        geometry,
+    ):
+        """Build the full per-window boolean attention mask.
+
+        Combines padding validity, optional NaN positions from
+        *kv_nan_mask*, and the exact local neighborhood inside each K/V tile.
+
+        Returns
+        -------
+        tf.Tensor
+            Bool ``(B * n_windows, ws*ws, tile_size*tile_size)``.
+        """
+        if kv_nan_mask is not None:
+            kv_valid = tf.expand_dims(tf.cast(~kv_nan_mask, dtype), -1)
+        else:
+            kv_valid = tf.ones(
+                tf.stack([1, geometry.kv_height, geometry.kv_width, 1]),
+                dtype=dtype,
+            )
+
+        kv_valid_padded = tf.pad(kv_valid, geometry.pad_spec)
+        valid_patches = tf.image.extract_patches(
+            kv_valid_padded,
+            sizes=[1, geometry.tile_size, geometry.tile_size, 1],
+            strides=[1, geometry.window_size, geometry.window_size, 1],
+            rates=[1, 1, 1, 1],
+            padding='VALID',
+        )
+        if kv_nan_mask is None:
+            valid_patches = tf.broadcast_to(
+                valid_patches,
+                [
+                    geometry.batch_size,
+                    geometry.n_window_rows,
+                    geometry.n_window_cols,
+                    geometry.tile_tokens,
+                ],
+            )
+        dims = [
+            geometry.batch_size * geometry.n_windows,
+            1,
+            geometry.tile_tokens,
+        ]
+        kv_mask = tf.reshape(valid_patches, dims)
+        window_rows = tf.repeat(
+            tf.range(geometry.window_size), geometry.window_size
+        )
+        window_cols = tf.tile(
+            tf.range(geometry.window_size), [geometry.window_size]
+        )
+        tile_rows = tf.repeat(tf.range(geometry.tile_size), geometry.tile_size)
+        tile_cols = tf.tile(tf.range(geometry.tile_size), [geometry.tile_size])
+
+        row_mask = tf.logical_and(
+            tile_rows[None, :] >= window_rows[:, None],
+            tile_rows[None, :] <= (window_rows[:, None] + 2 * geometry.radius),
+        )
+        col_mask = tf.logical_and(
+            tile_cols[None, :] >= window_cols[:, None],
+            tile_cols[None, :] <= (window_cols[:, None] + 2 * geometry.radius),
+        )
+        local_mask = tf.logical_and(row_mask, col_mask)[None, :, :]
+        return tf.logical_and(tf.cast(kv_mask, tf.bool), local_mask)
+
+    def _haversine_bias(self, lat_q, lon_q, lat_v, lon_v):
+        """Compute scaled haversine ALiBi bias.
+
+        All inputs should be broadcastable tensors of lat/lon in
+        **degrees**. The last two dims represent (n_q, 1) and (1, n_v)
+        or equivalent shapes that broadcast to (n_q, n_v).
+
+        Returns
+        -------
+        tf.Tensor
+            ``(..., num_heads, n_q, n_v)`` bias tensor.
+        """
+        lat_q_rad = lat_q * (np.pi / 180.0)
+        lon_q_rad = lon_q * (np.pi / 180.0)
+        lat_v_rad = lat_v * (np.pi / 180.0)
+        lon_v_rad = lon_v * (np.pi / 180.0)
+
+        dlat = lat_q_rad - lat_v_rad
+        dlon = lon_q_rad - lon_v_rad
+        a = (
+            tf.sin(dlat / 2) ** 2
+            + tf.cos(lat_q_rad) * tf.cos(lat_v_rad) * tf.sin(dlon / 2) ** 2
+        )
+        distance = 2 * 6.371e6 * tf.asin(tf.sqrt(a))
+        bias = -(distance**2) * self.alibi_scale
+        bias = tf.expand_dims(bias, axis=1)
+        bias = tf.repeat(bias, repeats=self._num_heads, axis=1)
+        return bias * self.head_slopes
+
+    def _compute_window_alibi(
+        self,
+        lat,
+        lon,
+        geometry,
+    ):
+        """Compute per-window ALiBi bias from lat/lon coordinates.
+
+        Partitions lat/lon into Q windows, extracts KV lat/lon patches,
+        computes haversine distance, and scales by head slopes.
+
+        Returns
+        -------
+        tf.Tensor
+            ``(B * n_windows, num_heads, ws*ws, tile_tokens)``
+        """
+        # Q lat/lon windows
+        q_lat_win = self._partition_windows(lat, geometry)
+        q_lon_win = self._partition_windows(lon, geometry)
+
+        # KV lat/lon patches - (B*n_win, tile_tokens, 1)
+        kv_lat_win = self._extract_overlap_patches(lat, geometry)
+        kv_lon_win = self._extract_overlap_patches(lon, geometry)
+
+        # Transpose KV to (B*n_win, 1, tile_tokens) for broadcasting
+        kv_lat_win = tf.transpose(kv_lat_win, [0, 2, 1])
+        kv_lon_win = tf.transpose(kv_lon_win, [0, 2, 1])
+
+        return self._haversine_bias(
+            q_lat_win, q_lon_win, kv_lat_win, kv_lon_win
+        )
+
+    def _compute_full_alibi(self, lat, lon, batch_size):
+        """Compute full-attention ALiBi bias from lat/lon coordinates.
+
+        Returns
+        -------
+        tf.Tensor
+            ``(B, num_heads, n_tokens, n_tokens)``
+        """
+        dims = [batch_size, -1, 1]
+        lat_q = tf.reshape(lat, dims)
+        lon_q = tf.reshape(lon, dims)
+        dims = [batch_size, 1, -1]
+        lat_v = tf.reshape(lat, dims)
+        lon_v = tf.reshape(lon, dims)
+
+        return self._haversine_bias(lat_q, lon_q, lat_v, lon_v)
+
+    def _reassemble_windows(
+        self,
+        output,
+        query,
+        geometry,
+    ):
+        """Reshape windowed output back to ``(B, n_q, C)`` sequence."""
+        feat_out = tf.shape(output)[-1]
+        dims = [
+            geometry.batch_size,
+            geometry.n_window_rows,
+            geometry.n_window_cols,
+            geometry.window_size,
+            geometry.window_size,
+            feat_out,
+        ]
+        output = tf.transpose(tf.reshape(output, dims), [0, 1, 3, 2, 4, 5])
+        dims = [
+            geometry.batch_size,
+            geometry.padded_query_height,
+            geometry.padded_query_width,
+            feat_out,
+        ]
+        output = tf.reshape(output, dims)
+        output = output[:, : geometry.query_height, : geometry.query_width, :]
+        return tf.reshape(output, tf.shape(query))
+
+    def _full_attention_call(
+        self,
+        query,
+        key,
+        value,
+        training,
+        kv_nan_mask,
+        lat,
+        lon,
+    ):
+        """Full attention path when ``window_size`` is ``None``.
+
+        Flattens spatial dims to 3-D, computes ALiBi bias and NaN
+        masking, runs standard MHA, and reshapes back.
+        """
+        batch_size = tf.shape(query)[0]
+        feat = tf.shape(query)[-1]
+        dims = [batch_size, -1, feat]
+        q_flat = tf.reshape(query, dims)
+        k_flat = tf.reshape(key, dims)
+        v_flat = tf.reshape(value, dims)
+
+        bias = None
+        if self.use_alibi and lat is not None:
+            bias = self._compute_full_alibi(lat, lon, batch_size)
+
+        if kv_nan_mask is not None:
+            nan_flat = tf.reshape(kv_nan_mask, [batch_size, 1, 1, -1])
+            if bias is not None:
+                bias = tf.where(nan_flat, tf.cast(-1e9, bias.dtype), bias)
+            else:
+                bias = tf.where(
+                    nan_flat,
+                    tf.constant(-1e9, dtype=query.dtype),
+                    0.0,
+                )
+
+        output = super().call(
+            query=q_flat,
+            value=v_flat,
+            key=k_flat,
+            training=training,
+            bias=bias,
+        )
+        return tf.reshape(output, tf.shape(query))
+
+    def _window_attention_call(
+        self,
+        query,
+        key,
+        value,
+        training,
+        kv_nan_mask,
+        lat,
+        lon,
+    ):
+        """Execute the full windowed attention path."""
+        geometry = self._get_window_geometry(query, key)
+
+        if (
+            geometry.query_height == geometry.kv_height
+            and geometry.query_width == geometry.kv_width
+            and geometry.n_windows == 1
+        ):
+            return self._full_attention_call(
+                query,
+                key,
+                value,
+                training,
+                kv_nan_mask,
+                lat,
+                lon,
+            )
+
+        q_win = self._partition_windows(query, geometry)
+        k_win = self._extract_overlap_patches(key, geometry)
+        v_win = self._extract_overlap_patches(value, geometry)
+        kv_mask = self._build_window_mask(
+            kv_nan_mask,
+            query.dtype,
+            geometry,
+        )
+
+        bias_win = None
+        if self.use_alibi and lat is not None:
+            bias_win = self._compute_window_alibi(lat, lon, geometry)
+
+        output = super().call(
+            query=q_win,
+            value=v_win,
+            key=k_win,
+            attention_mask=kv_mask,
+            training=training,
+            bias=bias_win,
+        )
+
+        return self._reassemble_windows(output, query, geometry)
 
     @tf.function
     def call(
@@ -876,166 +1356,67 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         training=None,
         use_causal_mask=False,
         bias=None,
-        query_spatial_shape=None,
-        kv_spatial_shape=None,
+        kv_nan_mask=None,
+        lat=None,
+        lon=None,
     ):
         """Run windowed attention.
 
         Parameters
         ----------
         query : tf.Tensor
-            (batch, n_q, features)
+            ``(batch, H_q, W_q, features)``
         value : tf.Tensor
-            (batch, n_v, features)
+            ``(batch, H_v, W_v, features)``
         key : tf.Tensor | None
-            (batch, n_v, features). Defaults to value.
+            ``(batch, H_v, W_v, features)``. Defaults to *value*.
         bias : tf.Tensor | None
-            Additive pre-softmax bias (batch, heads, n_q, n_v) or None.
-        query_spatial_shape : tuple(int, int)
-            (H_q, W_q) spatial grid dimensions for the query tokens.
-        kv_spatial_shape : tuple(int, int)
-            (H_v, W_v) spatial grid dimensions for the key/value tokens.
-        attention_mask : tf.Tensor | None
-            Not supported for windowed attention; must be None.
-        return_attention_scores : bool
-            Not supported for windowed attention; must be False.
+            Additive pre-softmax bias ``(batch, heads, n_q, n_v)`` or
+            None.
+        kv_nan_mask : tf.Tensor | None
+            Boolean ``(B, H_v, W_v)`` where True marks NaN KV positions.
+        lat, lon : tf.Tensor | None
+            ``(B, H, W, 1)`` grids for per-window ALiBi bias.
+        attention_mask, return_attention_scores, use_causal_mask
+            Unused; kept for Keras API compatibility.
         training : bool | None
             Training flag forwarded to dropout.
-        use_causal_mask : bool
-            Not supported for windowed attention; must be False.
 
         Returns
         -------
         output : tf.Tensor
-            (batch, n_q, features)
+            ``(batch, H_q, W_q, features)``
         """
         if key is None:
             key = value
 
-        h_q, w_q = query_spatial_shape
-        h_v, w_v = kv_spatial_shape
-
-        # Scale factors for cross-attention geometry
-        s_h = h_v / h_q
-        s_w = w_v / w_q
-
-        # Compute window grid: number of windows along each axis
-        n_win_h = (h_q + self.window_size - 1) // self.window_size
-        n_win_w = (w_q + self.window_size - 1) // self.window_size
-
-        outputs = tf.TensorArray(
-            dtype=query.dtype,
-            size=n_win_h * n_win_w,
-            dynamic_size=False,
-            infer_shape=False,
+        if self.window_size is None:
+            return self._full_attention_call(
+                query,
+                key,
+                value,
+                training,
+                kv_nan_mask,
+                lat,
+                lon,
+            )
+        return self._window_attention_call(
+            query,
+            key,
+            value,
+            training,
+            kv_nan_mask,
+            lat,
+            lon,
         )
-        # Track query indices per window for final reassembly
-        q_indices_list = tf.TensorArray(
-            dtype=tf.int32,
-            size=n_win_h * n_win_w,
-            dynamic_size=False,
-            infer_shape=False,
-        )
-
-        win_idx = 0
-        for wi in tf.range(n_win_h):
-            for wj in tf.range(n_win_w):
-                # Query window bounds in query spatial grid
-                q_r_start = wi * self.window_size
-                q_r_end = tf.minimum(q_r_start + self.window_size, h_q)
-                q_c_start = wj * self.window_size
-                q_c_end = tf.minimum(q_c_start + self.window_size, w_q)
-
-                # Gather query token indices (row-major flattened)
-                q_rows = tf.range(q_r_start, q_r_end)
-                q_cols = tf.range(q_c_start, q_c_end)
-                q_grid = tf.reshape(
-                    q_rows[:, None] * w_q + q_cols[None, :], [-1]
-                )
-
-                # KV region bounds (scaled + overlap, clamped)
-                kv_r_start = (
-                    tf.cast(tf.cast(q_r_start, tf.float32) * s_h, tf.int32)
-                    - self.overlap
-                )
-                kv_r_end = (
-                    tf.cast(tf.cast(q_r_end, tf.float32) * s_h, tf.int32)
-                    + self.overlap
-                )
-                kv_c_start = (
-                    tf.cast(tf.cast(q_c_start, tf.float32) * s_w, tf.int32)
-                    - self.overlap
-                )
-                kv_c_end = (
-                    tf.cast(tf.cast(q_c_end, tf.float32) * s_w, tf.int32)
-                    + self.overlap
-                )
-
-                kv_r_start = tf.maximum(kv_r_start, 0)
-                kv_r_end = tf.minimum(kv_r_end, h_v)
-                kv_c_start = tf.maximum(kv_c_start, 0)
-                kv_c_end = tf.minimum(kv_c_end, w_v)
-
-                kv_rows = tf.range(kv_r_start, kv_r_end)
-                kv_cols = tf.range(kv_c_start, kv_c_end)
-                kv_grid = tf.reshape(
-                    kv_rows[:, None] * w_v + kv_cols[None, :], [-1]
-                )
-
-                # Gather tokens for this window
-                q_win = tf.gather(query, q_grid, axis=1)
-                k_win = tf.gather(key, kv_grid, axis=1)
-                v_win = tf.gather(value, kv_grid, axis=1)
-
-                # Slice bias if provided
-                if bias is not None:
-                    # bias shape: (B, H, n_q, n_v)
-                    bias_win = tf.gather(bias, q_grid, axis=2)
-                    bias_win = tf.gather(bias_win, kv_grid, axis=3)
-                else:
-                    bias_win = None
-
-                # Run attention for this window
-                out_win = super().call(
-                    query=q_win,
-                    value=v_win,
-                    key=k_win,
-                    training=training,
-                    bias=bias_win,
-                )
-
-                # Transpose to (tokens, batch, feat) so variable token dim
-                # is first — required for TensorArray.concat()
-                out_win = tf.transpose(out_win, [1, 0, 2])
-                outputs = outputs.write(win_idx, out_win)
-                q_indices_list = q_indices_list.write(win_idx, q_grid)
-                win_idx += 1
-
-        # Reassemble: concat along token dimension
-        # all_outputs: (total_tokens, batch, feat)
-        all_outputs = outputs.concat()
-        all_indices = q_indices_list.concat()  # (total_tokens,)
-
-        # Transpose back to (batch, total_tokens, feat)
-        all_outputs = tf.transpose(all_outputs, [1, 0, 2])
-
-        # Reorder tokens to original sequence order
-        sort_order = tf.argsort(all_indices)
-        output = tf.gather(all_outputs, sort_order, axis=1)
-
-        # Restore shape lost by TensorArray operations. Use tf.reshape
-        # with tf.shape(query) to propagate dynamic shape correctly
-        # inside @tf.function tracing.
-        output = tf.reshape(output, tf.shape(query))
-
-        return output
 
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
         config.update({
             'window_size': self.window_size,
-            'overlap': self.overlap,
+            'radius': self.radius,
+            'alibi_scale': self.alibi_scale,
         })
         return config
 
@@ -1048,9 +1429,10 @@ class TransformerLayer(tf.keras.layers.Layer):
         self,
         num_heads,
         key_dim,
-        attention_kwargs=None,
-        norm_input=True,
-        attention_type='full',
+        alibi_scale=0.0,
+        window_size=None,
+        radius=None,
+        dropout=0.0,
         **kwargs,
     ):
         """Initialize the transformer layer.
@@ -1061,61 +1443,52 @@ class TransformerLayer(tf.keras.layers.Layer):
             Number of attention heads.
         key_dim : int
             Size of each attention head.
-        attention_kwargs : dict | None
-            Additional keyword arguments forwarded to the internal
-            attention layer. When ``attention_type='windowed'`` this must
-            include ``window_size`` and ``overlap`` keys.
-        norm_input : bool
-            Whether to apply LayerNormalization to the input. This is
-            typically set to True when the transformer layer is the first layer
-            in the model to normalize the raw input features before attention.
-        attention_type : str
-            Type of attention mechanism to use. Options are ``'full'``
-            (default) for standard multi-head attention, or ``'windowed'``
-            for overlapping spatial window attention which reduces memory
-            usage for long sequences.
+        alibi_scale : float
+            Positive values enable ALiBi distance-based attention bias and
+            set its scaling factor. Non-positive values disable ALiBi.
+        window_size : int | None
+            Side length of the non-overlapping query execution block in token
+            units.
+            Patch encoding is applied before windowed attention, so this is
+            measured on the token grid. ``None`` uses full attention over the
+            entire token grid.
+        radius : int | None
+            Symmetric halo radius, in token units, added around each query
+            window when reading key/value tokens.
+        dropout : float
+            Dropout rate for attention weights.
         **kwargs
             Additional keyword arguments passed to ``tf.keras.layers.Layer``.
         """
         super().__init__(**kwargs)
         self.num_heads = num_heads
         self.key_dim = key_dim
-        self.attention_kwargs = attention_kwargs
-        self.norm_input = norm_input
-        self.attention_type = attention_type
+        self.window_size = window_size
+        self.radius = radius
+        self.dropout = dropout
 
-        attn_cls = (
-            WindowedMultiHeadAttention
-            if attention_type == 'windowed'
-            else MultiHeadAttention
-        )
-        layer_norm_cls = (
-            tf.keras.layers.LayerNormalization
-            if self.norm_input
-            else tf.keras.layers.Identity
-        )
-        self.lq = layer_norm_cls()
-        self.lk = layer_norm_cls()
-        self.lv = layer_norm_cls()
-        self.attn = attn_cls(
+        self.attn = WindowedMultiHeadAttention(
+            window_size=window_size,
+            radius=radius,
             num_heads=self.num_heads,
             key_dim=self.key_dim,
-            **(self.attention_kwargs or {}),
+            alibi_scale=alibi_scale,
+            dropout=self.dropout,
         )
-        self.lo = tf.keras.layers.LayerNormalization()
+        self.lo = tf.keras.layers.RMSNormalization()
         self.mlp = tf.keras.Sequential([
-            tf.keras.layers.Dense(2 * self.key_dim, activation='relu'),
+            tf.keras.layers.Dense(4 * self.key_dim),
+            SwiGLU(),
             tf.keras.layers.Dense(self.key_dim),
         ])
 
     def build(self, query_shape, key_shape, value_shape):
         """Build all sub-layers."""
+        feat = query_shape[-1]
         self.attn.build(query_shape, value_shape, key_shape)
-        self.lq.build(query_shape)
-        self.lk.build(key_shape)
-        self.lv.build(value_shape)
-        self.lo.build(query_shape)
-        self.mlp.build(query_shape)
+        generic_shape = (None, None, feat)
+        self.lo.build(generic_shape)
+        self.mlp.build(generic_shape)
         super().build(query_shape)
 
     @tf.function
@@ -1124,48 +1497,41 @@ class TransformerLayer(tf.keras.layers.Layer):
         query,
         key,
         value,
-        bias=None,
-        query_spatial_shape=None,
-        kv_spatial_shape=None,
+        kv_nan_mask=None,
+        lat=None,
+        lon=None,
     ):
         """Call transformer layer with multi-head attention output.
-
-        Note
-        ----
-        The order of layers follows Swin Transformer style with pre-attention
-        and pre-MLP layer normalization and a skip connection around the
-        attention and MLP blocks together. The attention output is added to
-        the input before passing through the MLP.
 
         Parameters
         ----------
         query : tf.Tensor
-            Query tensor with shape (batch_size, seq_q, features)
+            ``(B, H, W, C)`` query tensor.
         key : tf.Tensor
-            Key tensor with shape (batch_size, seq_k, features)
+            ``(B, H, W, C)`` key tensor.
         value : tf.Tensor
-            Value tensor with shape (batch_size, seq_v, features)
-        bias : tf.Tensor | None
-            Optional bias tensor to add to the attention scores before softmax.
-            Must be broadcastable to shape (batch_size, num_heads, seq_q,
-            seq_k).
-        query_spatial_shape : tuple(int, int) | None
-            (H_q, W_q) spatial dimensions of the query grid. Required when
-            ``attention_type='windowed'``.
-        kv_spatial_shape : tuple(int, int) | None
-            (H_v, W_v) spatial dimensions of the key/value grid. Required
-            when ``attention_type='windowed'``.
+            ``(B, H, W, C)`` value tensor.
+        kv_nan_mask : tf.Tensor | None
+            Boolean mask for NaN KV positions.
+        lat, lon : tf.Tensor | None
+            Latitude / longitude grids for ALiBi bias.
         """
-        q = self.lq(query)
-        k = self.lk(key)
-        v = self.lv(value)
-        kwargs = dict(query=q, key=k, value=v, bias=bias)
-        if self.attention_type == 'windowed':
-            kwargs['query_spatial_shape'] = query_spatial_shape
-            kwargs['kv_spatial_shape'] = kv_spatial_shape
-        attn = self.attn(**kwargs)
+        attn = self.attn(
+            query=query,
+            key=key,
+            value=value,
+            kv_nan_mask=kv_nan_mask,
+            lat=lat,
+            lon=lon,
+        )
         out = self.lo(query + attn)
-        return q + self.mlp(out)
+        out_shape = tf.shape(out)
+        batch = out_shape[0]
+        feat = tf.shape(out)[-1]
+        out_flat = tf.reshape(out, [batch, -1, feat])
+        mlp_out = self.mlp(out_flat)
+        mlp_out = tf.reshape(mlp_out, out_shape)
+        return query + mlp_out
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -1173,24 +1539,27 @@ class TransformerLayer(tf.keras.layers.Layer):
         config.update({
             'num_heads': self.num_heads,
             'key_dim': self.key_dim,
-            'attention_kwargs': self.attention_kwargs,
-            'attention_type': self.attention_type,
+            'alibi_scale': self.attn.alibi_scale,
+            'window_size': self.window_size,
+            'radius': self.radius,
+            'dropout': self.dropout,
         })
         return config
 
 
 class Sup3rTransformerLayer(tf.keras.layers.Layer):
-    """Custom layer to implement transformer layer with cross attention with
-    tokenization and positional encoding. This is typically used for sparse
-    observation data assimilation, but can also be used to attend to gapless
-    data like topography. Queries are typically the latent space of the model
-    and keys/values are the high-resolution features.
+    """Transformer layer with cross attention, tokenization, and optional
+    ALiBi positional bias.  Queries are typically the latent space of the
+    model; keys/values are high-resolution features (observations,
+    topography, etc.).
+
+    When ``alibi_scale > 0`` a distance-based bias replaces explicit
+    positional encodings (ALiBi - Press et al., 2022). When
+    ``alibi_scale <= 0``, sinusoidal positional encodings are added to Q
+    and K.
 
     Note: This layer assumes that any sparse input data with NaN values has
-    NaNs for the same tokens across all features. If you want to attend to
-    sparse data with different NaN patterns across features, you should
-    use different attention layers for each feature or group of features with
-    the same NaN pattern.
+    NaNs for the same tokens across all features.
     """
 
     def __init__(
@@ -1198,6 +1567,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         name=None,
         features=None,
         exo_features=None,
+        patch_size=1,
         num_heads=1,
         key_dim=64,
         embed_dim=64,
@@ -1205,9 +1575,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         max_period_spatial=2,
         min_period_temporal=1,
         max_period_temporal=864000,
-        attention_kwargs=None,
-        norm_input=True,
-        attention_type='full',
+        alibi_scale=0.0,
+        window_size=None,
+        radius=None,
+        dropout=0.0,
         **kwargs,
     ):
         """
@@ -1218,14 +1589,15 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         features : list[str] | None
             List of hi-resolution feature names.
         exo_features : list[str] | None
-            List of exogenous feature names. These are features that will be
-            used for positional encoding like latitude, longitude, and time.
+            List of exogenous feature names (latitude, longitude, time).
+        patch_size : int
+            Height, width, and optional depth of attention patches.
         embed_dim : int
             Dimension of the tokenized inputs.
         num_heads : int
-            Number of attention heads
+            Number of attention heads.
         key_dim : int
-            Size of each attention head
+            Size of each attention head.
         min_period_spatial : float
             Minimum period for the spatial positional encoding.
         max_period_spatial : float
@@ -1234,27 +1606,29 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Minimum period for the temporal positional encoding.
         max_period_temporal : float
             Maximum period for the temporal positional encoding.
-        attention_kwargs : dict | None
-            Additional keyword arguments forwarded to the internal
-            attention layer. When ``attention_type='windowed'`` this must
-            include ``window_size`` and ``overlap`` keys.
-        norm_input : bool
-            Whether to apply RMS normalization to the input of the transformer
-            layer. This is typically set to True when the transformer layer is
-            the first layer in the model to normalize the raw input features
-            before attention.
-        attention_type : str
-            Type of attention: ``'full'`` or ``'windowed'``. Forwarded to
-            :class:`TransformerLayer`.
+        alibi_scale : float
+            Positive values use ALiBi distance-based bias instead of
+            positional encoding and set its scaling factor. Non-positive
+            values disable ALiBi.
+        window_size : int | None
+            Side length of the non-overlapping query execution block in token
+            units.
+            Patch encoding is applied before attention, so this is measured on
+            the token grid. ``None`` uses full attention.
+        radius : int | None
+            Symmetric halo radius, in token units, added around each query
+            window when reading key/value tokens.
+        dropout : float
+            Dropout rate for attention weights.
         **kwargs
-             Additional keyword arguments to pass to the parent class. This can
-             include arguments like trainable and dtype.
+            Additional keyword arguments for the parent class.
         """
 
         super().__init__(name=name, **kwargs)
         self.features = features or []
         self.exo_features = exo_features or []
         self.rank = None
+        self.patch_size = patch_size
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.embed_dim = embed_dim
@@ -1262,29 +1636,44 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.max_period_spatial = max_period_spatial
         self.min_period_temporal = min_period_temporal
         self.max_period_temporal = max_period_temporal
-        self.attention_kwargs = attention_kwargs
-        self.attention_type = attention_type
-        self.eq = Embedder(embed_dim=self.embed_dim)
-        self.ek = Embedder(embed_dim=self.embed_dim)
-        self.ev = Embedder(embed_dim=self.embed_dim)
-        self.pe = PositionEncoder(
-            embed_dim=self.embed_dim,
-            min_period_spatial=self.min_period_spatial,
-            max_period_spatial=self.max_period_spatial,
-            min_period_temporal=self.min_period_temporal,
-            max_period_temporal=self.max_period_temporal,
+        self.window_size = window_size
+        self.radius = radius
+        self.alibi_scale = float(alibi_scale)
+        self.use_alibi = self.alibi_scale > 0
+        self.dropout = dropout
+        self.eq = PatchEncoder(
+            patch_size=self.patch_size, embed_dim=self.embed_dim
+        )
+        self.ek = PatchEncoder(
+            patch_size=self.patch_size, embed_dim=self.embed_dim
+        )
+        self.ev = PatchEncoder(
+            patch_size=self.patch_size, embed_dim=self.embed_dim
+        )
+        self.pe = (
+            None
+            if self.use_alibi
+            else PositionEncoder(
+                patch_size=self.patch_size,
+                embed_dim=self.embed_dim,
+                min_period_spatial=self.min_period_spatial,
+                max_period_spatial=self.max_period_spatial,
+                min_period_temporal=self.min_period_temporal,
+                max_period_temporal=self.max_period_temporal,
+            )
         )
         self.tl = TransformerLayer(
             key_dim=self.key_dim,
             num_heads=self.num_heads,
-            attention_kwargs=self.attention_kwargs,
-            norm_input=norm_input,
-            attention_type=self.attention_type,
+            alibi_scale=self.alibi_scale,
+            window_size=self.window_size,
+            radius=self.radius,
+            dropout=self.dropout,
         )
-        self.final_proj = None
+        self.decoder = None
 
     def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
-        """Build the Sup3rTransformerLayer layer based on an input shape
+        """Build the layer based on an input shape.
 
         Parameters
         ----------
@@ -1297,8 +1686,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         """
         self.rank = len(x_shape)
         msg = (
-            'Sup3rTransformerLayer input must be 4D or 5D, but received input '
-            f'shape: {x_shape}'
+            'Sup3rTransformerLayer input must be 4D or 5D, but received '
+            f'input shape: {x_shape}'
         )
         if self.rank not in {4, 5}:
             logger.error(msg)
@@ -1343,14 +1732,17 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         q_shape = x_shape
         v_shape = hi_res_feature_shape or x_shape
-        embed_shape = (None, None, self.embed_dim)
-        self.final_proj = tf.keras.layers.Dense(q_shape[-1])
+        embed_shape = (None, None, None, self.embed_dim)
+        self.decoder = PatchDecoder(
+            patch_size=self.patch_size, output_dim=q_shape[-1]
+        )
         self.eq.build(q_shape)
         self.ek.build(v_shape)
         self.ev.build(v_shape)
-        self.pe.build(q_shape)
+        if self.pe is not None:
+            self.pe.build(q_shape)
         self.tl.build(embed_shape, embed_shape, embed_shape)
-        self.final_proj.build(embed_shape)
+        self.decoder.build(embed_shape)
         super().build(q_shape)
 
     def get_config(self):
@@ -1359,6 +1751,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         config.update({
             'features': self.features,
             'exo_features': self.exo_features,
+            'patch_size': self.patch_size,
             'num_heads': self.num_heads,
             'key_dim': self.key_dim,
             'embed_dim': self.embed_dim,
@@ -1366,109 +1759,68 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'max_period_spatial': self.max_period_spatial,
             'min_period_temporal': self.min_period_temporal,
             'max_period_temporal': self.max_period_temporal,
-            'attention_kwargs': self.attention_kwargs,
-            'attention_type': self.attention_type,
+            'alibi_scale': self.alibi_scale,
+            'window_size': self.window_size,
+            'radius': self.radius,
+            'dropout': self.dropout,
         })
         return config
 
-    def _call(self, x, hi_res_feature, idx, lat=None, lon=None, time=None):
-        """Call transformer layer for a single batch member. This is necessary
-        to handle different NaN patterns across batch members in the case of
-        sparse observation data.
+    def _merge_time_into_batch(self, q, k, v, nan_mask, lat=None, lon=None):
+        """Merge the time axis into the batch axis for 5D attention.
 
-        Parameters
-        ----------
-        x : tf.Tensor
-            4D or 5D input tensor. Typically this is the latent space tensor
-            being updated by the attention block.
-        hi_res_feature : tf.Tensor
-            4D or 5D high resolution feature tensor. This will be used as the
-            value input. This can be sparse observation data, possibly with
-            some NaN values, or high-resolution gapless data like topography.
-        idx : int
-            Index of the batch member being processed.
-        lat : tf.Tensor
-            Latitude tensor for positional encoding
-        lon : tf.Tensor
-            Longitude tensor for positional encoding
-        time : tf.Tensor, optional
-            Time tensor for positional encoding. Default is None.
-
-        Returns
-        -------
-        x : tf.Tensor
-            Output tensor of the transformer layer.
+        Converts 5D tensors from ``(B, H, W, T, C)`` to ``(B*T, H, W, C)``
+        and applies the same transformation to the NaN mask and optional
+        latitude / longitude tensors.
         """
-        x_in = x[idx : idx + 1]
-        hr_in = hi_res_feature[idx : idx + 1]
-        lat = None if lat is None else lat[idx : idx + 1]
-        lon = None if lon is None else lon[idx : idx + 1]
-        time = None if time is None else time[idx : idx + 1]
-
-        if tf.math.reduce_all(tf.math.is_nan(hr_in)):
-            return tf.squeeze(x_in, axis=0)
-
-        out = self._transformer_layer(x_in, hr_in, lat=lat, lon=lon, time=time)
-
-        tf.debugging.assert_all_finite(
-            out, message='Attention output contains NaN or Inf values.'
+        batch_size = tf.shape(q)[0]
+        time_steps = tf.shape(q)[3]
+        bt = batch_size * time_steps
+        dims = tf.concat(
+            [tf.reshape(bt, [1]), tf.shape(q)[1:3], tf.shape(q)[4:5]], axis=0
         )
-
-        return tf.squeeze(out, axis=0)
-
-    def _transformer_layer(self, x_in, hr_in, lat, lon, time=None):
-        """Run the base transformer attention path for one batch member."""
-
-        q = self.eq(x_in)
-        k = self.ek(hr_in)
-        v = self.ev(hr_in)
-
-        q += self.pe(x_in, lat=lat, lon=lon, time=time)
-        k += self.pe(hr_in, lat=lat, lon=lon, time=time)
-        v += self.pe(hr_in, lat=lat, lon=lon, time=time)
-
-        # Spatial shapes needed for windowed attention
-        q_shape = x_in.shape
-        kv_shape = hr_in.shape
-        query_spatial_shape = (q_shape[1], q_shape[2])
-        kv_spatial_shape = (kv_shape[1], kv_shape[2])
-
-        out = self.tl(
-            query=q,
-            key=k,
-            value=v,
-            query_spatial_shape=query_spatial_shape,
-            kv_spatial_shape=kv_spatial_shape,
+        q = tf.reshape(tf.transpose(q, [0, 3, 1, 2, 4]), dims)
+        dims = tf.concat(
+            [tf.reshape(bt, [1]), tf.shape(k)[1:3], tf.shape(k)[4:5]], axis=0
         )
-        out = self.final_proj(out)
-        return tf.reshape(out, tf.shape(x_in))
+        k = tf.reshape(tf.transpose(k, [0, 3, 1, 2, 4]), dims)
+        dims = tf.concat(
+            [tf.reshape(bt, [1]), tf.shape(v)[1:3], tf.shape(v)[4:5]], axis=0
+        )
+        v = tf.reshape(tf.transpose(v, [0, 3, 1, 2, 4]), dims)
+        # nan_mask: (B, H, W) → tile across T → (B*T, H, W)
+        nan_mask = tf.tile(tf.expand_dims(nan_mask, 1), [1, time_steps, 1, 1])
+        dims = tf.concat([tf.reshape(bt, [1]), tf.shape(nan_mask)[2:]], axis=0)
+        nan_mask = tf.reshape(nan_mask, dims)
+        if lat is not None:
+            lat = tf.tile(tf.expand_dims(lat, 1), [1, time_steps, 1, 1, 1])
+            dims = tf.concat([tf.reshape(bt, [1]), tf.shape(lat)[2:]], axis=0)
+            lat = tf.reshape(lat, dims)
+            lon = tf.tile(tf.expand_dims(lon, 1), [1, time_steps, 1, 1, 1])
+            dims = tf.concat([tf.reshape(bt, [1]), tf.shape(lon)[2:]], axis=0)
+            lon = tf.reshape(lon, dims)
+
+        return q, k, v, nan_mask, lat, lon, batch_size, time_steps
 
     @tf.function
     def call(self, x, hi_res_feature=None, exo_data=None):
-        """Call transformer layer across batch dimension to handle different
-        NaN patterns in the case of sparse observation data.
+        """Call transformer layer on the full batch.
 
         Parameters
         ----------
         x : tf.Tensor
-            4D or 5D input tensor. Typically this is the latent space tensor
-            being updated by the attention block.
+            4D or 5D input tensor (latent space being updated).
         hi_res_feature : tf.Tensor, optional
-            4D or 5D high resolution feature tensor. This will be used as the
-            value input. This can be sparse observation data, possibly with
-            some NaN values, or high-resolution gapless data like topography.
-        exo_data: tf.Tensor, optional
-            4D or 5D tensor of features to use for positional encoding. If
-            hi_res_feature is provided, this should must include latitude and
-            longitude, and optionally time, in that order.  Latitude and
-            longitude should be in degrees and time should be in a datetime
-            format that can be parsed by
-            tf.experimental.numpy.datetime_as_string.
+            4D or 5D high-resolution feature tensor used as key/value
+            input.  May contain NaNs for sparse observations.
+        exo_data : tf.Tensor, optional
+            Exogenous data with latitude (channel 0), longitude (channel 1),
+            and optionally time (channel 2).
 
         Returns
         -------
-        x : tf.Tensor
-            Output tensor of the attention block.
+        tf.Tensor
+            Output tensor with the same shape as *x*.
         """
         if hi_res_feature is None:
             return x
@@ -1481,188 +1833,46 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             else exo_data[..., 2:3]
         )
 
-        out_spec = tf.TensorSpec(shape=x.shape[1:], dtype=x.dtype)
-        return tf.map_fn(
-            lambda i: self._call(
-                x,
-                hi_res_feature,
-                lat=lat,
-                lon=lon,
-                time=time,
-                idx=i,
-            ),
-            tf.range(tf.shape(x)[0]),
-            fn_output_signature=out_spec,
+        hr_clean, nan_mask, attn_lat, attn_lon = self.ek.prepare_sparse_tensor(
+            hi_res_feature, lat=lat, lon=lon
         )
 
+        q = self.eq(x)
+        k = self.ek(hr_clean)
+        v = self.ev(hr_clean)
 
-class Sup3rTransformerLayerAlibi(Sup3rTransformerLayer):
-    """Transformer layer with attention layer with linear biases (ALiBi)
-    instead of positional encoding. This adds a distance-based bias to the
-    attention scores before softmax.
+        if not self.use_alibi and self.pe is not None:
+            q = q + self.pe(x, lat=lat, lon=lon, time=time)
+            k = k + self.pe(hr_clean, lat=lat, lon=lon, time=time)
 
-    References
-    ----------
-    Press, O., Smith, N. A., & Lewis, M. (2022). Train Short, Test Long:
-    Attention with Linear Biases Enables Input Length Extrapolation.
-    arXiv:2108.12409. https://arxiv.org/abs/2108.12409
-    """
-
-    def __init__(
-        self, *args, alpha=1e6, trainable=True, norm_input=False, **kwargs
-    ):
-        """Initialize the Sup3rTransformerLayerAlibi layer.
-
-        Parameters
-        ----------
-        alpha : float, optional
-            Scaling factor for the ALiBi bias. Default is 1e6.
-        trainable : bool, optional
-            Whether the alpha parameter is trainable. Default is True.
-        norm_input : bool, optional
-            Whether to apply RMS normalization to the input. Default is False.
-            ALiBi is designed to work without positional encodings, and
-            normalization can interfere with the bias.
-        """
-
-        super().__init__(*args, norm_input=norm_input, **kwargs)
-        self.alpha = alpha
-        self.trainable = trainable
-        self.head_slopes = None
-
-    def get_config(self):
-        """Implementation of get_config method from tf.keras.layers.Layer for
-        saving/loading as part of keras sequential model.
-
-        Returns
-        -------
-        config : dict
-        """
-        config = super().get_config().copy()
-        config.update({
-            'trainable': self.trainable,
-            'alpha': float(self.alpha),
-        })
-        return config
-
-    def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
-        """Build the Sup3rTransformerLayer layer based on an input shape
-
-        Parameters
-        ----------
-        x_shape : tuple
-            Shape tuple of the query tensor.
-        hi_res_feature_shape : tuple | None
-            Shape tuple of the high resolution feature tensor.
-        exo_data_shape : tuple | None
-            Shape tuple of the exogenous data tensor.
-        """
-        self.alpha = self.add_weight(
-            name='alpha',
-            shape=[],
-            trainable=self.trainable,
-            dtype=tf.float32,
-            initializer=tf.keras.initializers.Constant(self.alpha),
-        )
-        # Compute head slopes for the ALiBi bias based on the number of
-        # attention heads. This follows the approach from the ALiBi paper to
-        # give each head a different slope for the distance-based bias.
-        x = 2 ** (8 / self.num_heads)
-        slopes = np.array(
-            [1 / (x ** (i + 1)) for i in range(self.num_heads)],
-            dtype=np.float32,
-        ).reshape(1, self.num_heads, 1, 1)
-        self.head_slopes = self.add_weight(
-            name='head_slopes',
-            shape=slopes.shape,
-            trainable=False,
-            dtype=tf.float32,
-            initializer=tf.keras.initializers.Constant(slopes),
-        )
-        super().build(x_shape, hi_res_feature_shape, exo_data_shape)
-
-    def get_locality_bias(self, x, hi_res_feature, lat, lon, time=None):
-        """Helper function to compute a locality bias for the attention based
-        on the haversine distance between the query and value tokens.
-
-        Parameters
-        ----------
-        x : tf.Tensor
-            4D or 5D input tensor. Typically this is the latent space tensor
-            being updated by the attention block.
-        hi_res_feature : tf.Tensor
-            4D or 5D high resolution feature tensor. This will be used as the
-            value input. This can be sparse observation data, possibly with
-            some NaN values, or high-resolution gapless data like topography.
-        lat : tf.Tensor
-            Latitude tensor for positional encoding.
-        lon : tf.Tensor
-            Longitude tensor for positional encoding.
-        time : tf.Tensor, optional
-            Time tensor for positional encoding. Default is None.
-
-        Returns
-        -------
-        locality_bias : tf.Tensor
-            Tensor representing the locality bias for the attention mechanism.
-            (batch_size, n_query_tokens, n_value_tokens, key_dim)
-        """
-        # Compute pairwise distances between query and value tokens based on
-        # lat/lon. This assumes that the tokens are ordered in the same way as
-        # the spatial dimensions of the input tensors.
-
-        lat_q = tf.reshape(lat, (tf.shape(lat)[0], -1, 1))
-        lon_q = tf.reshape(lon, (tf.shape(lon)[0], -1, 1))
-
-        lat_v = self.ev._mask(hi_res_feature, lat)
-        lon_v = self.ev._mask(hi_res_feature, lon)
-        lat_v = tf.reshape(lat_v, (tf.shape(lat)[0], 1, -1))
-        lon_v = tf.reshape(lon_v, (tf.shape(lon)[0], 1, -1))
-
-        lat_q_rad = lat_q * (np.pi / 180.0)
-        lon_q_rad = lon_q * (np.pi / 180.0)
-        lat_v_rad = lat_v * (np.pi / 180.0)
-        lon_v_rad = lon_v * (np.pi / 180.0)
-
-        dlat = lat_q_rad - lat_v_rad
-        dlon = lon_q_rad - lon_v_rad
-        a = (
-            tf.sin(dlat / 2) ** 2
-            + tf.cos(lat_q_rad) * tf.cos(lat_v_rad) * tf.sin(dlon / 2) ** 2
-        )
-        distance = 2 * tf.asin(tf.sqrt(a))
-        bias = -(distance**2) * self.alpha
-
-        bias = tf.expand_dims(bias, axis=1)
-        bias = tf.repeat(bias, repeats=self.num_heads, axis=1)
-        bias *= self.head_slopes
-        return bias
-
-    def _transformer_layer(self, x_in, hr_in, lat, lon, time=None):
-        # embed query, key, and value inputs
-        q = self.eq(x_in)
-        k = self.ek(hr_in)
-        v = self.ev(hr_in)
-
-        # use locality bias instead of positional encodings
-        bias = self.get_locality_bias(x_in, hr_in, lat=lat, lon=lon, time=time)
-
-        # Spatial shapes needed for windowed attention
-        q_shape = x_in.shape
-        kv_shape = hr_in.shape
-        query_spatial_shape = (q_shape[1], q_shape[2])
-        kv_spatial_shape = (kv_shape[1], kv_shape[2])
+        batch_size = None
+        time_steps = None
+        if self.rank == 5:
+            out = self._merge_time_into_batch(
+                q, k, v, nan_mask, attn_lat, attn_lon
+            )
+            q, k, v, nan_mask, attn_lat, attn_lon, batch_size, time_steps = out
 
         out = self.tl(
             query=q,
             key=k,
             value=v,
-            bias=bias,
-            query_spatial_shape=query_spatial_shape,
-            kv_spatial_shape=kv_spatial_shape,
+            kv_nan_mask=nan_mask,
+            lat=attn_lat,
+            lon=attn_lon,
         )
-        out = self.final_proj(out)
-        return tf.reshape(out, tf.shape(x_in))
+
+        if self.rank == 5:
+            # Unmerge: (B*T, H, W, C) → (B, T, H, W, C) → (B, H, W, T, C)
+            dims = tf.concat(
+                [tf.stack([batch_size, time_steps]), tf.shape(out)[1:]], axis=0
+            )
+            out = tf.reshape(out, dims)
+            out = tf.transpose(out, [0, 2, 3, 1, 4])
+
+        out = self.decoder(out)
+
+        return tf.reshape(out, tf.shape(x))
 
 
 class Sup3rTransformerBlock(tf.keras.layers.Layer):
@@ -1673,13 +1883,14 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         name=None,
         features=None,
         exo_features=None,
+        patch_size=1,
         num_heads=1,
         key_dim=64,
         embed_dim=64,
-        use_alibi=False,
-        attention_type='full',
-        transformer_kwargs=None,
-        attention_kwargs=None,
+        alibi_scale=0.0,
+        window_size=None,
+        radius=None,
+        dropout=0.0,
         **kwargs,
     ):
         """
@@ -1689,71 +1900,56 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             Name of layer.
         features : list[str] | None
             List of hi-resolution feature names. The length of this list
-            determines the number of Sup3rTransformerLayer layers in the block.
-            Each layer will attend to the corresponding feature in the list.
-            For example, if features=['obs', 'topography'] then the first layer
-            will attend to the 'obs' feature and the second layer will attend
-            to the 'topography' feature. If None, no layers will be created.
-        exo_features : list[str] | None
-            List of exogenous feature names. These are features that will be
-            used for positional encoding like latitude, longitude, and time.
-            This will be used for all layers in the block. If None, no
-            exogenous features will be used for positional encoding.
-        num_heads : int
-            Number of attention heads for each transformer layer in the block.
-        key_dim : int
-            Size of each attention head for each transformer layer in the
+            determines the number of Sup3rTransformerLayer layers in the
             block.
+        exo_features : list[str] | None
+            List of exogenous feature names (latitude, longitude, time).
+        patch_size : int
+            Height, width, and optional depth of attention patches.
+        num_heads : int
+            Number of attention heads for each transformer layer.
+        key_dim : int
+            Size of each attention head.
         embed_dim : int
-            Dimension of the tokenized inputs for each transformer layer in the
-            block. This matches the embed_dim used for the positional encoding.
-        use_alibi : bool
-            Whether to use ALiBi (Attention with Linear Biases) instead of
-            positional encoding. If True, the Sup3rTransformerLayerAlibi class
-            will be used for the layers in the block. If False, the standard
-            Sup3rTransformerLayer with positional encoding will be used.
-            Default is False.
-        attention_type : str
-            Type of attention mechanism. 'full' for standard full attention,
-            'windowed' for overlapping windowed attention that reduces memory
-            usage. When 'windowed', window_size and overlap should be
-            specified in attention_kwargs. Default is 'full'.
-        transformer_kwargs : dict | None
-            Keyword arguments forwarded to each transformer layer in the
-            block. This is the place to set transformer-layer options like
-            ``embed_dim``, ``key_dim``, or positional encoding periods.
-        attention_kwargs : dict | None
-            Additional keyword arguments forwarded to the internal
-            :class:`MultiHeadAttention` layer for each transformer layer.
+            Dimension of the tokenized inputs.
+        alibi_scale : float
+            Positive values enable ALiBi and set its distance scaling
+            factor. Non-positive values disable ALiBi.
+        window_size : int | None
+            Side length of the non-overlapping query execution block.
+            ``None`` uses full attention.
+        radius : int | None
+            Symmetric halo radius, in token units, added around each query
+            window when reading key/value tokens.
+        dropout : float
+            Dropout rate for attention weights.
         **kwargs
-             Additional keyword arguments to pass to the block itself. This can
-             include arguments like trainable and dtype.
+            Additional keyword arguments for the block.
         """
         super().__init__(**kwargs)
         self.features = features or []
         self.exo_features = exo_features or []
-        self.transformer_kwargs = dict(transformer_kwargs or {})
-        self.use_alibi = use_alibi
-        self.attention_type = attention_type
+        self.alibi_scale = float(alibi_scale)
+        self.use_alibi = self.alibi_scale > 0
+        self.patch_size = patch_size
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.embed_dim = embed_dim
-        self.attention_kwargs = attention_kwargs
-        transformer_cls = (
-            Sup3rTransformerLayerAlibi
-            if self.use_alibi
-            else Sup3rTransformerLayer
-        )
+        self.window_size = window_size
+        self.radius = radius
+        self.dropout = dropout
         self.layers = [
-            transformer_cls(**{
-                'features': [feat],
-                'attention_kwargs': self.attention_kwargs,
-                'attention_type': self.attention_type,
-                'num_heads': self.num_heads,
-                'key_dim': self.key_dim,
-                'embed_dim': self.embed_dim,
-                **self.transformer_kwargs,
-            })
+            Sup3rTransformerLayer(
+                features=[feat],
+                patch_size=self.patch_size,
+                num_heads=self.num_heads,
+                key_dim=self.key_dim,
+                embed_dim=self.embed_dim,
+                alibi_scale=self.alibi_scale,
+                window_size=self.window_size,
+                radius=self.radius,
+                dropout=self.dropout,
+            )
             for feat in self.features
         ]
 
@@ -1764,25 +1960,16 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         Parameters
         ----------
         x : tf.Tensor
-            4D or 5D input tensor. Typically this is the latent space tensor
-            being updated by the attention block.
+            4D or 5D input tensor (latent space).
         hi_res_features : tf.Tensor, optional
-            4D or 5D high resolution feature tensor. This will be used as the
-            value input. This can be sparse observation data, possibly with
-            some NaN values, or high-resolution gapless data like topography.
-        exo_data: tf.Tensor, optional
-            4D or 5D tensor of features to use for positional encoding. If
-            hi_res_feature is provided, this should must include latitude and
-            longitude, and optionally time, in that order.  Latitude and
-            longitude should be in degrees and time should be in a datetime
-            format that can be parsed by
-            tf.experimental.numpy.datetime_as_string.
+            4D or 5D high-resolution feature tensor stack.
+        exo_data : tf.Tensor, optional
+            Exogenous data (latitude, longitude, optional time).
 
         Returns
         -------
-        x : tf.Tensor
-            Output tensor of the attention block after passing through all
-            layers in the stack.
+        tf.Tensor
+            Output tensor after all layers plus skip connection.
         """
         if hi_res_features is None:
             return x
@@ -1802,7 +1989,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         hi_res_features_shape=None,
         exo_data_shape=None,
     ):
-        """Build the block based on an input shape
+        """Build the block based on an input shape.
 
         Parameters
         ----------
@@ -1827,13 +2014,14 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         config.update({
             'features': self.features,
             'exo_features': self.exo_features,
+            'patch_size': self.patch_size,
             'num_heads': self.num_heads,
             'key_dim': self.key_dim,
             'embed_dim': self.embed_dim,
-            'use_alibi': self.use_alibi,
-            'attention_type': self.attention_type,
-            'transformer_kwargs': self.transformer_kwargs,
-            'attention_kwargs': self.attention_kwargs,
+            'alibi_scale': self.alibi_scale,
+            'window_size': self.window_size,
+            'radius': self.radius,
+            'dropout': self.dropout,
         })
         return config
 
