@@ -234,6 +234,9 @@ max-complexity = 12
 "docs/source/conf.py" = [
   "E402", # unused-import
 ]
+"tests/*" = [
+  "ARG001", # unused-function-argument (monkeypatch stubs match parent signatures)
+]
 
 [tool.ruff.lint.pylint]
 max-args = 10 # (PLR0913) Maximum number of arguments for function / method
