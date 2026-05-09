@@ -104,14 +104,53 @@ def test_wmha_caps_window_size_to_tensor_shape(monkeypatch):
     assert captured['value_shape'] == (1, 16, 8)
 
 
+def test_wmha_ignores_shift_when_window_covers_grid(monkeypatch):
+    """Single-window calls should route to full attention and ignore shift."""
+    captured = {}
+
+    def fake_call(
+        self,
+        query,
+        value,
+        key=None,
+        attention_mask=None,
+        return_attention_scores=False,
+        training=None,
+        use_causal_mask=False,
+        bias=None,
+    ):
+        captured['query_shape'] = tuple(query.shape)
+        captured['value_shape'] = tuple(value.shape)
+        return query
+
+    monkeypatch.setattr(MultiHeadAttention, 'call', fake_call)
+
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        window_size=10,
+        radius=1,
+        window_shift=3,
+    )
+    query = tf.random.normal((1, 4, 4, 8))
+    value = tf.random.normal((1, 4, 4, 8))
+
+    output = layer(query, value)
+
+    assert output.shape == (1, 4, 4, 8)
+    assert captured['query_shape'] == (1, 16, 8)
+    assert captured['value_shape'] == (1, 16, 8)
+
+
 def test_wmha_get_config():
     """Config should include window size, radius, and num_heads."""
     layer = WindowedMultiHeadAttention(
-        num_heads=2, key_dim=4, window_size=5, radius=3
+        num_heads=2, key_dim=4, window_size=5, radius=3, window_shift=1
     )
     config = layer.get_config()
     assert config["window_size"] == 5
     assert config["radius"] == 3
+    assert config["window_shift"] == 1
     assert config["num_heads"] == 2
 
 
@@ -125,21 +164,99 @@ def test_wmha_non_square_grid():
     assert output.shape == (1, 6, 4, 8)
 
 
+def test_wmha_shifted_window_path(monkeypatch):
+    """Shifted multi-window calls should use the windowed path."""
+    captured = {}
+
+    def fake_call(
+        self,
+        query,
+        value,
+        key=None,
+        attention_mask=None,
+        return_attention_scores=False,
+        training=None,
+        use_causal_mask=False,
+        bias=None,
+    ):
+        captured['query_shape'] = tuple(query.shape)
+        captured['value_shape'] = tuple(value.shape)
+        return query
+
+    monkeypatch.setattr(MultiHeadAttention, 'call', fake_call)
+
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        window_size=2,
+        radius=1,
+        window_shift=1,
+    )
+    query = tf.random.normal((1, 6, 6, 8))
+    value = tf.random.normal((1, 6, 6, 8))
+
+    output = layer(query, value)
+
+    assert output.shape == (1, 6, 6, 8)
+    assert captured['query_shape'] == (16, 4, 8)
+    assert captured['value_shape'] == (16, 16, 8)
+
+
+def test_wmha_shifted_window_alibi():
+    """Shifted window attention should work with ALiBi enabled."""
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        window_size=2,
+        radius=1,
+        window_shift=1,
+        alibi_scale=1.0,
+    )
+    query = tf.random.normal((1, 4, 4, 8))
+    lat = np.linspace(30, 40, 4).reshape(1, 4, 1, 1) * np.ones(
+        (1, 1, 4, 1)
+    )
+    lon = np.linspace(-100, -90, 4).reshape(1, 1, 4, 1) * np.ones(
+        (1, 4, 1, 1)
+    )
+
+    output = layer(
+        query,
+        query,
+        lat=tf.constant(lat, dtype=tf.float32),
+        lon=tf.constant(lon, dtype=tf.float32),
+    )
+
+    assert output.shape == (1, 4, 4, 8)
+
+
 def test_wmha_masks_padded_kv_positions(monkeypatch):
-    """Halo padding should be masked out of attention."""
+    """Halo padding should be masked out of attention for boundary windows."""
     layer = WindowedMultiHeadAttention(
         num_heads=1, key_dim=2, window_size=2, radius=1
     )
-    query = tf.random.normal((1, 2, 2, 4))
-    geometry = layer._get_window_geometry(query, query)
-    attention_mask = layer._build_window_mask(None, query.dtype, geometry).numpy()
+    # Use 4x4 spatial so radius=1 isn't capped (max_tile=4 > ws+2*r=4).
+    query = tf.random.normal((1, 4, 4, 4))
+    geometry = layer._get_window_geometry(query, query, window_size=2)
+    attention_mask = layer._build_window_mask(
+        None, query.dtype, geometry
+    ).numpy()
 
-    valid_indices = {5, 6, 9, 10}
-    padded_indices = [idx for idx in range(16) if idx not in valid_indices]
-
-    assert attention_mask.shape == (1, 4, 16)
-    assert not attention_mask[:, :, padded_indices].any()
-    assert attention_mask[:, :, list(valid_indices)].any()
+    # 4 windows, each Q has 4 tokens, each KV tile has 16 tokens
+    assert attention_mask.shape == (4, 4, 16)
+    # Top-left window's halo extends beyond the boundary on top and left.
+    # Row 0 and col 0 of the tile are padding → should be masked False.
+    top_left_mask = attention_mask[0]
+    pad_row_indices = [0, 1, 2, 3]  # tile row 0, all cols
+    pad_col_indices = [0, 4, 8, 12]  # tile col 0, all rows
+    pad_indices = list(set(pad_row_indices + pad_col_indices))
+    # Every Q token should mask out padding positions that fall in its
+    # local neighborhood.
+    for q_idx in range(4):
+        for p_idx in pad_indices:
+            assert not top_left_mask[q_idx, p_idx], (
+                f"Q token {q_idx} should mask padded KV index {p_idx}"
+            )
 
 
 # --- TransformerLayer ---
@@ -148,15 +265,17 @@ def test_wmha_masks_padded_kv_positions(monkeypatch):
 def test_transformer_layer_windowed():
     """TransformerLayer should use WMHA and forward window params."""
     layer = TransformerLayer(
-        num_heads=2, key_dim=8, window_size=4, radius=2
+        num_heads=2, key_dim=8, window_size=4, radius=2, window_shift=1
     )
     assert isinstance(layer.attn, WindowedMultiHeadAttention)
     assert layer.attn.window_size == 4
     assert layer.attn.radius == 2
+    assert layer.attn.window_shift == 1
 
     config = layer.get_config()
     assert config["window_size"] == 4
     assert config["radius"] == 2
+    assert config["window_shift"] == 1
 
 
 def test_transformer_layer_default_full_attention():
@@ -197,14 +316,17 @@ def test_sup3r_transformer_layer_windowed():
         embed_dim=8,
         window_size=4,
         radius=2,
+        window_shift=1,
     )
     assert isinstance(layer.tl.attn, WindowedMultiHeadAttention)
     assert layer.tl.attn.window_size == 4
+    assert layer.tl.attn.window_shift == 1
 
     config = layer.get_config()
     assert config["patch_size"] == 2
     assert config["window_size"] == 4
     assert config["radius"] == 2
+    assert config["window_shift"] == 1
 
     x = tf.random.normal((1, 8, 8, 16))
     hr = tf.random.normal((1, 8, 8, 1))
@@ -241,6 +363,7 @@ def test_block_windowed_construction_and_config():
         embed_dim=8,
         window_size=4,
         radius=2,
+        window_shift=1,
     )
     assert len(block.layers) == 2
     for layer in block.layers:
@@ -248,11 +371,13 @@ def test_block_windowed_construction_and_config():
         assert layer.patch_size == 2
         assert layer.tl.attn.window_size == 4
         assert layer.tl.attn.radius == 2
+        assert layer.tl.attn.window_shift == 1
 
     config = block.get_config()
     assert config["patch_size"] == 2
     assert config["window_size"] == 4
     assert config["radius"] == 2
+    assert config["window_shift"] == 1
 
 
 def test_sup3r_transformer_layer_patch_size_restores_shape():
@@ -274,6 +399,36 @@ def test_sup3r_transformer_layer_patch_size_restores_shape():
     )
     lon = np.linspace(-100, -90, 8).reshape(1, 1, 8, 1) * np.ones(
         (1, 8, 1, 1)
+    )
+    exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
+
+    output = layer(x, hi_res_feature=hr, exo_data=exo_data)
+
+    assert isinstance(
+        layer.decoder.proj_layer, tf.keras.layers.Conv2DTranspose
+    )
+    assert output.shape == x.shape
+
+
+def test_sup3r_transformer_layer_patch_size_odd_restores_shape():
+    """Patchified attention should preserve non-divisible query shapes."""
+    layer = Sup3rTransformerLayer(
+        features=["obs"],
+        patch_size=3,
+        num_heads=2,
+        key_dim=8,
+        embed_dim=8,
+        window_size=2,
+        radius=1,
+    )
+
+    x = tf.random.normal((1, 10, 11, 16))
+    hr = tf.random.normal((1, 10, 11, 1))
+    lat = np.linspace(30, 40, 10).reshape(1, 10, 1, 1) * np.ones(
+        (1, 1, 11, 1)
+    )
+    lon = np.linspace(-100, -90, 11).reshape(1, 1, 11, 1) * np.ones(
+        (1, 10, 1, 1)
     )
     exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
@@ -425,8 +580,8 @@ def test_block_dropout():
 def _patch_fused_attention(monkeypatch, dot_product_attention):
     """Patch the fused attention helper used by the custom layer."""
     monkeypatch.setattr(
-        custom_layers_module,
-        '_dot_product_attention',
+        tf.keras.ops,
+        'dot_product_attention',
         dot_product_attention,
     )
 

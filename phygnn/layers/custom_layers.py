@@ -35,11 +35,6 @@ def _register_custom_layer_objects():
         registry[f'phygnn>{name}'] = obj
 
 
-def _dot_product_attention(*args, **kwargs):
-    """Call the Keras 3 fused dot-product attention op."""
-    return tf.keras.ops.dot_product_attention(*args, **kwargs)
-
-
 @dataclass(frozen=True)
 class WindowGeometry:
     """Computed layout for one windowed-attention call."""
@@ -50,8 +45,11 @@ class WindowGeometry:
     kv_height: int | tf.Tensor
     kv_width: int | tf.Tensor
     window_size: int | tf.Tensor
+    window_shift: int | tf.Tensor
     tile_size: int | tf.Tensor
     radius: int | tf.Tensor
+    query_top_padding: int | tf.Tensor
+    query_left_padding: int | tf.Tensor
     query_height_padding: int | tf.Tensor
     query_width_padding: int | tf.Tensor
     padded_query_height: int | tf.Tensor
@@ -82,9 +80,6 @@ def _set_keras_mask(x, mask):
 
 class SwiGLU(tf.keras.layers.Layer):
     """SwiGLU activation function."""
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     @tf.function
     def call(self, x):
@@ -171,7 +166,6 @@ class FlexiblePadding(tf.keras.layers.Layer):
             )
         return tf.TensorShape(output_shape)
 
-    @tf.function
     def call(self, x):
         """Calls the padding routine
 
@@ -564,8 +558,7 @@ class PositionEncoder(tf.keras.layers.Layer):
             min_period=min_period,
             max_period=max_period,
         )
-        out = tf.concat([lat_enc, lon_enc], axis=-1)
-        return out
+        return tf.concat([lat_enc, lon_enc], axis=-1)
 
     def encode_time(self, x, time, min_period, max_period):
         """Sinusoidal positional encoding for time.
@@ -602,8 +595,7 @@ class PositionEncoder(tf.keras.layers.Layer):
         soy_enc = self._freq_encode(
             soy, min_period, max_period, d=self.embed_dim // 2
         )
-        out = tf.concat([doy_enc, soy_enc], axis=-1)
-        return out
+        return tf.concat([doy_enc, soy_enc], axis=-1)
 
     def build(self, input_shape):
         """Build the Positional Encoding layer based on an input shape
@@ -802,7 +794,7 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
                         attention_mask, axis=mask_expansion_axis
                     )
 
-            attention_output = _dot_product_attention(
+            attention_output = tf.keras.ops.dot_product_attention(
                 query=query,
                 key=key,
                 value=value,
@@ -881,6 +873,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         self,
         window_size=None,
         radius=None,
+        window_shift=0,
         num_heads=1,
         key_dim=64,
         alibi_scale=0.0,
@@ -889,25 +882,32 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         super().__init__(num_heads=num_heads, key_dim=key_dim, **kwargs)
         self.window_size = window_size
         self.radius = radius
+        self.window_shift = int(window_shift)
         self.alibi_scale = float(alibi_scale)
         self.use_alibi = self.alibi_scale > 0
         self.head_slopes = None
-        self._built_window_size = None
 
-        if self.window_size is None:
-            if self.radius is not None:
-                msg = 'radius must be None when window_size is None.'
-                logger.error(msg)
-                raise ValueError(msg)
-        else:
+        if self.radius is not None and self.radius < 0:
+            msg = 'radius must be >= 0.'
+            logger.error(msg)
+            raise ValueError(msg)
+        if self.window_shift < 0:
+            msg = 'window_shift must be >= 0.'
+            logger.error(msg)
+            raise ValueError(msg)
+        if self.window_size is not None:
             if self.radius is None:
                 msg = 'radius is required when window_size is set.'
                 logger.error(msg)
                 raise ValueError(msg)
-            if self.radius < 0:
-                msg = 'radius must be >= 0.'
+            if self.window_shift >= self.window_size:
+                msg = 'window_shift must be < window_size.'
                 logger.error(msg)
                 raise ValueError(msg)
+        elif self.radius is not None:
+            msg = 'radius must be None when window_size is None.'
+            logger.error(msg)
+            raise ValueError(msg)
 
     def build(self, query_shape, value_shape, key_shape=None):
         """Build projection layers with 3D shapes.
@@ -934,47 +934,96 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                 initializer=tf.keras.initializers.Constant(slopes),
             )
 
-    def _get_window_geometry(self, query, key):
+    @staticmethod
+    def _get_spatial_shape(tensor):
+        """Get spatial height and width from static or dynamic shape."""
+        height = tensor.shape[1]
+        width = tensor.shape[2]
+
+        if None in {height, width}:
+            return tf.shape(tensor)[1], tf.shape(tensor)[2], True
+
+        return int(height), int(width), False
+
+    def _resolve_windowing(self, query, key):
+        """Resolve the active window size and routing for this call."""
+        if self.window_size is None:
+            return None, True
+
+        query_height, query_width, query_dynamic = self._get_spatial_shape(
+            query
+        )
+        kv_height, kv_width, kv_dynamic = self._get_spatial_shape(key)
+
+        tile_size = self.window_size + 2 * self.radius
+
+        if query_dynamic or kv_dynamic:
+            use_full_attention = tf.logical_and(
+                tf.logical_and(
+                    tile_size >= query_height,
+                    tile_size >= query_width,
+                ),
+                tf.logical_and(
+                    tile_size >= kv_height,
+                    tile_size >= kv_width,
+                ),
+            )
+            return self.window_size, use_full_attention
+
+        window_size = min(
+            self.window_size,
+            int(query_height),
+            int(query_width),
+            int(kv_height),
+            int(kv_width),
+        )
+        use_full_attention = (
+            tile_size >= query_height
+            and tile_size >= query_width
+            and tile_size >= kv_height
+            and tile_size >= kv_width
+        )
+        return window_size, use_full_attention
+
+    def _get_window_geometry(self, query, key, window_size):
         """Get the full geometry for one windowed-attention call.
 
-        This also caps ``window_size`` to the available spatial extent
-        and caches the capped value when static shapes are known.
+        This applies shifted padded-window geometry for the multi-window
+        execution path.
         """
+
         batch_size = tf.shape(query)[0]
-        query_height = query.shape[1]
-        query_width = query.shape[2]
-        kv_height = key.shape[1]
-        kv_width = key.shape[2]
+        query_height, query_width, q_dyn = self._get_spatial_shape(query)
+        kv_height, kv_width, kv_dyn = self._get_spatial_shape(key)
 
-        if self._built_window_size is not None:
-            window_size = self._built_window_size
-        elif None in (query_height, query_width, kv_height, kv_width):
-            query_height = tf.shape(query)[1]
-            query_width = tf.shape(query)[2]
-            kv_height = tf.shape(key)[1]
-            kv_width = tf.shape(key)[2]
-            window_size = self.window_size
-        else:
-            window_size = min(
-                self.window_size,
-                int(query_height),
-                int(query_width),
-                int(kv_height),
-                int(kv_width),
+        window_shift = min(self.window_shift, window_size - 1)
+        if q_dyn or kv_dyn:
+            max_tile = tf.reduce_min(
+                [query_height, query_width, kv_height, kv_width]
             )
-            self._built_window_size = window_size
+            radius = tf.maximum(
+                tf.minimum(self.radius, (max_tile - window_size) // 2), 0
+            )
+            tile_size = window_size + 2 * radius
+        else:
+            max_tile = min(query_height, query_width, kv_height, kv_width)
+            radius = max(min(self.radius, (max_tile - window_size) // 2), 0)
+            tile_size = window_size + 2 * radius
 
-        radius = self.radius
-        tile_size = window_size + 2 * radius
-
+        query_top_padding = window_shift
+        query_left_padding = window_shift
         query_height_padding = (
-            window_size - query_height % window_size
+            window_size - (query_height + query_top_padding) % window_size
         ) % window_size
         query_width_padding = (
-            window_size - query_width % window_size
+            window_size - (query_width + query_left_padding) % window_size
         ) % window_size
-        padded_query_height = query_height + query_height_padding
-        padded_query_width = query_width + query_width_padding
+        padded_query_height = (
+            query_height + query_top_padding + query_height_padding
+        )
+        padded_query_width = (
+            query_width + query_left_padding + query_width_padding
+        )
         n_window_rows = padded_query_height // window_size
         n_window_cols = padded_query_width // window_size
         n_windows = n_window_rows * n_window_cols
@@ -983,12 +1032,16 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 
         total_height = window_size * (n_window_rows - 1) + tile_size
         total_width = window_size * (n_window_cols - 1) + tile_size
-        extra_height = tf.maximum(0, total_height - (kv_height + 2 * radius))
-        extra_width = tf.maximum(0, total_width - (kv_width + 2 * radius))
+        kv_top_padding = radius + query_top_padding
+        kv_left_padding = radius + query_left_padding
+        extra_height = tf.maximum(
+            0, total_height - (kv_height + kv_top_padding)
+        )
+        extra_width = tf.maximum(0, total_width - (kv_width + kv_left_padding))
         pad_spec = tf.stack([
             tf.stack([0, 0]),
-            tf.stack([radius, radius + extra_height]),
-            tf.stack([radius, radius + extra_width]),
+            tf.stack([kv_top_padding, extra_height]),
+            tf.stack([kv_left_padding, extra_width]),
             tf.stack([0, 0]),
         ])
 
@@ -999,8 +1052,11 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             kv_height=kv_height,
             kv_width=kv_width,
             window_size=window_size,
+            window_shift=window_shift,
             tile_size=tile_size,
             radius=radius,
+            query_top_padding=query_top_padding,
+            query_left_padding=query_left_padding,
             query_height_padding=query_height_padding,
             query_width_padding=query_width_padding,
             padded_query_height=padded_query_height,
@@ -1012,11 +1068,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             pad_spec=pad_spec,
         )
 
-    def _partition_windows(
-        self,
-        tensor_4d,
-        geometry,
-    ):
+    @staticmethod
+    def _partition_windows(tensor_4d, geometry):
         """Reshape ``(B, H, W, C)`` into ``(B*n_win, ws*ws, C)`` windows.
 
         Pads spatial dimensions to a multiple of ``window_size``, then
@@ -1025,8 +1078,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         c = tf.shape(tensor_4d)[-1]
         padding = [
             [0, 0],
-            [0, geometry.query_height_padding],
-            [0, geometry.query_width_padding],
+            [geometry.query_top_padding, geometry.query_height_padding],
+            [geometry.query_left_padding, geometry.query_width_padding],
             [0, 0],
         ]
         t = tf.pad(tensor_4d, padding)
@@ -1046,11 +1099,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         ]
         return tf.reshape(t, dims)
 
-    def _extract_overlap_patches(
-        self,
-        tensor_4d,
-        geometry,
-    ):
+    @staticmethod
+    def _extract_overlap_patches(tensor_4d, geometry):
         """Pad ``(B, H, W, C)`` and extract overlapping patches.
 
         Returns
@@ -1074,12 +1124,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         ]
         return tf.reshape(patches, dims)
 
-    def _build_window_mask(
-        self,
-        kv_nan_mask,
-        dtype,
-        geometry,
-    ):
+    @staticmethod
+    def _build_window_mask(kv_nan_mask, dtype, geometry):
         """Build the full per-window boolean attention mask.
 
         Combines padding validity, optional NaN positions from
@@ -1168,7 +1214,6 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         distance = 2 * 6.371e6 * tf.asin(tf.sqrt(a))
         bias = -(distance**2) * self.alibi_scale
         bias = tf.expand_dims(bias, axis=1)
-        bias = tf.repeat(bias, repeats=self._num_heads, axis=1)
         return bias * self.head_slopes
 
     def _compute_window_alibi(
@@ -1220,12 +1265,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 
         return self._haversine_bias(lat_q, lon_q, lat_v, lon_v)
 
-    def _reassemble_windows(
-        self,
-        output,
-        query,
-        geometry,
-    ):
+    @staticmethod
+    def _reassemble_windows(output, query, geometry):
         """Reshape windowed output back to ``(B, n_q, C)`` sequence."""
         feat_out = tf.shape(output)[-1]
         dims = [
@@ -1244,7 +1285,14 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             feat_out,
         ]
         output = tf.reshape(output, dims)
-        output = output[:, : geometry.query_height, : geometry.query_width, :]
+        output = output[
+            :,
+            geometry.query_top_padding : geometry.query_top_padding
+            + geometry.query_height,
+            geometry.query_left_padding : geometry.query_left_padding
+            + geometry.query_width,
+            :,
+        ]
         return tf.reshape(output, tf.shape(query))
 
     def _full_attention_call(
@@ -1257,7 +1305,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         lat,
         lon,
     ):
-        """Full attention path when ``window_size`` is ``None``.
+        """Full attention path when the current call does not need windowing.
 
         Flattens spatial dims to 3-D, computes ALiBi bias and NaN
         masking, runs standard MHA, and reshapes back.
@@ -1302,24 +1350,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_nan_mask,
         lat,
         lon,
+        window_size,
     ):
         """Execute the full windowed attention path."""
-        geometry = self._get_window_geometry(query, key)
-
-        if (
-            geometry.query_height == geometry.kv_height
-            and geometry.query_width == geometry.kv_width
-            and geometry.n_windows == 1
-        ):
-            return self._full_attention_call(
-                query,
-                key,
-                value,
-                training,
-                kv_nan_mask,
-                lat,
-                lon,
-            )
+        geometry = self._get_window_geometry(query, key, window_size)
 
         q_win = self._partition_windows(query, geometry)
         k_win = self._extract_overlap_patches(key, geometry)
@@ -1390,7 +1424,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         if key is None:
             key = value
 
-        if self.window_size is None:
+        window_size, use_full_attention = self._resolve_windowing(query, key)
+        if use_full_attention:
             return self._full_attention_call(
                 query,
                 key,
@@ -1408,6 +1443,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             kv_nan_mask,
             lat,
             lon,
+            window_size,
         )
 
     def get_config(self):
@@ -1416,6 +1452,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         config.update({
             'window_size': self.window_size,
             'radius': self.radius,
+            'window_shift': self.window_shift,
             'alibi_scale': self.alibi_scale,
         })
         return config
@@ -1432,6 +1469,7 @@ class TransformerLayer(tf.keras.layers.Layer):
         alibi_scale=0.0,
         window_size=None,
         radius=None,
+        window_shift=0,
         dropout=0.0,
         **kwargs,
     ):
@@ -1455,6 +1493,10 @@ class TransformerLayer(tf.keras.layers.Layer):
         radius : int | None
             Symmetric halo radius, in token units, added around each query
             window when reading key/value tokens.
+        window_shift : int
+            Shift of the query-window start on the token grid. This is only
+            active when the current call uses multiple windows; otherwise it
+            is ignored because the layer routes to full attention.
         dropout : float
             Dropout rate for attention weights.
         **kwargs
@@ -1465,11 +1507,13 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.key_dim = key_dim
         self.window_size = window_size
         self.radius = radius
+        self.window_shift = window_shift
         self.dropout = dropout
 
         self.attn = WindowedMultiHeadAttention(
             window_size=window_size,
             radius=radius,
+            window_shift=window_shift,
             num_heads=self.num_heads,
             key_dim=self.key_dim,
             alibi_scale=alibi_scale,
@@ -1542,6 +1586,7 @@ class TransformerLayer(tf.keras.layers.Layer):
             'alibi_scale': self.attn.alibi_scale,
             'window_size': self.window_size,
             'radius': self.radius,
+            'window_shift': self.window_shift,
             'dropout': self.dropout,
         })
         return config
@@ -1578,6 +1623,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         alibi_scale=0.0,
         window_size=None,
         radius=None,
+        window_shift=0,
         dropout=0.0,
         **kwargs,
     ):
@@ -1618,6 +1664,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         radius : int | None
             Symmetric halo radius, in token units, added around each query
             window when reading key/value tokens.
+        window_shift : int
+            Shift of the query-window start on the token grid. This is only
+            active when the current call uses multiple windows; otherwise it
+            is ignored because the layer routes to full attention.
         dropout : float
             Dropout rate for attention weights.
         **kwargs
@@ -1638,6 +1688,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.max_period_temporal = max_period_temporal
         self.window_size = window_size
         self.radius = radius
+        self.window_shift = window_shift
         self.alibi_scale = float(alibi_scale)
         self.use_alibi = self.alibi_scale > 0
         self.dropout = dropout
@@ -1668,9 +1719,116 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             alibi_scale=self.alibi_scale,
             window_size=self.window_size,
             radius=self.radius,
+            window_shift=self.window_shift,
             dropout=self.dropout,
         )
         self.decoder = None
+
+    def _validate_build_shapes(self, x_shape, exo_data_shape):
+        """Validate query and exogenous tensor shapes for build()."""
+        self.rank = len(x_shape)
+        msg = (
+            'Sup3rTransformerLayer input must be 4D or 5D, but received '
+            f'input shape: {x_shape}'
+        )
+        if self.rank not in {4, 5}:
+            logger.error(msg)
+            raise ValueError(msg)
+
+        if exo_data_shape is None:
+            return
+
+        exo_rank = len(exo_data_shape)
+        if exo_rank != self.rank:
+            msg = (
+                'Sup3rTransformerLayer exo_data rank must match the '
+                f'query rank. Received x shape {x_shape} and exo_data '
+                f'shape {exo_data_shape}.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
+        mismatched_dims = [
+            (x_dim, exo_dim)
+            for x_dim, exo_dim in zip(x_shape[:-1], exo_data_shape[:-1])
+            if x_dim is not None and exo_dim is not None and x_dim != exo_dim
+        ]
+        if mismatched_dims:
+            msg = (
+                'Sup3rTransformerLayer exo_data spatial dimensions must '
+                'match the query tensor. Received x shape '
+                f'{x_shape} and exo_data shape {exo_data_shape}.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
+        exo_features = exo_data_shape[-1]
+        if exo_features is not None and exo_features < 2:
+            msg = (
+                'Sup3rTransformerLayer exo_data must contain at least '
+                'latitude and longitude channels. Received exo_data '
+                f'shape {exo_data_shape}.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
+    @staticmethod
+    def _split_exo_inputs(exo_data):
+        """Split exogenous inputs into lat, lon, and optional time."""
+        lat = None if exo_data is None else exo_data[..., 0:1]
+        lon = None if exo_data is None else exo_data[..., 1:2]
+        time = (
+            None
+            if exo_data is None or exo_data.shape[-1] < 3
+            else exo_data[..., 2:3]
+        )
+        return lat, lon, time
+
+    @staticmethod
+    def _merge_time_tensor(tensor, batch_time):
+        """Merge a 5D ``(B, H, W, T, C)`` tensor into ``(B*T, H, W, C)``."""
+        dims = tf.concat(
+            [
+                tf.reshape(batch_time, [1]),
+                tf.shape(tensor)[1:3],
+                tf.shape(tensor)[4:5],
+            ],
+            axis=0,
+        )
+        return tf.reshape(tf.transpose(tensor, [0, 3, 1, 2, 4]), dims)
+
+    def _pad_to_patch_multiple(self, tensor):
+        """Pad patch axes so tokenization preserves the full query domain."""
+        if tensor is None or self.patch_size == 1:
+            return tensor
+
+        paddings = [[0, 0]]
+        for axis in range(1, self.rank - 1):
+            size = tf.shape(tensor)[axis]
+            pad = (
+                self.patch_size - tf.math.floormod(size, self.patch_size)
+            ) % self.patch_size
+            paddings.append([0, pad])
+        paddings.append([0, 0])
+        return tf.pad(tensor, paddings)
+
+    def _prepare_attention_inputs(self, x, hi_res_feature, lat, lon, time):
+        """Prepare encoded Q/K/V inputs and optional position features."""
+        hr_clean, nan_mask, attn_lat, attn_lon = (
+            self.ek.prepare_sparse_tensor(
+                hi_res_feature, lat=lat, lon=lon
+            )
+        )
+
+        q = self.eq(x)
+        k = self.ek(hr_clean)
+        v = self.ev(hr_clean)
+
+        if not self.use_alibi and self.pe is not None:
+            q = q + self.pe(x, lat=lat, lon=lon, time=time)  # noqa: PLR6104
+            k = k + self.pe(hr_clean, lat=lat, lon=lon, time=time)  # noqa: PLR6104
+
+        return q, k, v, nan_mask, attn_lat, attn_lon
 
     def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
         """Build the layer based on an input shape.
@@ -1684,66 +1842,20 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         exo_data_shape : tuple | None
             Shape tuple of the exogenous data tensor.
         """
-        self.rank = len(x_shape)
-        msg = (
-            'Sup3rTransformerLayer input must be 4D or 5D, but received '
-            f'input shape: {x_shape}'
-        )
-        if self.rank not in {4, 5}:
-            logger.error(msg)
-            raise ValueError(msg)
-
-        if exo_data_shape is not None:
-            exo_rank = len(exo_data_shape)
-            if exo_rank != self.rank:
-                msg = (
-                    'Sup3rTransformerLayer exo_data rank must match the '
-                    f'query rank. Received x shape {x_shape} and exo_data '
-                    f'shape {exo_data_shape}.'
-                )
-                logger.error(msg)
-                raise ValueError(msg)
-
-            mismatched_dims = [
-                (x_dim, exo_dim)
-                for x_dim, exo_dim in zip(x_shape[:-1], exo_data_shape[:-1])
-                if x_dim is not None
-                and exo_dim is not None
-                and x_dim != exo_dim
-            ]
-            if mismatched_dims:
-                msg = (
-                    'Sup3rTransformerLayer exo_data spatial dimensions must '
-                    'match the query tensor. Received x shape '
-                    f'{x_shape} and exo_data shape {exo_data_shape}.'
-                )
-                logger.error(msg)
-                raise ValueError(msg)
-
-            exo_features = exo_data_shape[-1]
-            if exo_features is not None and exo_features < 2:
-                msg = (
-                    'Sup3rTransformerLayer exo_data must contain at least '
-                    'latitude and longitude channels. Received exo_data '
-                    f'shape {exo_data_shape}.'
-                )
-                logger.error(msg)
-                raise ValueError(msg)
-
-        q_shape = x_shape
-        v_shape = hi_res_feature_shape or x_shape
+        self._validate_build_shapes(x_shape, exo_data_shape)
+        value_shape = hi_res_feature_shape or x_shape
         embed_shape = (None, None, None, self.embed_dim)
         self.decoder = PatchDecoder(
-            patch_size=self.patch_size, output_dim=q_shape[-1]
+            patch_size=self.patch_size, output_dim=x_shape[-1]
         )
-        self.eq.build(q_shape)
-        self.ek.build(v_shape)
-        self.ev.build(v_shape)
+        self.eq.build(x_shape)
+        self.ek.build(value_shape)
+        self.ev.build(value_shape)
         if self.pe is not None:
-            self.pe.build(q_shape)
+            self.pe.build(x_shape)
         self.tl.build(embed_shape, embed_shape, embed_shape)
         self.decoder.build(embed_shape)
-        super().build(q_shape)
+        super().build(x_shape)
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -1762,11 +1874,13 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'alibi_scale': self.alibi_scale,
             'window_size': self.window_size,
             'radius': self.radius,
+            'window_shift': self.window_shift,
             'dropout': self.dropout,
         })
         return config
 
-    def _merge_time_into_batch(self, q, k, v, nan_mask, lat=None, lon=None):
+    @staticmethod
+    def _merge_time_into_batch(q, k, v, nan_mask, lat=None, lon=None):
         """Merge the time axis into the batch axis for 5D attention.
 
         Converts 5D tensors from ``(B, H, W, T, C)`` to ``(B*T, H, W, C)``
@@ -1776,18 +1890,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         batch_size = tf.shape(q)[0]
         time_steps = tf.shape(q)[3]
         bt = batch_size * time_steps
-        dims = tf.concat(
-            [tf.reshape(bt, [1]), tf.shape(q)[1:3], tf.shape(q)[4:5]], axis=0
-        )
-        q = tf.reshape(tf.transpose(q, [0, 3, 1, 2, 4]), dims)
-        dims = tf.concat(
-            [tf.reshape(bt, [1]), tf.shape(k)[1:3], tf.shape(k)[4:5]], axis=0
-        )
-        k = tf.reshape(tf.transpose(k, [0, 3, 1, 2, 4]), dims)
-        dims = tf.concat(
-            [tf.reshape(bt, [1]), tf.shape(v)[1:3], tf.shape(v)[4:5]], axis=0
-        )
-        v = tf.reshape(tf.transpose(v, [0, 3, 1, 2, 4]), dims)
+        q = Sup3rTransformerLayer._merge_time_tensor(q, bt)
+        k = Sup3rTransformerLayer._merge_time_tensor(k, bt)
+        v = Sup3rTransformerLayer._merge_time_tensor(v, bt)
         # nan_mask: (B, H, W) → tile across T → (B*T, H, W)
         nan_mask = tf.tile(tf.expand_dims(nan_mask, 1), [1, time_steps, 1, 1])
         dims = tf.concat([tf.reshape(bt, [1]), tf.shape(nan_mask)[2:]], axis=0)
@@ -1825,41 +1930,24 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         if hi_res_feature is None:
             return x
 
-        lat = None if exo_data is None else exo_data[..., 0:1]
-        lon = None if exo_data is None else exo_data[..., 1:2]
-        time = (
-            None
-            if exo_data is None or exo_data.shape[-1] < 3
-            else exo_data[..., 2:3]
+        original_shape = tf.shape(x)
+        x = self._pad_to_patch_multiple(x)
+        hi_res_feature = self._pad_to_patch_multiple(hi_res_feature)
+        exo_data = self._pad_to_patch_multiple(exo_data)
+
+        lat, lon, time = self._split_exo_inputs(exo_data)
+        q, k, v, nan_mask, lat, lon = self._prepare_attention_inputs(
+            x, hi_res_feature, lat, lon, time
         )
-
-        hr_clean, nan_mask, attn_lat, attn_lon = self.ek.prepare_sparse_tensor(
-            hi_res_feature, lat=lat, lon=lon
-        )
-
-        q = self.eq(x)
-        k = self.ek(hr_clean)
-        v = self.ev(hr_clean)
-
-        if not self.use_alibi and self.pe is not None:
-            q = q + self.pe(x, lat=lat, lon=lon, time=time)
-            k = k + self.pe(hr_clean, lat=lat, lon=lon, time=time)
 
         batch_size = None
         time_steps = None
         if self.rank == 5:
-            out = self._merge_time_into_batch(
-                q, k, v, nan_mask, attn_lat, attn_lon
-            )
-            q, k, v, nan_mask, attn_lat, attn_lon, batch_size, time_steps = out
+            out = self._merge_time_into_batch(q, k, v, nan_mask, lat, lon)
+            q, k, v, nan_mask, lat, lon, batch_size, time_steps = out
 
         out = self.tl(
-            query=q,
-            key=k,
-            value=v,
-            kv_nan_mask=nan_mask,
-            lat=attn_lat,
-            lon=attn_lon,
+            query=q, key=k, value=v, kv_nan_mask=nan_mask, lat=lat, lon=lon
         )
 
         if self.rank == 5:
@@ -1872,7 +1960,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         out = self.decoder(out)
 
-        return tf.reshape(out, tf.shape(x))
+        return tf.slice(
+            out, tf.zeros(self.rank, dtype=tf.int32), original_shape
+        )
 
 
 class Sup3rTransformerBlock(tf.keras.layers.Layer):
@@ -1890,6 +1980,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         alibi_scale=0.0,
         window_size=None,
         radius=None,
+        window_shift=0,
         dropout=0.0,
         **kwargs,
     ):
@@ -1921,6 +2012,10 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         radius : int | None
             Symmetric halo radius, in token units, added around each query
             window when reading key/value tokens.
+        window_shift : int
+            Shift of the query-window start on the token grid. This is only
+            active when the current call uses multiple windows; otherwise it
+            is ignored because the layer routes to full attention.
         dropout : float
             Dropout rate for attention weights.
         **kwargs
@@ -1930,13 +2025,13 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         self.features = features or []
         self.exo_features = exo_features or []
         self.alibi_scale = float(alibi_scale)
-        self.use_alibi = self.alibi_scale > 0
         self.patch_size = patch_size
         self.num_heads = num_heads
         self.key_dim = key_dim
         self.embed_dim = embed_dim
         self.window_size = window_size
         self.radius = radius
+        self.window_shift = window_shift
         self.dropout = dropout
         self.layers = [
             Sup3rTransformerLayer(
@@ -1948,6 +2043,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
                 alibi_scale=self.alibi_scale,
                 window_size=self.window_size,
                 radius=self.radius,
+                window_shift=self.window_shift,
                 dropout=self.dropout,
             )
             for feat in self.features
@@ -2021,6 +2117,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             'alibi_scale': self.alibi_scale,
             'window_size': self.window_size,
             'radius': self.radius,
+            'window_shift': self.window_shift,
             'dropout': self.dropout,
         })
         return config
@@ -2042,7 +2139,6 @@ class ExpandDims(tf.keras.layers.Layer):
         super().__init__(**kwargs)
         self._axis = axis
 
-    @tf.function
     def call(self, x):
         """Calls the expand dims operation
 
@@ -2081,7 +2177,6 @@ class TileLayer(tf.keras.layers.Layer):
         self._multiples = tuple(int(value) for value in multiples)
         self._mult = tf.constant(self._multiples, tf.int32)
 
-    @tf.function
     def call(self, x):
         """Calls the tile operation
 
@@ -2464,7 +2559,6 @@ class SpatialExpansion(tf.keras.layers.Layer):
 
         return out
 
-    @tf.function
     def call(self, x):
         """Call the custom SpatialExpansion layer
 
@@ -2667,7 +2761,6 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
 
         return tf.stack(out, axis=3)
 
-    @tf.function
     def call(self, x):
         """Call the custom SpatioTemporalExpansion layer
 
