@@ -431,6 +431,11 @@ def test_windowed_attention_uses_patch_token_grid():
     """Windowed attention should operate on the patch-token grid."""
     x = tf.random.normal((1, 32, 32, 16))
     hr = tf.random.normal((1, 32, 32, 1))
+    lat = np.linspace(30, 40, 32).reshape(1, 32, 1, 1) * np.ones((1, 1, 32, 1))
+    lon = np.linspace(-100, -90, 32).reshape(1, 1, 32, 1) * np.ones(
+        (1, 32, 1, 1)
+    )
+    exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
     layer_patch_1 = Sup3rTransformerLayer(
         features=['obs'],
@@ -453,8 +458,8 @@ def test_windowed_attention_uses_patch_token_grid():
         alibi_scale=1.0,
     )
 
-    layer_patch_1.build(x.shape, hr.shape, None)
-    layer_patch_4.build(x.shape, hr.shape, None)
+    layer_patch_1.build(x.shape, hr.shape, exo_data.shape)
+    layer_patch_4.build(x.shape, hr.shape, exo_data.shape)
 
     assert layer_patch_1.eq(x).shape[1:3] == (32, 32)
     assert layer_patch_4.eq(x).shape[1:3] == (8, 8)
@@ -478,8 +483,11 @@ def test_sup3r_transformer_layer_partial_patch_kept():
     hr[0, 0, 0, 0] = 5.0
     hr[0, 2, 2, 0] = 7.0
     hr = tf.constant(hr)
+    lat = np.linspace(30, 40, 4).reshape(1, 4, 1, 1) * np.ones((1, 1, 4, 1))
+    lon = np.linspace(-100, -90, 4).reshape(1, 1, 4, 1) * np.ones((1, 4, 1, 1))
+    exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
-    layer.build(x.shape, hr.shape, None)
+    layer.build(x.shape, hr.shape, exo_data.shape)
     hr_clean, nan_mask, _, _ = layer.ek.prepare_sparse_tensor(hr)
     k = layer.ek(hr_clean)
 
@@ -488,6 +496,24 @@ def test_sup3r_transformer_layer_partial_patch_kept():
         nan_mask.numpy(),
         np.array([[[False, True], [True, False]]]),
     )
+
+
+def test_sup3r_transformer_layer_requires_exo_data():
+    """Sup3rTransformerLayer should reject missing exogenous inputs."""
+    layer = Sup3rTransformerLayer(
+        features=['obs'],
+        num_heads=2,
+        key_dim=8,
+        embed_dim=8,
+    )
+    x = tf.random.normal((1, 8, 8, 16))
+    hr = tf.random.normal((1, 8, 8, 1))
+
+    with pytest.raises(ValueError, match='requires exo_data'):
+        layer.build(x.shape, hr.shape, None)
+
+    with pytest.raises(ValueError, match='requires exo_data'):
+        layer(x, hi_res_feature=hr, exo_data=None)
 
 
 def test_block_windowed_forward_pass():

@@ -541,7 +541,9 @@ class PositionEncoder(tf.keras.layers.Layer):
         Returns
         -------
         lat_lon_enc : tf.Tensor
-            Positional encoding with shape (batch, n_tokens, embed_dim)
+            Positional encoding with the same leading dimensions as ``x`` and
+            final dimension ``embed_dim``. The spatial or token grid is not
+            flattened.
         """
         assert self.embed_dim % 4 == 0, (
             'Embedding dimension must be divisible by 4 for latitude and '
@@ -569,7 +571,8 @@ class PositionEncoder(tf.keras.layers.Layer):
         x : tf.Tensor
             Input tensor used for shape reference.
         time : tf.Tensor
-            Tensor of datetime values (..., 1).
+            Tensor of Unix timestamps in seconds since epoch with shape
+            ``(..., 1)``.
         min_period : float
             Minimum period in seconds.
         max_period : float
@@ -578,7 +581,9 @@ class PositionEncoder(tf.keras.layers.Layer):
         Returns
         -------
         time_enc : tf.Tensor
-            Positional encoding with shape (batch, n_tokens, embed_dim)
+            Positional encoding with the same leading dimensions as ``x`` and
+            final dimension ``embed_dim``. The spatial or token grid is not
+            flattened.
         """
         assert self.embed_dim % 4 == 0, (
             'Embedding dimension must be divisible by 4 for time encoding.'
@@ -632,12 +637,16 @@ class PositionEncoder(tf.keras.layers.Layer):
         lon : tf.Tensor
             Longitude tensor (..., 1) in degrees.
         time : tf.Tensor | None
-            Time tensor (..., 1). If None, time encoding is skipped.
+            Optional Unix timestamp tensor in seconds since epoch with shape
+            ``(..., 1)``. If ``None``, time encoding is skipped.
 
         Returns
         -------
         x_enc : tf.Tensor
-            Positional encoding tensor (batch, n_tokens, embed_dim)
+            Positional encoding tensor with the same leading dimensions as the
+            active spatial or token grid and final dimension ``embed_dim``.
+            When ``patch_size > 1``, this corresponds to the pooled token grid
+            rather than the unpooled input grid.
         """
         if self.patch_size > 1:
             x = self._pool_layer(x)
@@ -1212,6 +1221,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             tf.sin(dlat / 2) ** 2
             + tf.cos(lat_q_rad) * tf.cos(lat_v_rad) * tf.sin(dlon / 2) ** 2
         )
+        a = tf.clip_by_value(a, 0.0, 1.0)
         distance = 2 * 6.371e6 * tf.asin(tf.sqrt(a))
         bias = -(distance**2) * self.alibi_scale
         bias = tf.expand_dims(bias, axis=1)
@@ -1569,14 +1579,13 @@ class TransformerLayer(tf.keras.layers.Layer):
             lat=lat,
             lon=lon,
         )
-        out = self.lo(query + attn)
+        attn_res = query + attn
+        out = self.lo(attn_res)
         out_shape = tf.shape(out)
-        batch = out_shape[0]
-        feat = tf.shape(out)[-1]
-        out_flat = tf.reshape(out, [batch, -1, feat])
+        out_flat = tf.reshape(out, [out_shape[0], -1, out_shape[-1]])
         mlp_out = self.mlp(out_flat)
         mlp_out = tf.reshape(mlp_out, out_shape)
-        return query + mlp_out
+        return attn_res + mlp_out
 
     def get_config(self):
         """Get config for Keras serialization."""
@@ -1737,7 +1746,12 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             raise ValueError(msg)
 
         if exo_data_shape is None:
-            return
+            msg = (
+                'Sup3rTransformerLayer requires exo_data with latitude and '
+                'longitude channels.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
 
         exo_rank = len(exo_data_shape)
         if exo_rank != self.rank:
@@ -1917,9 +1931,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         hi_res_feature : tf.Tensor, optional
             4D or 5D high-resolution feature tensor used as key/value
             input.  May contain NaNs for sparse observations.
-        exo_data : tf.Tensor, optional
+        exo_data : tf.Tensor
             Exogenous data with latitude (channel 0), longitude (channel 1),
-            and optionally time (channel 2).
+            and optionally time (channel 2). This input is required whenever
+            hi_res_feature is provided.
 
         Returns
         -------
@@ -1928,6 +1943,14 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         """
         if hi_res_feature is None:
             return x
+
+        if exo_data is None:
+            msg = (
+                'Sup3rTransformerLayer requires exo_data with latitude and '
+                'longitude channels.'
+            )
+            logger.error(msg)
+            raise ValueError(msg)
 
         original_shape = tf.shape(x)
         x = self._pad_to_patch_multiple(x)
@@ -2058,8 +2081,9 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             4D or 5D input tensor (latent space).
         hi_res_features : tf.Tensor, optional
             4D or 5D high-resolution feature tensor stack.
-        exo_data : tf.Tensor, optional
-            Exogenous data (latitude, longitude, optional time).
+        exo_data : tf.Tensor
+            Exogenous data (latitude, longitude, optional time). This input
+            is required whenever hi_res_features is provided.
 
         Returns
         -------
