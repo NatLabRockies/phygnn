@@ -3,6 +3,7 @@
 
 import logging
 from dataclasses import dataclass
+from typing import Union
 
 import numpy as np
 import tensorflow as tf
@@ -40,24 +41,24 @@ class WindowGeometry:
     """Computed layout for one windowed-attention call."""
 
     batch_size: tf.Tensor
-    query_height: int | tf.Tensor
-    query_width: int | tf.Tensor
-    kv_height: int | tf.Tensor
-    kv_width: int | tf.Tensor
-    window_size: int | tf.Tensor
-    window_shift: int | tf.Tensor
-    tile_size: int | tf.Tensor
-    radius: int | tf.Tensor
-    query_top_padding: int | tf.Tensor
-    query_left_padding: int | tf.Tensor
-    query_height_padding: int | tf.Tensor
-    query_width_padding: int | tf.Tensor
-    padded_query_height: int | tf.Tensor
-    padded_query_width: int | tf.Tensor
-    n_window_rows: int | tf.Tensor
-    n_window_cols: int | tf.Tensor
-    n_windows: int | tf.Tensor
-    tile_tokens: int | tf.Tensor
+    query_height: Union[int, tf.Tensor]
+    query_width: Union[int, tf.Tensor]
+    kv_height: Union[int, tf.Tensor]
+    kv_width: Union[int, tf.Tensor]
+    window_size: Union[int, tf.Tensor]
+    window_shift: Union[int, tf.Tensor]
+    tile_size: Union[int, tf.Tensor]
+    radius: Union[int, tf.Tensor]
+    query_top_padding: Union[int, tf.Tensor]
+    query_left_padding: Union[int, tf.Tensor]
+    query_height_padding: Union[int, tf.Tensor]
+    query_width_padding: Union[int, tf.Tensor]
+    padded_query_height: Union[int, tf.Tensor]
+    padded_query_width: Union[int, tf.Tensor]
+    n_window_rows: Union[int, tf.Tensor]
+    n_window_cols: Union[int, tf.Tensor]
+    n_windows: Union[int, tf.Tensor]
+    tile_tokens: Union[int, tf.Tensor]
     pad_spec: tf.Tensor
 
 
