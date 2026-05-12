@@ -1894,17 +1894,15 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         q = Sup3rTransformerLayer._merge_time_tensor(q, bt)
         k = Sup3rTransformerLayer._merge_time_tensor(k, bt)
         v = Sup3rTransformerLayer._merge_time_tensor(v, bt)
-        # nan_mask: (B, H, W) → tile across T → (B*T, H, W)
-        nan_mask = tf.tile(tf.expand_dims(nan_mask, 1), [1, time_steps, 1, 1])
-        dims = tf.concat([tf.reshape(bt, [1]), tf.shape(nan_mask)[2:]], axis=0)
-        nan_mask = tf.reshape(nan_mask, dims)
+        nan_mask = tf.squeeze(
+            Sup3rTransformerLayer._merge_time_tensor(
+                nan_mask[..., tf.newaxis], bt
+            ),
+            axis=-1,
+        )
         if lat is not None:
-            lat = tf.tile(tf.expand_dims(lat, 1), [1, time_steps, 1, 1, 1])
-            dims = tf.concat([tf.reshape(bt, [1]), tf.shape(lat)[2:]], axis=0)
-            lat = tf.reshape(lat, dims)
-            lon = tf.tile(tf.expand_dims(lon, 1), [1, time_steps, 1, 1, 1])
-            dims = tf.concat([tf.reshape(bt, [1]), tf.shape(lon)[2:]], axis=0)
-            lon = tf.reshape(lon, dims)
+            lat = Sup3rTransformerLayer._merge_time_tensor(lat, bt)
+            lon = Sup3rTransformerLayer._merge_time_tensor(lon, bt)
 
         return q, k, v, nan_mask, lat, lon, batch_size, time_steps
 
