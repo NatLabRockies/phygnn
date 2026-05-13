@@ -260,9 +260,7 @@ class PatchEncoder(tf.keras.layers.Layer):
                 else tf.keras.layers.MaxPooling3D(**pool_kwargs)
             )
         else:
-            self.proj_layer = tf.keras.layers.Dense(
-                self.embed_dim, use_bias=False
-            )
+            self.proj_layer = tf.keras.layers.Dense(self.embed_dim)
         self.proj_layer.build(input_shape)
         super().build(input_shape)
 
@@ -1008,9 +1006,12 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 
         window_shift = min(self.window_shift, window_size - 1)
         if q_dyn or kv_dyn:
-            max_tile = tf.reduce_min(
-                [query_height, query_width, kv_height, kv_width]
-            )
+            max_tile = tf.reduce_min([
+                query_height,
+                query_width,
+                kv_height,
+                kv_width,
+            ])
             radius = tf.maximum(
                 tf.minimum(self.radius, (max_tile - window_size) // 2), 0
             )
@@ -1829,10 +1830,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
     def _prepare_attention_inputs(self, x, hi_res_feature, lat, lon, time):
         """Prepare encoded Q/K/V inputs and optional position features."""
-        hr_clean, nan_mask, attn_lat, attn_lon = (
-            self.ek.prepare_sparse_tensor(
-                hi_res_feature, lat=lat, lon=lon
-            )
+        hr_clean, nan_mask, attn_lat, attn_lon = self.ek.prepare_sparse_tensor(
+            hi_res_feature, lat=lat, lon=lon
         )
 
         q = self.eq(x)
