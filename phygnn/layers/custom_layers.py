@@ -1411,23 +1411,18 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         Parameters
         ----------
         query : tf.Tensor
-            ``(batch, H_q, W_q, features)`` or
-            ``(batch, H_q, W_q, T_q, features)``
+            ``(batch, H_q, W_q, features)``
         value : tf.Tensor
-            ``(batch, H_v, W_v, features)`` or
-            ``(batch, H_v, W_v, T_v, features)``
+            ``(batch, H_v, W_v, features)``
         key : tf.Tensor | None
-            ``(batch, H_v, W_v, features)`` or
-            ``(batch, H_v, W_v, T_v, features)``. Defaults to *value*.
+            ``(batch, H_v, W_v, features)``. Defaults to *value*.
         bias : tf.Tensor | None
             Additive pre-softmax bias ``(batch, heads, n_q, n_v)`` or
             None.
         kv_nan_mask : tf.Tensor | None
-            Boolean ``(B, H_v, W_v)`` or ``(B, H_v, W_v, T_v)`` where
-            True marks NaN KV positions.
+            Boolean ``(B, H_v, W_v)`` where True marks NaN KV positions.
         lat, lon : tf.Tensor | None
-            ``(B, H, W, 1)`` or ``(B, H, W, T, 1)`` grids for
-            per-window ALiBi bias.
+            ``(B, H, W, 1)`` grids for per-window ALiBi bias.
         attention_mask, return_attention_scores, use_causal_mask
             Unused; kept for Keras API compatibility.
         training : bool | None
@@ -1436,8 +1431,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         Returns
         -------
         output : tf.Tensor
-            ``(batch, H_q, W_q, features)`` or
-            ``(batch, H_q, W_q, T_q, features)``
+            ``(batch, H_q, W_q, features)``
         """
         if key is None:
             key = value
@@ -1489,7 +1483,6 @@ class TransformerLayer(tf.keras.layers.Layer):
         radius=None,
         window_shift=0,
         dropout=0.0,
-        norm_in=False,
         **kwargs,
     ):
         """Initialize the transformer layer.
@@ -1518,9 +1511,6 @@ class TransformerLayer(tf.keras.layers.Layer):
             is ignored because the layer routes to full attention.
         dropout : float
             Dropout rate for attention weights.
-        norm_in : bool
-            If True, apply RMSNorm to Q, K, and V before attention. This is
-            typically not needed when using ALiBi bias.
         **kwargs
             Additional keyword arguments passed to ``tf.keras.layers.Layer``.
         """
@@ -1531,7 +1521,7 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.radius = radius
         self.window_shift = window_shift
         self.dropout = dropout
-        self.norm_in = norm_in
+
         self.attn = WindowedMultiHeadAttention(
             window_size=window_size,
             radius=radius,
@@ -1541,15 +1531,7 @@ class TransformerLayer(tf.keras.layers.Layer):
             alibi_scale=alibi_scale,
             dropout=self.dropout,
         )
-        norm_cls = (
-            tf.keras.layers.RMSNormalization
-            if self.norm_in
-            else tf.keras.layers.Identity
-        )
-        self.qnorm = norm_cls()
-        self.knorm = norm_cls()
-        self.vnorm = norm_cls()
-        self.onorm = norm_cls()
+        self.lo = tf.keras.layers.RMSNormalization()
         self.mlp = tf.keras.Sequential([
             tf.keras.layers.Dense(4 * self.key_dim),
             SwiGLU(),
@@ -1558,12 +1540,11 @@ class TransformerLayer(tf.keras.layers.Layer):
 
     def build(self, query_shape, key_shape, value_shape):
         """Build all sub-layers."""
+        feat = query_shape[-1]
         self.attn.build(query_shape, value_shape, key_shape)
-        self.onorm.build((None, None, query_shape[-1]))
-        self.qnorm.build((None, None, query_shape[-1]))
-        self.knorm.build((None, None, key_shape[-1]))
-        self.vnorm.build((None, None, value_shape[-1]))
-        self.mlp.build((None, None, query_shape[-1]))
+        generic_shape = (None, None, feat)
+        self.lo.build(generic_shape)
+        self.mlp.build(generic_shape)
         super().build(query_shape)
 
     @tf.function
@@ -1581,26 +1562,26 @@ class TransformerLayer(tf.keras.layers.Layer):
         Parameters
         ----------
         query : tf.Tensor
-            ``(B, H, W, C)`` or ``(B, H, W, T, C)`` query tensor.
+            ``(B, H, W, C)`` query tensor.
         key : tf.Tensor
-            ``(B, H, W, C)`` or ``(B, H, W, T, C)`` key tensor.
+            ``(B, H, W, C)`` key tensor.
         value : tf.Tensor
-            ``(B, H, W, C)`` or ``(B, H, W, T, C)`` value tensor.
+            ``(B, H, W, C)`` value tensor.
         kv_nan_mask : tf.Tensor | None
             Boolean mask for NaN KV positions.
         lat, lon : tf.Tensor | None
             Latitude / longitude grids for ALiBi bias.
         """
         attn = self.attn(
-            query=self.qnorm(query),
-            key=self.knorm(key),
-            value=self.vnorm(value),
+            query=query,
+            key=key,
+            value=value,
             kv_nan_mask=kv_nan_mask,
             lat=lat,
             lon=lon,
         )
         attn_res = query + attn
-        out = self.onorm(attn_res)
+        out = self.lo(attn_res)
         out_shape = tf.shape(out)
         out_flat = tf.reshape(out, [out_shape[0], -1, out_shape[-1]])
         mlp_out = self.mlp(out_flat)
@@ -1618,7 +1599,6 @@ class TransformerLayer(tf.keras.layers.Layer):
             'radius': self.radius,
             'window_shift': self.window_shift,
             'dropout': self.dropout,
-            'norm_in': self.norm_in,
         })
         return config
 
@@ -1651,12 +1631,11 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         max_period_spatial=2,
         min_period_temporal=1,
         max_period_temporal=864000,
-        alibi_scale=1.0,
+        alibi_scale=0.0,
         window_size=None,
         radius=None,
         window_shift=0,
         dropout=0.0,
-        norm_in=False,
         **kwargs,
     ):
         """
@@ -1702,8 +1681,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             is ignored because the layer routes to full attention.
         dropout : float
             Dropout rate for attention weights.
-        norm_in : bool
-            Whether to apply RMS normalization to Q, K, V before attention.
         **kwargs
             Additional keyword arguments for the parent class.
         """
@@ -1726,7 +1703,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.alibi_scale = float(alibi_scale)
         self.use_alibi = self.alibi_scale > 0
         self.dropout = dropout
-        self.norm_in = norm_in
         self.eq = PatchEncoder(
             patch_size=self.patch_size, embed_dim=self.embed_dim
         )
@@ -1756,7 +1732,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             radius=self.radius,
             window_shift=self.window_shift,
             dropout=self.dropout,
-            norm_in=self.norm_in,
         )
         self.decoder = None
 
@@ -1915,7 +1890,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'radius': self.radius,
             'window_shift': self.window_shift,
             'dropout': self.dropout,
-            'norm_in': self.norm_in,
         })
         return config
 
