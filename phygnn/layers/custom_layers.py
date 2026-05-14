@@ -167,6 +167,7 @@ class FlexiblePadding(tf.keras.layers.Layer):
             )
         return tf.TensorShape(output_shape)
 
+    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Calls the padding routine
 
@@ -264,6 +265,7 @@ class PatchEncoder(tf.keras.layers.Layer):
         self.proj_layer.build(input_shape)
         super().build(input_shape)
 
+    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Embed inputs for attention blocks.
 
@@ -407,6 +409,7 @@ class PatchDecoder(tf.keras.layers.Layer):
         self.proj_layer.build(input_shape)
         super().build(input_shape)
 
+    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Decode token features back into the query feature space."""
         return self.proj_layer(x)
@@ -2161,6 +2164,7 @@ class ExpandDims(tf.keras.layers.Layer):
         super().__init__(**kwargs)
         self._axis = axis
 
+    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Calls the expand dims operation
 
@@ -2199,6 +2203,7 @@ class TileLayer(tf.keras.layers.Layer):
         self._multiples = tuple(int(value) for value in multiples)
         self._mult = tf.constant(self._multiples, tf.int32)
 
+    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Calls the tile operation
 
@@ -2581,6 +2586,7 @@ class SpatialExpansion(tf.keras.layers.Layer):
 
         return out
 
+    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Call the custom SpatialExpansion layer
 
@@ -2783,6 +2789,7 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
 
         return tf.stack(out, axis=3)
 
+    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Call the custom SpatioTemporalExpansion layer
 
@@ -2842,6 +2849,7 @@ class SkipConnection(tf.keras.layers.Layer):
         self._cache = None
         self._method = method
 
+    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Call the custom SkipConnection layer
 

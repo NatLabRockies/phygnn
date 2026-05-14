@@ -1,15 +1,15 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:
-    -   id: check-json
-    -   id: check-merge-conflict
-    -   id: check-symlinks
-    -   id: flake8
-    -   id: mixed-line-ending
-    -   id: pretty-format-json
-        args: [--autofix]
--   repo: https://github.com/pre-commit/mirrors-pylint
-    rev: v2.3.1
+      - id: check-json
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: mixed-line-ending
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.14
     hooks:
-    -   id: pylint
+      - id: ruff
+
