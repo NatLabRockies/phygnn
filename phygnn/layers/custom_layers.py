@@ -1008,16 +1008,12 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_height, kv_width, kv_dyn = self._get_spatial_shape(key)
 
         window_shift = min(self.window_shift, window_size - 1)
+        # This method is only called from the windowed path, meaning the tile
+        # fits within the spatial extent by construction.  Keep radius and
+        # tile_size as static Python ints so that tf.image.extract_patches
+        # (which requires static sizes) works with dynamic spatial shapes.
         if q_dyn or kv_dyn:
-            max_tile = tf.reduce_min([
-                query_height,
-                query_width,
-                kv_height,
-                kv_width,
-            ])
-            radius = tf.maximum(
-                tf.minimum(self.radius, (max_tile - window_size) // 2), 0
-            )
+            radius = self.radius
             tile_size = window_size + 2 * radius
         else:
             max_tile = min(query_height, query_width, kv_height, kv_width)
@@ -1319,6 +1315,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_nan_mask,
         lat,
         lon,
+        attention_mask=None,
+        return_attention_scores=False,
+        use_causal_mask=False,
+        bias=None,
     ):
         """Full attention path when the current call does not need windowing.
 
@@ -1332,8 +1332,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         k_flat = tf.reshape(key, dims)
         v_flat = tf.reshape(value, dims)
 
-        bias = None
-        if self.use_alibi and lat is not None:
+        if bias is None and self.use_alibi and lat is not None:
             bias = self._compute_full_alibi(lat, lon, batch_size)
 
         if kv_nan_mask is not None:
@@ -1351,9 +1350,15 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             query=q_flat,
             value=v_flat,
             key=k_flat,
+            attention_mask=attention_mask,
+            return_attention_scores=return_attention_scores,
             training=training,
+            use_causal_mask=use_causal_mask,
             bias=bias,
         )
+        if return_attention_scores:
+            out_tensor, scores = output
+            return tf.reshape(out_tensor, tf.shape(query)), scores
         return tf.reshape(output, tf.shape(query))
 
     def _window_attention_call(
@@ -1366,8 +1371,22 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         lat,
         lon,
         window_size,
+        return_attention_scores=False,
+        use_causal_mask=False,
+        bias=None,
     ):
-        """Execute the full windowed attention path."""
+        """Execute the full windowed attention path.
+
+        Note: a caller-provided ``bias`` is not supported in the windowed
+        path because decomposing a full-sequence bias tensor into per-window
+        tiles requires the same geometry as the KV patch extraction and is
+        not implemented.  Use ``lat``/``lon`` for ALiBi-style additive bias.
+        """
+        if bias is not None:
+            logger.warning(
+                'A caller-provided bias is not supported for windowed '
+                'attention and will be ignored. Use lat/lon for ALiBi bias.'
+            )
         geometry = self._get_window_geometry(query, key, window_size)
 
         q_win = self._partition_windows(query, geometry)
@@ -1388,10 +1407,17 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             value=v_win,
             key=k_win,
             attention_mask=kv_mask,
+            return_attention_scores=return_attention_scores,
             training=training,
+            use_causal_mask=use_causal_mask,
             bias=bias_win,
         )
 
+        if return_attention_scores:
+            out_tensor, scores = output
+            return self._reassemble_windows(
+                out_tensor, query, geometry
+            ), scores
         return self._reassemble_windows(output, query, geometry)
 
     @tf.function
@@ -1420,14 +1446,25 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         key : tf.Tensor | None
             ``(batch, H_v, W_v, features)``. Defaults to *value*.
         bias : tf.Tensor | None
-            Additive pre-softmax bias ``(batch, heads, n_q, n_v)`` or
-            None.
+            Additive pre-softmax bias ``(batch, heads, n_q, n_v)`` or None.
+            When provided, overrides the internally-computed ALiBi / NaN bias
+            in the full-attention path.  Not supported for the windowed path
+            (a warning is logged and the value is ignored); use ``lat``/``lon``
+            for ALiBi bias with windowed attention.
         kv_nan_mask : tf.Tensor | None
             Boolean ``(B, H_v, W_v)`` where True marks NaN KV positions.
         lat, lon : tf.Tensor | None
             ``(B, H, W, 1)`` grids for per-window ALiBi bias.
-        attention_mask, return_attention_scores, use_causal_mask
-            Unused; kept for Keras API compatibility.
+        attention_mask : tf.Tensor | None
+            Boolean or float mask forwarded to the full-attention path.
+            Not supported for the windowed path (the layer builds its own
+            per-window mask from ``kv_nan_mask``).
+        return_attention_scores : bool
+            If True the return value is ``(output, attention_scores)``.
+            For the windowed path, ``attention_scores`` contains the
+            concatenated per-window scores.
+        use_causal_mask : bool
+            Forwarded to the underlying ``MultiHeadAttention`` call.
         training : bool | None
             Training flag forwarded to dropout.
 
@@ -1449,6 +1486,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                 kv_nan_mask,
                 lat,
                 lon,
+                attention_mask=attention_mask,
+                return_attention_scores=return_attention_scores,
+                use_causal_mask=use_causal_mask,
+                bias=bias,
             )
         return self._window_attention_call(
             query,
@@ -1459,6 +1500,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             lat,
             lon,
             window_size,
+            return_attention_scores=return_attention_scores,
+            use_causal_mask=use_causal_mask,
+            bias=bias,
         )
 
     def get_config(self):
@@ -1535,19 +1579,18 @@ class TransformerLayer(tf.keras.layers.Layer):
             dropout=self.dropout,
         )
         self.lo = tf.keras.layers.RMSNormalization()
-        self.mlp = tf.keras.Sequential([
-            tf.keras.layers.Dense(4 * self.key_dim),
-            SwiGLU(),
-            tf.keras.layers.Dense(self.key_dim),
-        ])
+        self.mlp = None  # built in build() once query feature dim is known
 
     def build(self, query_shape, key_shape, value_shape):
         """Build all sub-layers."""
-        feat = query_shape[-1]
         self.attn.build(query_shape, value_shape, key_shape)
-        generic_shape = (None, None, feat)
-        self.lo.build(generic_shape)
-        self.mlp.build(generic_shape)
+        self.lo.build((None, None, query_shape[-1]))
+        self.mlp = tf.keras.Sequential([
+            tf.keras.layers.Dense(4 * query_shape[-1]),
+            SwiGLU(),
+            tf.keras.layers.Dense(query_shape[-1]),
+        ])
+        self.mlp.build((None, None, query_shape[-1]))
         super().build(query_shape)
 
     @tf.function
@@ -1816,8 +1859,23 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         )
         return tf.reshape(tf.transpose(tensor, [0, 3, 1, 2, 4]), dims)
 
-    def _pad_to_patch_multiple(self, tensor):
-        """Pad patch axes so tokenization preserves the full query domain."""
+    def _pad_to_patch_multiple(
+        self, tensor, mode='CONSTANT', constant_values=0
+    ):
+        """Pad patch axes so tokenization preserves the full query domain.
+
+        Parameters
+        ----------
+        tensor : tf.Tensor | None
+            Tensor to pad.  Returned unchanged when ``None`` or when
+            ``patch_size == 1``.
+        mode : str
+            Padding mode forwarded to ``tf.pad``.  Use ``'CONSTANT'`` for
+            scalar fill values and ``'SYMMETRIC'`` for edge-replication
+            (suitable for coordinate grids).
+        constant_values : float
+            Fill value used only when ``mode='CONSTANT'``.
+        """
         if tensor is None or self.patch_size == 1:
             return tensor
 
@@ -1829,7 +1887,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             ) % self.patch_size
             paddings.append([0, pad])
         paddings.append([0, 0])
-        return tf.pad(tensor, paddings)
+        if mode == 'CONSTANT':
+            return tf.pad(tensor, paddings, constant_values=constant_values)
+        return tf.pad(tensor, paddings, mode=mode)
 
     def _prepare_attention_inputs(self, x, hi_res_feature, lat, lon, time):
         """Prepare encoded Q/K/V inputs and optional position features."""
@@ -1861,7 +1921,16 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         """
         self._validate_build_shapes(x_shape, exo_data_shape)
         value_shape = hi_res_feature_shape or x_shape
+        # Transformer sub-layers always operate on 4D (B, H, W, C) tensors
+        # (time is merged into batch for 5D inputs before the attention call).
         embed_shape = (None, None, None, self.embed_dim)
+        # The decoder receives the full-rank output: 4D for rank-4 inputs,
+        # 5D (B, H, W, T, C) for rank-5 inputs (time is unmerged first).
+        decoder_shape = (
+            (None, None, None, None, self.embed_dim)
+            if self.rank == 5
+            else embed_shape
+        )
         self.decoder = PatchDecoder(
             patch_size=self.patch_size, output_dim=x_shape[-1]
         )
@@ -1871,7 +1940,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         if self.pe is not None:
             self.pe.build(x_shape)
         self.tl.build(embed_shape, embed_shape, embed_shape)
-        self.decoder.build(embed_shape)
+        self.decoder.build(decoder_shape)
         super().build(x_shape)
 
     def get_config(self):
@@ -1955,9 +2024,18 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             raise ValueError(msg)
 
         original_shape = tf.shape(x)
-        x = self._pad_to_patch_multiple(x)
-        hi_res_feature = self._pad_to_patch_multiple(hi_res_feature)
-        exo_data = self._pad_to_patch_multiple(exo_data)
+        # Pad with edge-replicated values so that edge tokens' query vectors
+        # reflect real boundary features rather than zeros.
+        x = self._pad_to_patch_multiple(x, mode='SYMMETRIC')
+        # Pad with NaN so that edge tokens are correctly treated as missing
+        # by prepare_sparse_tensor(), which uses is_nan() for validity.
+        hi_res_feature = self._pad_to_patch_multiple(
+            hi_res_feature, constant_values=float('nan')
+        )
+        # Pad with symmetric (edge-replicated) coordinates so that pooled
+        # lat/lon/time at edge tokens reflects real boundary values rather
+        # than zeros.
+        exo_data = self._pad_to_patch_multiple(exo_data, mode='SYMMETRIC')
 
         lat, lon, time = self._split_exo_inputs(exo_data)
         q, k, v, nan_mask, lat, lon = self._prepare_attention_inputs(
@@ -2092,7 +2170,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         tf.Tensor
             Output tensor after all layers plus skip connection.
         """
-        if hi_res_features is None:
+        if hi_res_features is None or len(self.layers) == 0:
             return x
 
         x_in = x
