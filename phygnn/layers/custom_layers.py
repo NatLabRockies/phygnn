@@ -2579,14 +2579,13 @@ class SpatialExpansion(tf.keras.layers.Layer):
 
         else:
             s_expand_shape = tf.stack([
-                x.shape[1] * self._spatial_mult,
-                x.shape[2] * self._spatial_mult,
+                tf.shape(x)[1] * self._spatial_mult,
+                tf.shape(x)[2] * self._spatial_mult,
             ])
             out = tf.image.resize(x, s_expand_shape, method=self._spatial_meth)
 
         return out
 
-    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Call the custom SpatialExpansion layer
 
@@ -2730,8 +2729,8 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
 
         else:
             t_expand_shape = tf.stack([
-                x.shape[2],
-                x.shape[3] * self._temporal_mult,
+                tf.shape(x)[2],
+                tf.shape(x)[3] * self._temporal_mult,
             ])
             out = []
             for x_unstack in tf.unstack(x, axis=1):
@@ -2774,8 +2773,8 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
 
         else:
             s_expand_shape = tf.stack([
-                x.shape[1] * self._spatial_mult,
-                x.shape[2] * self._spatial_mult,
+                tf.shape(x)[1] * self._spatial_mult,
+                tf.shape(x)[2] * self._spatial_mult,
             ])
             out = []
             for x_unstack in tf.unstack(x, axis=3):
@@ -2789,7 +2788,6 @@ class SpatioTemporalExpansion(tf.keras.layers.Layer):
 
         return tf.stack(out, axis=3)
 
-    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Call the custom SpatioTemporalExpansion layer
 
@@ -2849,7 +2847,6 @@ class SkipConnection(tf.keras.layers.Layer):
         self._cache = None
         self._method = method
 
-    @tf.function(reduce_retracing=True)
     def call(self, x):
         """Call the custom SkipConnection layer
 
