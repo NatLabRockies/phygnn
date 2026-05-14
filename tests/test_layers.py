@@ -752,24 +752,14 @@ def test_tokenize_encode_lat_lon_encoding_values():
     enc = pos_enc.encode_lat_lon(
         x, lat, lon, min_period=min_period, max_period=max_period
     )
-    expected = tf.concat(
-        [
-            PositionEncoder._freq_encode(
-                lat,
-                d=embed_dim // 2,
-                min_period=min_period,
-                max_period=max_period,
-            ),
-            PositionEncoder._freq_encode(
-                lon,
-                d=embed_dim // 2,
-                min_period=min_period,
-                max_period=max_period,
-            ),
-        ],
-        axis=-1,
+    lat_enc = PositionEncoder._freq_encode(
+        lat, d=embed_dim // 2, min_period=min_period, max_period=max_period
     )
-    expected = tf.reshape(expected, (1, 2, 2, embed_dim))
+    lon_enc = PositionEncoder._freq_encode(
+        lon, d=embed_dim // 2, min_period=min_period, max_period=max_period
+    )
+    stacked = tf.stack([lat_enc, lon_enc], axis=-1)
+    expected = tf.reshape(stacked, (1, 2, 2, embed_dim))
     np.testing.assert_allclose(enc.numpy(), expected.numpy(), atol=1e-6)
 
     x_enc = pos_enc(x, lat=lat, lon=lon)
