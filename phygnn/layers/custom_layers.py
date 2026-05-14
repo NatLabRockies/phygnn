@@ -562,7 +562,10 @@ class PositionEncoder(tf.keras.layers.Layer):
             min_period=min_period,
             max_period=max_period,
         )
-        return tf.concat([lat_enc, lon_enc], axis=-1)
+        stacked = tf.stack([lat_enc, lon_enc], axis=-1)
+        return tf.reshape(
+            stacked, tf.concat([tf.shape(stacked)[:-2], [-1]], axis=0)
+        )
 
     def encode_time(self, x, time, min_period, max_period):
         """Sinusoidal positional encoding for time.
@@ -2024,18 +2027,17 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             raise ValueError(msg)
 
         original_shape = tf.shape(x)
-        # Pad with edge-replicated values so that edge tokens' query vectors
+        # Pad with reflected values so that edge tokens' query vectors
         # reflect real boundary features rather than zeros.
-        x = self._pad_to_patch_multiple(x, mode='SYMMETRIC')
+        x = self._pad_to_patch_multiple(x, mode='REFLECT')
         # Pad with NaN so that edge tokens are correctly treated as missing
         # by prepare_sparse_tensor(), which uses is_nan() for validity.
         hi_res_feature = self._pad_to_patch_multiple(
             hi_res_feature, constant_values=float('nan')
         )
-        # Pad with symmetric (edge-replicated) coordinates so that pooled
-        # lat/lon/time at edge tokens reflects real boundary values rather
-        # than zeros.
-        exo_data = self._pad_to_patch_multiple(exo_data, mode='SYMMETRIC')
+        # Pad with reflected coordinates so that pooled lat/lon/time at edge
+        # tokens reflects real boundary values rather than zeros.
+        exo_data = self._pad_to_patch_multiple(exo_data, mode='REFLECT')
 
         lat, lon, time = self._split_exo_inputs(exo_data)
         q, k, v, nan_mask, lat, lon = self._prepare_attention_inputs(
