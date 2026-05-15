@@ -60,6 +60,7 @@ class WindowGeometry:
     n_windows: Union[int, tf.Tensor]
     tile_tokens: Union[int, tf.Tensor]
     pad_spec: tf.Tensor
+    time_steps: Union[int, tf.Tensor] = 1
 
 
 def _get_keras_mask(x):
@@ -891,6 +892,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         num_heads=1,
         key_dim=64,
         alibi_scale=0.0,
+        alibi_scale_time=1e-6,
         **kwargs,
     ):
         super().__init__(num_heads=num_heads, key_dim=key_dim, **kwargs)
@@ -898,6 +900,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         self.radius = radius
         self.window_shift = int(window_shift)
         self.alibi_scale = float(alibi_scale)
+        self.alibi_scale_time = float(alibi_scale_time)
         self.use_alibi = self.alibi_scale > 0
         self.head_slopes = None
 
@@ -999,7 +1002,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         )
         return window_size, use_full_attention
 
-    def _get_window_geometry(self, query, key, window_size):
+    def _get_window_geometry(self, query, key, window_size, time_steps=1):
         """Get the full geometry for one windowed-attention call.
 
         This applies shifted padded-window geometry for the multi-window
@@ -1079,49 +1082,68 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             n_windows=n_windows,
             tile_tokens=tile_tokens,
             pad_spec=pad_spec,
+            time_steps=time_steps,
         )
 
     @staticmethod
-    def _partition_windows(tensor_4d, geometry):
-        """Reshape ``(B, H, W, C)`` into ``(B*n_win, ws*ws, C)`` windows.
+    def _partition_windows(tensor, geometry):
+        """Reshape ``(B, H, W, C)`` or ``(B, H, W, T, C)`` into windows.
 
-        Pads spatial dimensions to a multiple of ``window_size``, then
-        reshapes into non-overlapping tiles.
+        For 4D input produces ``(B*n_win, ws*ws, C)``. For 5D produces
+        ``(B*n_win, ws*ws*T, C)`` with spatial positions as the outer index
+        (token ordering: spatial outer, time inner).  Pads spatial dimensions
+        to a multiple of ``window_size``.
         """
-        c = tf.shape(tensor_4d)[-1]
+        if len(tensor.shape) == 4:
+            tensor = tensor[:, :, :, tf.newaxis, :]  # treat as T=1
+        t_steps = tf.shape(tensor)[3]
+        c = tf.shape(tensor)[-1]
+        ws = geometry.window_size
         padding = [
             [0, 0],
             [geometry.query_top_padding, geometry.query_height_padding],
             [geometry.query_left_padding, geometry.query_width_padding],
             [0, 0],
+            [0, 0],
         ]
-        t = tf.pad(tensor_4d, padding)
-        dims = [
-            geometry.batch_size,
-            geometry.n_window_rows,
-            geometry.window_size,
-            geometry.n_window_cols,
-            geometry.window_size,
-            c,
-        ]
-        t = tf.transpose(tf.reshape(t, dims), [0, 1, 3, 2, 4, 5])
-        dims = [
-            geometry.batch_size * geometry.n_windows,
-            geometry.window_size * geometry.window_size,
-            c,
-        ]
-        return tf.reshape(t, dims)
+        t = tf.pad(tensor, padding)
+        t = tf.transpose(
+            tf.reshape(
+                t,
+                [
+                    geometry.batch_size,
+                    geometry.n_window_rows,
+                    ws,
+                    geometry.n_window_cols,
+                    ws,
+                    t_steps,
+                    c,
+                ],
+            ),
+            [0, 1, 3, 2, 4, 5, 6],
+        )
+        return tf.reshape(
+            t, [geometry.batch_size * geometry.n_windows, ws * ws * t_steps, c]
+        )
 
     @staticmethod
-    def _extract_overlap_patches(tensor_4d, geometry):
-        """Pad ``(B, H, W, C)`` and extract overlapping patches.
+    def _extract_overlap_patches(tensor, geometry):
+        """Pad and extract overlapping patches.
+
+        Handles 4D ``(B, H, W, C)`` and 5D ``(B, H, W, T, C)`` inputs.
 
         Returns
         -------
         tf.Tensor
-            ``(B * n_windows, tile_tokens, C)``
+            4D: ``(B * n_windows, tile_tokens, C)``.
+            5D: ``(B * n_windows, tile_tokens * T, C)`` with spatial outer.
         """
-        c = tf.shape(tensor_4d)[-1]
+        b, h, w = tf.shape(tensor)[0], tf.shape(tensor)[1], tf.shape(tensor)[2]
+        t_steps = tf.shape(tensor)[3] if len(tensor.shape) == 5 else 1
+        c = tf.shape(tensor)[-1]
+        # Fold T into channel dim so extract_patches (4D only) can run, then
+        # reshape the last dim back out.  For 4D inputs t_steps=1 is a no-op.
+        tensor_4d = tf.reshape(tensor, [b, h, w, t_steps * c])
         padded = tf.pad(tensor_4d, geometry.pad_spec)
         patches = tf.image.extract_patches(
             padded,
@@ -1130,12 +1152,14 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             rates=[1, 1, 1, 1],
             padding='VALID',
         )
-        dims = [
-            geometry.batch_size * geometry.n_windows,
-            geometry.tile_tokens,
-            c,
-        ]
-        return tf.reshape(patches, dims)
+        return tf.reshape(
+            patches,
+            [
+                geometry.batch_size * geometry.n_windows,
+                geometry.tile_tokens * t_steps,
+                c,
+            ],
+        )
 
     @staticmethod
     def _build_window_mask(kv_nan_mask, dtype, geometry):
@@ -1144,16 +1168,26 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         Combines padding validity, optional NaN positions from
         *kv_nan_mask*, and the exact local neighborhood inside each K/V tile.
 
+        For 4D Q/KV, *kv_nan_mask* is ``(B, H_kv, W_kv)`` and the returned
+        mask has shape ``(B*n_windows, ws*ws, tile_tokens)``.
+        For 5D Q/KV, *kv_nan_mask* is ``(B, H_kv, W_kv, T)`` and the
+        returned mask has shape ``(B*n_windows, ws*ws*T, tile_tokens*T)``.
+
         Returns
         -------
         tf.Tensor
-            Bool ``(B * n_windows, ws*ws, tile_size*tile_size)``.
+            Bool attention mask.
         """
+        T = geometry.time_steps  # Python int for 4D, tf.Tensor for 5D
+
+        # --- NaN / padding validity -----------------------------------------
         if kv_nan_mask is not None:
-            kv_valid = tf.expand_dims(tf.cast(~kv_nan_mask, dtype), -1)
+            kv_valid = tf.cast(~kv_nan_mask, dtype)
+            if len(kv_valid.shape) == 3:  # 4D: (B, H, W) → add channel dim
+                kv_valid = kv_valid[..., tf.newaxis]
         else:
             kv_valid = tf.ones(
-                tf.stack([1, geometry.kv_height, geometry.kv_width, 1]),
+                tf.stack([1, geometry.kv_height, geometry.kv_width, T]),
                 dtype=dtype,
             )
 
@@ -1172,15 +1206,20 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                     geometry.batch_size,
                     geometry.n_window_rows,
                     geometry.n_window_cols,
-                    geometry.tile_tokens,
+                    geometry.tile_tokens * T,
                 ],
             )
-        dims = [
-            geometry.batch_size * geometry.n_windows,
-            1,
-            geometry.tile_tokens,
-        ]
-        kv_mask = tf.reshape(valid_patches, dims)
+
+        kv_mask = tf.reshape(
+            valid_patches,
+            [
+                geometry.batch_size * geometry.n_windows,
+                1,
+                geometry.tile_tokens * T,
+            ],
+        )
+
+        # --- Spatial local-neighborhood mask ---------------------------------
         window_rows = tf.repeat(
             tf.range(geometry.window_size), geometry.window_size
         )
@@ -1198,7 +1237,17 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             tile_cols[None, :] >= window_cols[:, None],
             tile_cols[None, :] <= (window_cols[:, None] + 2 * geometry.radius),
         )
-        local_mask = tf.logical_and(row_mask, col_mask)[None, :, :]
+        local_mask_4d = tf.logical_and(
+            row_mask, col_mask
+        )  # (ws*ws, tile_tokens)
+
+        # Expand each spatial pair to a (T × T) block.  For 4D (T=1) this is a
+        # no-op.  For 5D, all time steps cross-attend within the spatial
+        # neighborhood; causal masking can be AND-ed on top if needed.
+        local_mask = tf.repeat(
+            tf.repeat(local_mask_4d, T, axis=0), T, axis=1
+        )  # (ws*ws*T, tile_tokens*T)
+        local_mask = local_mask[None, :, :]
         return tf.logical_and(tf.cast(kv_mask, tf.bool), local_mask)
 
     def _haversine_bias(self, lat_q, lon_q, lat_v, lon_v):
@@ -1225,45 +1274,55 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             + tf.cos(lat_q_rad) * tf.cos(lat_v_rad) * tf.sin(dlon / 2) ** 2
         )
         a = tf.clip_by_value(a, 0.0, 1.0)
-        distance = 2 * 6.371e6 * tf.asin(tf.sqrt(a))
+        distance = 2 * 6.371e6 * tf.asin(tf.sqrt(a))  # distance in meters
         bias = -(distance**2) * self.alibi_scale
         bias = tf.expand_dims(bias, axis=1)
         return bias * self.head_slopes
 
-    def _compute_window_alibi(
-        self,
-        lat,
-        lon,
-        geometry,
-    ):
-        """Compute per-window ALiBi bias from lat/lon coordinates.
+    def _compute_window_alibi(self, lat, lon, geometry, time=None):
+        """Compute per-window ALiBi bias from lat/lon (and optionally time).
 
         Partitions lat/lon into Q windows, extracts KV lat/lon patches,
         computes haversine distance, and scales by head slopes.
+        When *time* is provided an additional temporal term is added:
+        ``-|t_q - t_kv|^2 * alibi_scale_time``, also scaled by head slopes.
 
         Returns
         -------
         tf.Tensor
-            ``(B * n_windows, num_heads, ws*ws, tile_tokens)``
+            ``(B * n_windows, num_heads, ws*ws[*T], tile_tokens[*T])``
         """
-        # Q lat/lon windows
         q_lat_win = self._partition_windows(lat, geometry)
         q_lon_win = self._partition_windows(lon, geometry)
-
-        # KV lat/lon patches - (B*n_win, tile_tokens, 1)
-        kv_lat_win = self._extract_overlap_patches(lat, geometry)
-        kv_lon_win = self._extract_overlap_patches(lon, geometry)
-
-        # Transpose KV to (B*n_win, 1, tile_tokens) for broadcasting
-        kv_lat_win = tf.transpose(kv_lat_win, [0, 2, 1])
-        kv_lon_win = tf.transpose(kv_lon_win, [0, 2, 1])
-
-        return self._haversine_bias(
+        kv_lat_win = tf.transpose(
+            self._extract_overlap_patches(lat, geometry), [0, 2, 1]
+        )
+        kv_lon_win = tf.transpose(
+            self._extract_overlap_patches(lon, geometry), [0, 2, 1]
+        )
+        bias = self._haversine_bias(
             q_lat_win, q_lon_win, kv_lat_win, kv_lon_win
         )
 
-    def _compute_full_alibi(self, lat, lon, batch_size):
-        """Compute full-attention ALiBi bias from lat/lon coordinates.
+        if time is not None and self.alibi_scale_time > 0:
+            # q_time: (B*n_win, ws*ws*T, 1)
+            q_time = self._partition_windows(time, geometry)
+            # kv_time: (B*n_win, 1, tile_tokens*T)
+            kv_time = tf.transpose(
+                self._extract_overlap_patches(time, geometry), [0, 2, 1]
+            )
+            # temporal_diffs: (B*n_win, ws*ws*T, tile_tokens*T)
+            temporal_diffs = -((q_time - kv_time) ** 2) * self.alibi_scale_time
+            # add head dim and scale:
+            # (B*n_win, num_heads, ws*ws*T, tile_tokens*T)
+            bias = (  # noqa: PLR6104
+                bias + self.head_slopes * temporal_diffs[:, tf.newaxis, :, :]
+            )
+
+        return bias
+
+    def _compute_full_alibi(self, lat, lon, batch_size, time=None):
+        """Compute full-attention ALiBi bias from lat/lon (and optionally time)
 
         Returns
         -------
@@ -1276,35 +1335,61 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         dims = [batch_size, 1, -1]
         lat_v = tf.reshape(lat, dims)
         lon_v = tf.reshape(lon, dims)
+        bias = self._haversine_bias(lat_q, lon_q, lat_v, lon_v)
 
-        return self._haversine_bias(lat_q, lon_q, lat_v, lon_v)
+        if time is not None and self.alibi_scale_time > 0:
+            t_q = tf.reshape(time, [batch_size, -1, 1])
+            t_kv = tf.reshape(time, [batch_size, 1, -1])
+            temporal_diffs = -((t_q - t_kv) ** 2) * self.alibi_scale_time
+            bias = (  # noqa: PLR6104
+                bias + self.head_slopes * temporal_diffs[:, tf.newaxis, :, :]
+            )
+
+        return bias
 
     @staticmethod
     def _reassemble_windows(output, query, geometry):
-        """Reshape windowed output back to ``(B, n_q, C)`` sequence."""
+        """Reshape windowed output back to the original spatial layout.
+
+        Handles 4D ``(B, H, W, C)`` and 5D ``(B, H, W, T, C)`` query shapes.
+        For 4D queries, T is treated as 1 and squeezed via the final reshape to
+        ``tf.shape(query)``.
+        """
         feat_out = tf.shape(output)[-1]
-        dims = [
-            geometry.batch_size,
-            geometry.n_window_rows,
-            geometry.n_window_cols,
-            geometry.window_size,
-            geometry.window_size,
-            feat_out,
-        ]
-        output = tf.transpose(tf.reshape(output, dims), [0, 1, 3, 2, 4, 5])
-        dims = [
-            geometry.batch_size,
-            geometry.padded_query_height,
-            geometry.padded_query_width,
-            feat_out,
-        ]
-        output = tf.reshape(output, dims)
+        t_steps = tf.shape(query)[3] if len(query.shape) == 5 else 1
+        ws = geometry.window_size
+        output = tf.transpose(
+            tf.reshape(
+                output,
+                [
+                    geometry.batch_size,
+                    geometry.n_window_rows,
+                    geometry.n_window_cols,
+                    ws,
+                    ws,
+                    t_steps,
+                    feat_out,
+                ],
+            ),
+            [0, 1, 3, 2, 4, 5, 6],
+        )
+        output = tf.reshape(
+            output,
+            [
+                geometry.batch_size,
+                geometry.padded_query_height,
+                geometry.padded_query_width,
+                t_steps,
+                feat_out,
+            ],
+        )
+        top = geometry.query_top_padding
+        left = geometry.query_left_padding
         output = output[
             :,
-            geometry.query_top_padding : geometry.query_top_padding
-            + geometry.query_height,
-            geometry.query_left_padding : geometry.query_left_padding
-            + geometry.query_width,
+            top : top + geometry.query_height,
+            left : left + geometry.query_width,
+            :,
             :,
         ]
         return tf.reshape(output, tf.shape(query))
@@ -1318,6 +1403,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_nan_mask,
         lat,
         lon,
+        time=None,
         attention_mask=None,
         return_attention_scores=False,
         use_causal_mask=False,
@@ -1336,7 +1422,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         v_flat = tf.reshape(value, dims)
 
         if bias is None and self.use_alibi and lat is not None:
-            bias = self._compute_full_alibi(lat, lon, batch_size)
+            bias = self._compute_full_alibi(lat, lon, batch_size, time=time)
 
         if kv_nan_mask is not None:
             nan_flat = tf.reshape(kv_nan_mask, [batch_size, 1, 1, -1])
@@ -1374,6 +1460,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         lat,
         lon,
         window_size,
+        time=None,
         return_attention_scores=False,
         use_causal_mask=False,
         bias=None,
@@ -1390,7 +1477,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                 'A caller-provided bias is not supported for windowed '
                 'attention and will be ignored. Use lat/lon for ALiBi bias.'
             )
-        geometry = self._get_window_geometry(query, key, window_size)
+        time_steps = tf.shape(query)[3] if len(query.shape) == 5 else 1
+        geometry = self._get_window_geometry(
+            query, key, window_size, time_steps=time_steps
+        )
 
         q_win = self._partition_windows(query, geometry)
         k_win = self._extract_overlap_patches(key, geometry)
@@ -1403,7 +1493,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 
         bias_win = None
         if self.use_alibi and lat is not None:
-            bias_win = self._compute_window_alibi(lat, lon, geometry)
+            bias_win = self._compute_window_alibi(
+                lat, lon, geometry, time=time
+            )
 
         output = super().call(
             query=q_win,
@@ -1437,6 +1529,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_nan_mask=None,
         lat=None,
         lon=None,
+        time=None,
     ):
         """Run windowed attention.
 
@@ -1489,6 +1582,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                 kv_nan_mask,
                 lat,
                 lon,
+                time=time,
                 attention_mask=attention_mask,
                 return_attention_scores=return_attention_scores,
                 use_causal_mask=use_causal_mask,
@@ -1503,6 +1597,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             lat,
             lon,
             window_size,
+            time=time,
             return_attention_scores=return_attention_scores,
             use_causal_mask=use_causal_mask,
             bias=bias,
@@ -1516,6 +1611,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             'radius': self.radius,
             'window_shift': self.window_shift,
             'alibi_scale': self.alibi_scale,
+            'alibi_scale_time': self.alibi_scale_time,
         })
         return config
 
@@ -1605,6 +1701,7 @@ class TransformerLayer(tf.keras.layers.Layer):
         kv_nan_mask=None,
         lat=None,
         lon=None,
+        time=None,
     ):
         """Call transformer layer with multi-head attention output.
 
@@ -1620,6 +1717,8 @@ class TransformerLayer(tf.keras.layers.Layer):
             Boolean mask for NaN KV positions.
         lat, lon : tf.Tensor | None
             Latitude / longitude grids for ALiBi bias.
+        time : tf.Tensor | None
+            Time coordinate grid for temporal ALiBi bias.
         """
         attn = self.attn(
             query=query,
@@ -1628,6 +1727,7 @@ class TransformerLayer(tf.keras.layers.Layer):
             kv_nan_mask=kv_nan_mask,
             lat=lat,
             lon=lon,
+            time=time,
         )
         attn_res = query + attn
         out = self.lo(attn_res)
@@ -1849,19 +1949,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         )
         return lat, lon, time
 
-    @staticmethod
-    def _merge_time_tensor(tensor, batch_time):
-        """Merge a 5D ``(B, H, W, T, C)`` tensor into ``(B*T, H, W, C)``."""
-        dims = tf.concat(
-            [
-                tf.reshape(batch_time, [1]),
-                tf.shape(tensor)[1:3],
-                tf.shape(tensor)[4:5],
-            ],
-            axis=0,
-        )
-        return tf.reshape(tf.transpose(tensor, [0, 3, 1, 2, 4]), dims)
-
     def _pad_to_patch_multiple(
         self, tensor, mode='CONSTANT', constant_values=0
     ):
@@ -1908,7 +1995,15 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             q = q + self.pe(x, lat=lat, lon=lon, time=time)  # noqa: PLR6104
             k = k + self.pe(hr_clean, lat=lat, lon=lon, time=time)  # noqa: PLR6104
 
-        return q, k, v, nan_mask, attn_lat, attn_lon
+        attn_time = None
+        if time is not None:
+            attn_time = (
+                self.ek.avg_pool(time)
+                if self.ek.avg_pool is not None
+                else time
+            )
+
+        return q, k, v, nan_mask, attn_lat, attn_lon, attn_time
 
     def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
         """Build the layer based on an input shape.
@@ -1924,16 +2019,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         """
         self._validate_build_shapes(x_shape, exo_data_shape)
         value_shape = hi_res_feature_shape or x_shape
-        # Transformer sub-layers always operate on 4D (B, H, W, C) tensors
-        # (time is merged into batch for 5D inputs before the attention call).
-        embed_shape = (None, None, None, self.embed_dim)
-        # The decoder receives the full-rank output: 4D for rank-4 inputs,
-        # 5D (B, H, W, T, C) for rank-5 inputs (time is unmerged first).
-        decoder_shape = (
-            (None, None, None, None, self.embed_dim)
-            if self.rank == 5
-            else embed_shape
-        )
+        embed_shape = (None,) * (self.rank - 1) + (self.embed_dim,)
+        decoder_shape = embed_shape
         self.decoder = PatchDecoder(
             patch_size=self.patch_size, output_dim=x_shape[-1]
         )
@@ -1967,32 +2054,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'dropout': self.dropout,
         })
         return config
-
-    @staticmethod
-    def _merge_time_into_batch(q, k, v, nan_mask, lat=None, lon=None):
-        """Merge the time axis into the batch axis for 5D attention.
-
-        Converts 5D tensors from ``(B, H, W, T, C)`` to ``(B*T, H, W, C)``
-        and applies the same transformation to the NaN mask and optional
-        latitude / longitude tensors.
-        """
-        batch_size = tf.shape(q)[0]
-        time_steps = tf.shape(q)[3]
-        bt = batch_size * time_steps
-        q = Sup3rTransformerLayer._merge_time_tensor(q, bt)
-        k = Sup3rTransformerLayer._merge_time_tensor(k, bt)
-        v = Sup3rTransformerLayer._merge_time_tensor(v, bt)
-        nan_mask = tf.squeeze(
-            Sup3rTransformerLayer._merge_time_tensor(
-                nan_mask[..., tf.newaxis], bt
-            ),
-            axis=-1,
-        )
-        if lat is not None:
-            lat = Sup3rTransformerLayer._merge_time_tensor(lat, bt)
-            lon = Sup3rTransformerLayer._merge_time_tensor(lon, bt)
-
-        return q, k, v, nan_mask, lat, lon, batch_size, time_steps
 
     @tf.function
     def call(self, x, hi_res_feature=None, exo_data=None):
@@ -2040,27 +2101,19 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         exo_data = self._pad_to_patch_multiple(exo_data, mode='REFLECT')
 
         lat, lon, time = self._split_exo_inputs(exo_data)
-        q, k, v, nan_mask, lat, lon = self._prepare_attention_inputs(
-            x, hi_res_feature, lat, lon, time
+        q, k, v, nan_mask, attn_lat, attn_lon, attn_time = (
+            self._prepare_attention_inputs(x, hi_res_feature, lat, lon, time)
         )
-
-        batch_size = None
-        time_steps = None
-        if self.rank == 5:
-            out = self._merge_time_into_batch(q, k, v, nan_mask, lat, lon)
-            q, k, v, nan_mask, lat, lon, batch_size, time_steps = out
 
         out = self.tl(
-            query=q, key=k, value=v, kv_nan_mask=nan_mask, lat=lat, lon=lon
+            query=q,
+            key=k,
+            value=v,
+            kv_nan_mask=nan_mask,
+            lat=attn_lat,
+            lon=attn_lon,
+            time=attn_time,
         )
-
-        if self.rank == 5:
-            # Unmerge: (B*T, H, W, C) → (B, T, H, W, C) → (B, H, W, T, C)
-            dims = tf.concat(
-                [tf.stack([batch_size, time_steps]), tf.shape(out)[1:]], axis=0
-            )
-            out = tf.reshape(out, dims)
-            out = tf.transpose(out, [0, 2, 3, 1, 4])
 
         out = self.decoder(out)
 

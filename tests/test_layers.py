@@ -27,6 +27,7 @@ from phygnn.layers.custom_layers import (
     Sup3rTransformerLayer,
     TileLayer,
     UnitConversion,
+    WindowedMultiHeadAttention,
 )
 from phygnn.layers.handlers import HiddenLayers, Layers
 
@@ -1121,3 +1122,32 @@ def test_recursive_hidden_layers_init():
 
     assert tf.reduce_any(tf.math.is_nan(y))
     assert not tf.reduce_any(tf.math.is_nan(out))
+
+
+def test_5d_single_time_step_matches_4d():
+    """5D windowed attention with T=1 should numerically match 4D.
+
+    Both paths produce the same (B*n_win, ws*ws, C) inner tokens fed to
+    the shared Keras MHA projection, so the outputs must be identical.
+    """
+    tf.random.set_seed(42)
+    # window_size=2, radius=0: small, deterministic geometry
+    layer = WindowedMultiHeadAttention(
+        window_size=2, radius=0, num_heads=1, key_dim=4
+    )
+
+    B, H, W, C = 1, 4, 4, 8
+    q4 = tf.random.normal((B, H, W, C), seed=42)
+    kv4 = tf.random.normal((B, H, W, C), seed=0)
+
+    # 4D call — builds the layer
+    out4 = layer(q4, kv4)  # (B, H, W, C_out)
+
+    # 5D T=1 equivalents use the same weights (no rebuild, same inner shape)
+    q5 = q4[:, :, :, tf.newaxis, :]   # (B, H, W, 1, C)
+    kv5 = kv4[:, :, :, tf.newaxis, :]  # (B, H, W, 1, C)
+    out5 = layer(q5, kv5)  # (B, H, W, 1, C_out)
+
+    np.testing.assert_allclose(
+        out4.numpy(), out5.numpy()[:, :, :, 0, :], atol=1e-5
+    )
