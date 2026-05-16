@@ -683,7 +683,7 @@ def test_pos_encoding_patch_size_gt1_2d():
     lat = tf.constant(lat, dtype=tf.float32)
     lon = tf.constant(lon, dtype=tf.float32)
 
-    enc = pos_enc(x, lat=lat, lon=lon)
+    enc = pos_enc(lat=lat, lon=lon)
     assert enc.shape == (
         1,
         n_rows // patch_size,
@@ -720,7 +720,7 @@ def test_pos_encoding_patch_size_gt1_3d():
     lat = tf.constant(lat, dtype=tf.float32)
     lon = tf.constant(lon, dtype=tf.float32)
 
-    enc = pos_enc(x, lat=lat, lon=lon)
+    enc = pos_enc(lat=lat, lon=lon)
     assert enc.shape == (
         1,
         n_rows // patch_size,
@@ -750,9 +750,7 @@ def test_tokenize_encode_lat_lon_encoding_values():
     min_period = pos_enc.min_period_spatial
     max_period = pos_enc.max_period_spatial
 
-    enc = pos_enc.encode_lat_lon(
-        x, lat, lon, min_period=min_period, max_period=max_period
-    )
+    enc = pos_enc.encode_lat_lon(lat, lon, min_period, max_period)
     lat_enc = PositionEncoder._freq_encode(
         lat, d=embed_dim // 2, min_period=min_period, max_period=max_period
     )
@@ -763,7 +761,7 @@ def test_tokenize_encode_lat_lon_encoding_values():
     expected = tf.reshape(stacked, (1, 2, 2, embed_dim))
     np.testing.assert_allclose(enc.numpy(), expected.numpy(), atol=1e-6)
 
-    x_enc = pos_enc(x, lat=lat, lon=lon)
+    x_enc = pos_enc(lat=lat, lon=lon)
     np.testing.assert_allclose(x_enc.numpy(), enc.numpy(), atol=1e-6)
 
 
@@ -795,12 +793,40 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     monkeypatch.setattr(pos_enc, 'encode_lat_lon', _fake_lat_lon)
     monkeypatch.setattr(pos_enc, 'encode_time', _fake_time)
 
-    x_enc = pos_enc(x, lat=lat, lon=lon, time=time)
+    x_enc = pos_enc(lat=lat, lon=lon, time=time)
     expected = lat_lon_out + time_out
 
     np.testing.assert_allclose(x_enc.numpy(), expected.numpy(), atol=1e-6)
     assert calls['lat_lon'] == 1
     assert calls['time'] == 1
+
+
+def test_position_encoder_learned_pos_encoding_identity():
+    """Learned positional encoding should preserve shape and be trainable."""
+    embed_dim = 8
+    x = tf.zeros((1, 2, 2, 1), dtype=tf.float32)
+    lat = tf.constant([[[[0.0], [1.0]], [[2.0], [3.0]]]], dtype=tf.float32)
+    lon = tf.constant(
+        [[[[10.0], [10.0]], [[20.0], [20.0]]]], dtype=tf.float32
+    )
+
+    base = PositionEncoder(patch_size=1, embed_dim=embed_dim)
+    learned = PositionEncoder(
+        patch_size=1,
+        embed_dim=embed_dim,
+        learned_pos_encoding=True,
+    )
+    base.build(x.shape)
+    learned.build(x.shape)
+
+    learned.learned_proj.kernel.assign(np.eye(embed_dim, dtype=np.float32))
+    learned.learned_proj.bias.assign(np.zeros(embed_dim, dtype=np.float32))
+
+    expected = base(lat=lat, lon=lon)
+    actual = learned(lat=lat, lon=lon)
+
+    np.testing.assert_allclose(actual.numpy(), expected.numpy(), atol=1e-6)
+    assert learned.get_config()['learned_pos_encoding'] is True
 
 
 def test_transformer_exo_data_time_forwarding():

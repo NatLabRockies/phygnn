@@ -210,7 +210,7 @@ def test_wmha_shifted_window_alibi():
         window_size=2,
         radius=1,
         window_shift=1,
-        alibi_scale=1.0,
+        bias_scale=1.0,
     )
     query = tf.random.normal((1, 4, 4, 8))
     lat = np.linspace(30, 40, 4).reshape(1, 4, 1, 1) * np.ones((1, 1, 4, 1))
@@ -297,6 +297,30 @@ def test_transformer_layer_forward_pass():
     assert output.shape == (1, 4, 4, 8)
 
 
+def test_transformer_layer_linear_attention():
+    """Linear attention should run without extra feature-map options."""
+    layer = TransformerLayer(
+        num_heads=2,
+        key_dim=4,
+        embed_dim=8,
+        linear_attention=True,
+    )
+
+    query = tf.random.normal((1, 4, 4, 8))
+    key = tf.random.normal((1, 4, 4, 8))
+    value = tf.random.normal((1, 4, 4, 8))
+
+    output = layer(query, key, value)
+
+    assert output.shape == (1, 4, 4, 8)
+    assert isinstance(
+        layer.attn, custom_layers_module.LinearMultiHeadAttention
+    )
+
+    config = layer.get_config()
+    assert config['linear_attention'] is True
+
+
 # --- Sup3rTransformerLayer ---
 
 
@@ -338,6 +362,20 @@ def test_sup3r_transformer_layer_dropout():
     )
     assert layer.dropout == pytest.approx(0.3)
     assert layer.tl.attn._dropout == pytest.approx(0.3)
+
+
+def test_sup3r_transformer_layer_learned_pos_encoding():
+    """Sup3rTransformerLayer should pass learned PE config to PositionEncoder.
+    """
+    layer = Sup3rTransformerLayer(
+        embed_dim=16,
+        num_heads=2,
+        key_dim=8,
+        learned_pos_encoding=True,
+    )
+
+    assert layer.pe.learned_pos_encoding is True
+    assert layer.get_config()['learned_pos_encoding'] is True
 
 
 # --- Sup3rTransformerBlock ---
@@ -432,9 +470,12 @@ def test_windowed_attention_uses_patch_token_grid():
     x = tf.random.normal((1, 32, 32, 16))
     hr = tf.random.normal((1, 32, 32, 1))
     lat = np.linspace(30, 40, 32).reshape(1, 32, 1, 1) * np.ones((1, 1, 32, 1))
-    lon = np.linspace(-100, -90, 32).reshape(1, 1, 32, 1) * np.ones(
-        (1, 32, 1, 1)
-    )
+    lon = np.linspace(-100, -90, 32).reshape(1, 1, 32, 1) * np.ones((
+        1,
+        32,
+        1,
+        1,
+    ))
     exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
     layer_patch_1 = Sup3rTransformerLayer(
@@ -445,7 +486,7 @@ def test_windowed_attention_uses_patch_token_grid():
         embed_dim=8,
         window_size=4,
         radius=1,
-        alibi_scale=1.0,
+        bias_scale=1.0,
     )
     layer_patch_4 = Sup3rTransformerLayer(
         features=['obs'],
@@ -455,7 +496,7 @@ def test_windowed_attention_uses_patch_token_grid():
         embed_dim=8,
         window_size=4,
         radius=1,
-        alibi_scale=1.0,
+        bias_scale=1.0,
     )
 
     layer_patch_1.build(x.shape, hr.shape, exo_data.shape)
@@ -475,7 +516,7 @@ def test_sup3r_transformer_layer_partial_patch_kept():
         num_heads=2,
         key_dim=8,
         embed_dim=8,
-        alibi_scale=1.0,
+        bias_scale=1.0,
     )
 
     x = tf.zeros((1, 4, 4, 2), dtype=tf.float32)
@@ -542,7 +583,7 @@ def test_block_alibi_windowed():
         num_heads=2,
         key_dim=8,
         embed_dim=8,
-        alibi_scale=1.0,
+        bias_scale=1.0,
         window_size=4,
         radius=2,
     )
