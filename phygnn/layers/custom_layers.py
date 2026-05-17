@@ -968,17 +968,13 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         tile_size = self.window_size + 2 * self.radius
 
         if query_dynamic or kv_dynamic:
-            use_full_attention = tf.logical_and(
-                tf.logical_and(
-                    tile_size >= query_height,
-                    tile_size >= query_width,
-                ),
-                tf.logical_and(
-                    tile_size >= kv_height,
-                    tile_size >= kv_width,
-                ),
+            covers_q = tf.logical_and(
+                tile_size >= query_height, tile_size >= query_width
             )
-            return self.window_size, use_full_attention
+            covers_kv = tf.logical_and(
+                tile_size >= kv_height, tile_size >= kv_width
+            )
+            return self.window_size, tf.logical_and(covers_q, covers_kv)
 
         window_size = min(
             self.window_size,
@@ -1100,24 +1096,18 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             [0, 0],
         ]
         t = tf.pad(tensor, padding)
-        t = tf.transpose(
-            tf.reshape(
-                t,
-                [
-                    geometry.batch_size,
-                    geometry.n_window_rows,
-                    ws,
-                    geometry.n_window_cols,
-                    ws,
-                    t_steps,
-                    c,
-                ],
-            ),
-            [0, 1, 3, 2, 4, 5, 6],
-        )
-        return tf.reshape(
-            t, [geometry.batch_size * geometry.n_windows, ws * ws * t_steps, c]
-        )
+        win_shape = [
+            geometry.batch_size,
+            geometry.n_window_rows,
+            ws,
+            geometry.n_window_cols,
+            ws,
+            t_steps,
+            c,
+        ]
+        t = tf.transpose(tf.reshape(t, win_shape), [0, 1, 3, 2, 4, 5, 6])
+        flat = geometry.batch_size * geometry.n_windows
+        return tf.reshape(t, [flat, ws * ws * t_steps, c])
 
     @staticmethod
     def _extract_overlap_patches(tensor, geometry):
@@ -1145,14 +1135,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             rates=[1, 1, 1, 1],
             padding='VALID',
         )
-        return tf.reshape(
-            patches,
-            [
-                geometry.batch_size * geometry.n_windows,
-                geometry.tile_tokens * t_steps,
-                c,
-            ],
-        )
+        flat = geometry.batch_size * geometry.n_windows
+        return tf.reshape(patches, [flat, geometry.tile_tokens * t_steps, c])
 
     @staticmethod
     def _build_window_mask(kv_nan_mask, dtype, geometry):
@@ -1192,25 +1176,18 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             rates=[1, 1, 1, 1],
             padding='VALID',
         )
+        tile_t = geometry.tile_tokens * T
         if kv_nan_mask is None:
-            valid_patches = tf.broadcast_to(
-                valid_patches,
-                [
-                    geometry.batch_size,
-                    geometry.n_window_rows,
-                    geometry.n_window_cols,
-                    geometry.tile_tokens * T,
-                ],
-            )
+            bcast_shape = [
+                geometry.batch_size,
+                geometry.n_window_rows,
+                geometry.n_window_cols,
+                tile_t,
+            ]
+            valid_patches = tf.broadcast_to(valid_patches, bcast_shape)
 
-        kv_mask = tf.reshape(
-            valid_patches,
-            [
-                geometry.batch_size * geometry.n_windows,
-                1,
-                geometry.tile_tokens * T,
-            ],
-        )
+        flat = geometry.batch_size * geometry.n_windows
+        kv_mask = tf.reshape(valid_patches, [flat, 1, tile_t])
 
         # --- Spatial local-neighborhood mask ---------------------------------
         window_rows = tf.repeat(
@@ -1230,16 +1207,14 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             tile_cols[None, :] >= window_cols[:, None],
             tile_cols[None, :] <= (window_cols[:, None] + 2 * geometry.radius),
         )
-        local_mask_4d = tf.logical_and(
-            row_mask, col_mask
-        )  # (ws*ws, tile_tokens)
+        # (ws*ws, tile_tokens)
+        local_mask_4d = tf.logical_and(row_mask, col_mask)
 
         # Expand each spatial pair to a (T × T) block.  For 4D (T=1) this is a
         # no-op.  For 5D, all time steps cross-attend within the spatial
         # neighborhood; causal masking can be AND-ed on top if needed.
-        local_mask = tf.repeat(
-            tf.repeat(local_mask_4d, T, axis=0), T, axis=1
-        )  # (ws*ws*T, tile_tokens*T)
+        # (ws*ws*T, tile_tokens*T)
+        local_mask = tf.repeat(tf.repeat(local_mask_4d, T, axis=0), T, axis=1)
         local_mask = local_mask[None, :, :]
         return tf.logical_and(tf.cast(kv_mask, tf.bool), local_mask)
 
@@ -1351,40 +1326,29 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         feat_out = tf.shape(output)[-1]
         t_steps = tf.shape(query)[3] if len(query.shape) == 5 else 1
         ws = geometry.window_size
-        output = tf.transpose(
-            tf.reshape(
-                output,
-                [
-                    geometry.batch_size,
-                    geometry.n_window_rows,
-                    geometry.n_window_cols,
-                    ws,
-                    ws,
-                    t_steps,
-                    feat_out,
-                ],
-            ),
-            [0, 1, 3, 2, 4, 5, 6],
-        )
-        output = tf.reshape(
-            output,
-            [
-                geometry.batch_size,
-                geometry.padded_query_height,
-                geometry.padded_query_width,
-                t_steps,
-                feat_out,
-            ],
-        )
-        top = geometry.query_top_padding
-        left = geometry.query_left_padding
-        output = output[
-            :,
-            top : top + geometry.query_height,
-            left : left + geometry.query_width,
-            :,
-            :,
+        win_shape = [
+            geometry.batch_size,
+            geometry.n_window_rows,
+            geometry.n_window_cols,
+            ws,
+            ws,
+            t_steps,
+            feat_out,
         ]
+        output = tf.transpose(
+            tf.reshape(output, win_shape), [0, 1, 3, 2, 4, 5, 6]
+        )
+        pad_shape = [
+            geometry.batch_size,
+            geometry.padded_query_height,
+            geometry.padded_query_width,
+            t_steps,
+            feat_out,
+        ]
+        output = tf.reshape(output, pad_shape)
+        tpad, lpad = geometry.query_top_padding, geometry.query_left_padding
+        h, w = geometry.query_height, geometry.query_width
+        output = output[:, tpad : tpad + h, lpad : lpad + w, :, :]
         return tf.reshape(output, tf.shape(query))
 
     def _full_attention_call(
@@ -1397,7 +1361,6 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         lat,
         lon,
         time=None,
-        attention_mask=None,
         return_attention_scores=False,
         use_causal_mask=False,
         bias=None,
@@ -1417,16 +1380,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         if bias is None and self.use_pos_bias and lat is not None:
             bias = self._compute_full_alibi(lat, lon, batch_size, time=time)
 
+        attention_mask = None
         if kv_nan_mask is not None:
-            nan_flat = tf.reshape(kv_nan_mask, [batch_size, 1, 1, -1])
-            if bias is not None:
-                bias = tf.where(nan_flat, tf.cast(-1e9, bias.dtype), bias)
-            else:
-                bias = tf.where(
-                    nan_flat,
-                    tf.constant(-1e9, dtype=query.dtype),
-                    0.0,
-                )
+            nan_flat = tf.reshape(kv_nan_mask, [batch_size, 1, -1])
+            attention_mask = ~tf.cast(nan_flat, tf.bool)
 
         output = super().call(
             query=q_flat,
@@ -1478,11 +1435,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         q_win = self._partition_windows(query, geometry)
         k_win = self._extract_overlap_patches(key, geometry)
         v_win = self._extract_overlap_patches(value, geometry)
-        kv_mask = self._build_window_mask(
-            kv_nan_mask,
-            query.dtype,
-            geometry,
-        )
+        kv_mask = self._build_window_mask(kv_nan_mask, query.dtype, geometry)
 
         bias_win = None
         if self.use_pos_bias and lat is not None:
@@ -1514,7 +1467,6 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         query,
         value,
         key=None,
-        attention_mask=None,
         return_attention_scores=False,
         training=None,
         use_causal_mask=False,
@@ -1542,14 +1494,12 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             for ALiBi bias with windowed attention.
         kv_nan_mask : tf.Tensor | None
             Boolean ``(B, H_v, W_v)`` where True marks NaN KV positions.
+            Both the full and windowed paths convert this internally to the
+            appropriate attention mask format.
         lat, lon : tf.Tensor | None
             ``(B, H, W, 1)`` grids for per-window ALiBi bias.
         time : tf.Tensor | None
             Time coordinate grid for temporal ALiBi bias.
-        attention_mask : tf.Tensor | None
-            Boolean or float mask forwarded to the full-attention path.
-            Not supported for the windowed path (the layer builds its own
-            per-window mask from ``kv_nan_mask``).
         return_attention_scores : bool
             If True the return value is ``(output, attention_scores)``.
             For the windowed path, ``attention_scores`` contains the
@@ -1568,34 +1518,23 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             key = value
 
         window_size, use_full_attention = self._resolve_windowing(query, key)
-        if use_full_attention:
-            return self._full_attention_call(
-                query,
-                key,
-                value,
-                training,
-                kv_nan_mask,
-                lat,
-                lon,
-                time=time,
-                attention_mask=attention_mask,
-                return_attention_scores=return_attention_scores,
-                use_causal_mask=use_causal_mask,
-                bias=bias,
-            )
-        return self._window_attention_call(
-            query,
-            key,
-            value,
-            training,
-            kv_nan_mask,
-            lat,
-            lon,
-            window_size,
+        kwargs = dict(
+            query=query,
+            key=key,
+            value=value,
+            training=training,
+            kv_nan_mask=kv_nan_mask,
+            lat=lat,
+            lon=lon,
             time=time,
             return_attention_scores=return_attention_scores,
             use_causal_mask=use_causal_mask,
             bias=bias,
+        )
+        return (
+            self._full_attention_call(**kwargs)
+            if use_full_attention
+            else self._window_attention_call(**kwargs, window_size=window_size)
         )
 
     def get_config(self):
@@ -2238,15 +2177,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         if self.linear_attention or not self.use_pos_bias:
             k = k + pos_enc  # noqa: PLR6104
 
-        if self.linear_attention:
-            projected = self.attn(
-                query=q, key=k, value=v, kv_nan_mask=nan_mask,
-            )
-        else:
-            projected = self.attn(
-                query=q, key=k, value=v, kv_nan_mask=nan_mask,
-                lat=lat, lon=lon, time=time,
-            )
+        attn_kwargs = dict(query=q, key=k, value=v, kv_nan_mask=nan_mask)
+        if not self.linear_attention:
+            attn_kwargs.update(lat=lat, lon=lon, time=time)
+        projected = self.attn(**attn_kwargs)
 
         # shared post-attention: residual -> norm -> MLP -> residual
         attn_res = q + projected
