@@ -632,7 +632,7 @@ def test_transformer_layer_3d():
     assert len(layers.layers) == 1
 
     x = np.random.normal(0, 1, size=(1, 10, 10, 6, 3)).astype(np.float32)
-    y = np.random.uniform(0, 1, size=(1, 10, 10, 6, 1)).astype(np.float32)
+    y = np.random.uniform(0, 1, size=(1, 10, 10, 6, 3)).astype(np.float32)
     mask = np.random.choice([False, True], (1, 10, 10, 6), p=[0.1, 0.9])
     y[mask] = np.nan
 
@@ -799,34 +799,6 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     np.testing.assert_allclose(x_enc.numpy(), expected.numpy(), atol=1e-6)
     assert calls['lat_lon'] == 1
     assert calls['time'] == 1
-
-
-def test_position_encoder_learned_pos_encoding_identity():
-    """Learned positional encoding should preserve shape and be trainable."""
-    embed_dim = 8
-    x = tf.zeros((1, 2, 2, 1), dtype=tf.float32)
-    lat = tf.constant([[[[0.0], [1.0]], [[2.0], [3.0]]]], dtype=tf.float32)
-    lon = tf.constant(
-        [[[[10.0], [10.0]], [[20.0], [20.0]]]], dtype=tf.float32
-    )
-
-    base = PositionEncoder(patch_size=1, embed_dim=embed_dim)
-    learned = PositionEncoder(
-        patch_size=1,
-        embed_dim=embed_dim,
-        learned_pos_encoding=True,
-    )
-    base.build(x.shape)
-    learned.build(x.shape)
-
-    learned.learned_proj.kernel.assign(np.eye(embed_dim, dtype=np.float32))
-    learned.learned_proj.bias.assign(np.zeros(embed_dim, dtype=np.float32))
-
-    expected = base(lat=lat, lon=lon)
-    actual = learned(lat=lat, lon=lon)
-
-    np.testing.assert_allclose(actual.numpy(), expected.numpy(), atol=1e-6)
-    assert learned.get_config()['learned_pos_encoding'] is True
 
 
 def test_transformer_exo_data_time_forwarding():

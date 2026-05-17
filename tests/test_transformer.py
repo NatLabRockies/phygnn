@@ -7,7 +7,6 @@ import tensorflow as tf
 from phygnn.layers import custom_layers as custom_layers_module
 
 MultiHeadAttention = custom_layers_module.MultiHeadAttention
-Sup3rTransformerBlock = custom_layers_module.Sup3rTransformerBlock
 Sup3rTransformerLayer = custom_layers_module.Sup3rTransformerLayer
 TransformerLayer = custom_layers_module.TransformerLayer
 WindowedMultiHeadAttention = custom_layers_module.WindowedMultiHeadAttention
@@ -336,9 +335,9 @@ def test_sup3r_transformer_layer_windowed():
         radius=2,
         window_shift=1,
     )
-    assert isinstance(layer.tl.attn, WindowedMultiHeadAttention)
-    assert layer.tl.attn.window_size == 4
-    assert layer.tl.attn.window_shift == 1
+    assert isinstance(layer.attn, WindowedMultiHeadAttention)
+    assert layer.attn.window_size == 4
+    assert layer.attn.window_shift == 1
 
     config = layer.get_config()
     assert config['patch_size'] == 2
@@ -361,29 +360,15 @@ def test_sup3r_transformer_layer_dropout():
         embed_dim=16, num_heads=2, key_dim=8, dropout=0.3
     )
     assert layer.dropout == pytest.approx(0.3)
-    assert layer.tl.attn._dropout == pytest.approx(0.3)
+    assert layer.attn._dropout == pytest.approx(0.3)
 
 
-def test_sup3r_transformer_layer_learned_pos_encoding():
-    """Sup3rTransformerLayer should pass learned PE config to PositionEncoder.
-    """
-    layer = Sup3rTransformerLayer(
-        embed_dim=16,
-        num_heads=2,
-        key_dim=8,
-        learned_pos_encoding=True,
-    )
-
-    assert layer.pe.learned_pos_encoding is True
-    assert layer.get_config()['learned_pos_encoding'] is True
-
-
-# --- Sup3rTransformerBlock ---
+# --- Sup3rTransformerLayer construction and config ---
 
 
 def test_block_windowed_construction_and_config():
-    """Block should create windowed layers and expose config."""
-    block = Sup3rTransformerBlock(
+    """Layer should create windowed layers and expose config."""
+    block = Sup3rTransformerLayer(
         features=['obs', 'topography'],
         patch_size=2,
         num_heads=2,
@@ -393,13 +378,11 @@ def test_block_windowed_construction_and_config():
         radius=2,
         window_shift=1,
     )
-    assert len(block.layers) == 2
-    for layer in block.layers:
-        assert isinstance(layer.tl.attn, WindowedMultiHeadAttention)
-        assert layer.patch_size == 2
-        assert layer.tl.attn.window_size == 4
-        assert layer.tl.attn.radius == 2
-        assert layer.tl.attn.window_shift == 1
+    assert isinstance(block.attn, WindowedMultiHeadAttention)
+    assert block.attn.window_size == 4
+    assert block.attn.radius == 2
+    assert block.attn.window_shift == 1
+    assert block.patch_size == 2
 
     config = block.get_config()
     assert config['patch_size'] == 2
@@ -504,8 +487,8 @@ def test_windowed_attention_uses_patch_token_grid():
 
     assert layer_patch_1.eq(x).shape[1:3] == (32, 32)
     assert layer_patch_4.eq(x).shape[1:3] == (8, 8)
-    assert layer_patch_1.tl.attn.window_size == 4
-    assert layer_patch_4.tl.attn.window_size == 4
+    assert layer_patch_1.attn.window_size == 4
+    assert layer_patch_4.attn.window_size == 4
 
 
 def test_sup3r_transformer_layer_partial_patch_kept():
@@ -539,6 +522,44 @@ def test_sup3r_transformer_layer_partial_patch_kept():
     )
 
 
+def test_multichannel_partial_nan_kept():
+    """Pixels valid in some channels but NaN in others should be unmasked."""
+    layer = Sup3rTransformerLayer(
+        features=['obs_a', 'obs_b'],
+        patch_size=1,
+        num_heads=2,
+        key_dim=8,
+        embed_dim=8,
+        bias_scale=1.0,
+    )
+
+    x = tf.zeros((1, 4, 4, 2), dtype=tf.float32)
+    # 2-channel hi-res: channel 0 valid everywhere, channel 1 NaN at (0,0)
+    hr = np.ones((1, 4, 4, 2), dtype=np.float32)
+    hr[0, 0, 0, 1] = np.nan  # one channel NaN
+    hr[0, 3, 3, :] = np.nan  # both channels NaN
+    hr = tf.constant(hr)
+    lat = np.linspace(30, 40, 4).reshape(1, 4, 1, 1) * np.ones((1, 1, 4, 1))
+    lon = np.linspace(-100, -90, 4).reshape(1, 1, 4, 1) * np.ones(
+        (1, 4, 1, 1)
+    )
+    exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
+
+    layer.build(x.shape, hr.shape, exo_data.shape)
+    hr_clean, nan_mask, _, _ = layer.ek.prepare_sparse_tensor(hr)
+
+    # (0,0): one channel valid → should be unmasked (False)
+    # (3,3): both channels NaN → should be masked (True)
+    assert not nan_mask[0, 0, 0].numpy(), 'partially-valid pixel was masked'
+    assert nan_mask[0, 3, 3].numpy(), 'fully-NaN pixel was not masked'
+    # cleaned tensor should have no NaNs
+    assert not tf.reduce_any(tf.math.is_nan(hr_clean)).numpy()
+    # valid channel should be preserved
+    np.testing.assert_allclose(hr_clean[0, 0, 0, 0].numpy(), 1.0)
+    # NaN channel should be filled with 0 (patch_size=1)
+    np.testing.assert_allclose(hr_clean[0, 0, 0, 1].numpy(), 0.0)
+
+
 def test_sup3r_transformer_layer_requires_exo_data():
     """Sup3rTransformerLayer should reject missing exogenous inputs."""
     layer = Sup3rTransformerLayer(
@@ -558,8 +579,8 @@ def test_sup3r_transformer_layer_requires_exo_data():
 
 
 def test_block_windowed_forward_pass():
-    """Block should produce correct output with windowed attention."""
-    block = Sup3rTransformerBlock(
+    """Layer should produce correct output with windowed attention."""
+    block = Sup3rTransformerLayer(
         features=['obs'],
         num_heads=2,
         key_dim=8,
@@ -572,13 +593,13 @@ def test_block_windowed_forward_pass():
     lat = np.linspace(30, 40, 8).reshape(1, 8, 1, 1) * np.ones((1, 1, 8, 1))
     lon = np.linspace(-100, -90, 8).reshape(1, 1, 8, 1) * np.ones((1, 8, 1, 1))
     exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
-    output = block(x, hi_res_features=hr, exo_data=exo_data)
+    output = block(x, hi_res_feature=hr, exo_data=exo_data)
     assert output.shape == (1, 8, 8, 16)
 
 
 def test_block_alibi_windowed():
-    """Block should work with ALiBi + windowed attention."""
-    block = Sup3rTransformerBlock(
+    """Layer should work with ALiBi + windowed attention."""
+    block = Sup3rTransformerLayer(
         features=['obs'],
         num_heads=2,
         key_dim=8,
@@ -587,27 +608,25 @@ def test_block_alibi_windowed():
         window_size=4,
         radius=2,
     )
-    assert len(block.layers) == 1
-    assert isinstance(block.layers[0], Sup3rTransformerLayer)
-    assert isinstance(block.layers[0].tl.attn, WindowedMultiHeadAttention)
+    assert isinstance(block.attn, WindowedMultiHeadAttention)
 
 
 def test_block_default_full_attention():
-    """Block should default to full attention (window_size=None)."""
-    block = Sup3rTransformerBlock(
+    """Layer should default to full attention (window_size=None)."""
+    block = Sup3rTransformerLayer(
         features=['obs'],
         num_heads=2,
         key_dim=8,
         embed_dim=8,
     )
     assert block.window_size is None
-    assert isinstance(block.layers[0].tl.attn, WindowedMultiHeadAttention)
-    assert block.layers[0].tl.attn.window_size is None
+    assert isinstance(block.attn, WindowedMultiHeadAttention)
+    assert block.attn.window_size is None
 
 
 def test_block_dropout():
-    """Block should forward dropout to all sub-layers."""
-    block = Sup3rTransformerBlock(
+    """Layer should forward dropout to all sub-layers."""
+    block = Sup3rTransformerLayer(
         features=['obs', 'topography'],
         num_heads=2,
         key_dim=8,
@@ -615,9 +634,7 @@ def test_block_dropout():
         dropout=0.2,
     )
     assert block.dropout == pytest.approx(0.2)
-    for layer in block.layers:
-        assert layer.dropout == pytest.approx(0.2)
-        assert layer.tl.attn._dropout == pytest.approx(0.2)
+    assert block.attn._dropout == pytest.approx(0.2)
 
 
 # --- Fused attention path ---

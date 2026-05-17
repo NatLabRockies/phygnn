@@ -310,7 +310,7 @@ class PatchEncoder(tf.keras.layers.Layer):
         pooled_lon : tf.Tensor | None
             Longitude pooled to token resolution when patching is active.
         """
-        pixel_valid = ~tf.math.reduce_any(tf.math.is_nan(x), axis=-1)
+        pixel_valid = ~tf.math.reduce_all(tf.math.is_nan(x), axis=-1)
         x_clean = self._fill_patchwise_nans(x)
         nan_mask = ~pixel_valid
 
@@ -433,7 +433,6 @@ class PositionEncoder(tf.keras.layers.Layer):
         name=None,
         patch_size=1,
         embed_dim=64,
-        learned_pos_encoding=False,
         min_period_spatial=1e-4,
         max_period_spatial=2,
         min_period_temporal=1,
@@ -453,9 +452,6 @@ class PositionEncoder(tf.keras.layers.Layer):
         embed_dim : int
             Dimension of the embedding. This determines the size of the output
             tokens after encoding. Default is 64.
-        learned_pos_encoding : bool
-            If True, apply a learned dense projection to the coordinate-based
-            positional encoding before returning it.
         min_period_spatial : float
             Minimum period in degrees for the positional encoding.
         max_period_spatial : float
@@ -472,13 +468,11 @@ class PositionEncoder(tf.keras.layers.Layer):
         self._pool_layer = None
         self.patch_size = patch_size
         self.embed_dim = embed_dim
-        self.learned_pos_encoding = learned_pos_encoding
         self.min_period_spatial = min_period_spatial
         self.max_period_spatial = max_period_spatial
         self.min_period_temporal = min_period_temporal
         self.max_period_temporal = max_period_temporal
         self.rank = None
-        self.learned_proj = None
 
     @classmethod
     def _freq_encode(cls, k, min_period, max_period, d=64):
@@ -629,9 +623,6 @@ class PositionEncoder(tf.keras.layers.Layer):
             if self.rank == 4
             else tf.keras.layers.AveragePooling3D(**kwargs)
         )
-        if self.learned_pos_encoding:
-            self.learned_proj = tf.keras.layers.Dense(self.embed_dim)
-            self.learned_proj.build((None, self.embed_dim))
         super().build(input_shape)
 
     @tf.function
@@ -669,8 +660,6 @@ class PositionEncoder(tf.keras.layers.Layer):
             x_enc += self.encode_time(
                 time, self.min_period_temporal, self.max_period_temporal
             )
-        if self.learned_pos_encoding:
-            x_enc = self.learned_proj(x_enc)
         return x_enc
 
     def get_config(self):
@@ -679,7 +668,6 @@ class PositionEncoder(tf.keras.layers.Layer):
         config.update({
             'patch_size': self.patch_size,
             'embed_dim': self.embed_dim,
-            'learned_pos_encoding': self.learned_pos_encoding,
             'min_period_spatial': self.min_period_spatial,
             'max_period_spatial': self.max_period_spatial,
             'min_period_temporal': self.min_period_temporal,
@@ -1626,13 +1614,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 class LinearMultiHeadAttention(tf.keras.layers.Layer):
     """O(N) linear attention using the positive feature map ``elu(x) + 1``."""
 
-    def __init__(
-        self,
-        num_heads,
-        key_dim,
-        dropout=0.0,
-        **kwargs,
-    ):
+    def __init__(self, num_heads, key_dim, dropout=0.0, **kwargs):
         super().__init__(**kwargs)
         self.num_heads = num_heads
         self.key_dim = key_dim
@@ -1885,17 +1867,17 @@ class TransformerLayer(tf.keras.layers.Layer):
 
 
 class Sup3rTransformerLayer(tf.keras.layers.Layer):
-    """Transformer layer with cross attention, tokenization, and optional
-    ALiBi positional bias.  Queries are typically the latent space of the
-    model; keys/values are high-resolution features (observations,
-    topography, etc.).
+    """Transformer layer with shared Q encoding, joint K/V attention,
+    and a shared post-attention pathway.
 
-    When ``linear_attention=False`` and ``bias_scale > 0``, a distance-based
-    bias replaces explicit positional encodings (ALiBi - Press et al., 2022).
-    Otherwise, sinusoidal positional encodings are added directly to Q and K.
+    Queries are typically the latent space of the model; keys/values are
+    high-resolution features (observations, topography, etc.).  All
+    feature channels are processed jointly by a single K/V encoder and
+    attention head.
 
-    Note: This layer assumes that any sparse input data with NaN values has
-    NaNs for the same tokens across all features.
+    When ``linear_attention=False`` and ``bias_scale > 0``, a
+    distance-based bias replaces explicit positional encodings (ALiBi).
+    Otherwise, sinusoidal positional encodings are added to Q and K.
     """
 
     def __init__(
@@ -1905,9 +1887,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         exo_features=None,
         patch_size=1,
         num_heads=1,
-        key_dim=64,
         embed_dim=64,
-        learned_pos_encoding=False,
+        key_dim=None,
         min_period_spatial=1e-4,
         max_period_spatial=2,
         min_period_temporal=1,
@@ -1926,62 +1907,55 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         name : str | None
             Name of layer.
         features : list[str] | None
-            List of hi-resolution feature names.
+            List of hi-resolution feature names used for exogenous-data
+            dispatch by the calling framework.
         exo_features : list[str] | None
             List of exogenous feature names (latitude, longitude, time).
         patch_size : int
             Height, width, and optional depth of attention patches.
-        embed_dim : int
-            Dimension of the tokenized inputs.
         num_heads : int
             Number of attention heads.
-        key_dim : int
-            Size of each attention head.
+        key_dim : int | None
+            Size of each attention head. If None, defaults to embed_dim
+        embed_dim : int
+            Dimension of the tokenized inputs.
         min_period_spatial : float
             Minimum period for the spatial positional encoding.
         max_period_spatial : float
             Maximum period for the spatial positional encoding.
-        learned_pos_encoding : bool
-            If True, apply a learned projection to the positional encoding
-            before adding it to queries and keys.
         min_period_temporal : float
             Minimum period for the temporal positional encoding.
         max_period_temporal : float
             Maximum period for the temporal positional encoding.
         bias_scale : float
-            Positive values use ALiBi distance-based bias instead of
-            positional encoding and set its scaling factor. Non-positive
-            values disable ALiBi.
+            Positive values enable ALiBi and set its distance scaling
+            factor.  Non-positive values disable ALiBi.
         window_size : int | None
-            Side length of the non-overlapping query execution block in token
-            units.
-            Patch encoding is applied before attention, so this is measured on
-            the token grid. ``None`` uses full attention.
+            Side length of the non-overlapping query execution block.
+            ``None`` uses full attention.
         radius : int | None
             Symmetric halo radius, in token units, added around each query
             window when reading key/value tokens.
         window_shift : int
-            Shift of the query-window start on the token grid. This is only
-            active when the current call uses multiple windows; otherwise it
-            is ignored because the layer routes to full attention.
+            Shift of the query-window start on the token grid. This is
+            only active when the current call uses multiple windows;
+            otherwise it is ignored because the layer routes to full
+            attention.
         dropout : float
             Dropout rate for attention weights.
         linear_attention : bool
-            If True, use the linear-attention implementation inside the
-            transformer layer.
+            If True, use the linear-attention implementation.
         **kwargs
-            Additional keyword arguments for the parent class.
+            Additional keyword arguments for the layer.
         """
-
         super().__init__(name=name, **kwargs)
         self.features = features or []
         self.exo_features = exo_features or []
         self.rank = None
         self.patch_size = patch_size
         self.num_heads = num_heads
-        self.key_dim = key_dim
         self.embed_dim = embed_dim
-        self.learned_pos_encoding = learned_pos_encoding
+        self.key_dim = key_dim or embed_dim
         self.min_period_spatial = min_period_spatial
         self.max_period_spatial = max_period_spatial
         self.min_period_temporal = min_period_temporal
@@ -1993,36 +1967,49 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.use_pos_bias = self.bias_scale > 0
         self.dropout = dropout
         self.linear_attention = linear_attention
+
+        # -- shared layers --
         self.eq = PatchEncoder(
             patch_size=self.patch_size, embed_dim=self.embed_dim
         )
+        self.pe = PositionEncoder(
+            patch_size=self.patch_size,
+            embed_dim=self.embed_dim,
+            min_period_spatial=self.min_period_spatial,
+            max_period_spatial=self.max_period_spatial,
+            min_period_temporal=self.min_period_temporal,
+            max_period_temporal=self.max_period_temporal,
+        )
+        self.lo = tf.keras.layers.RMSNormalization()
+        self.mlp = None  # built in build()
+        self.decoder = None  # built in build()
+
+        # -- single K/V encoder and attention head (joint across features) --
         self.ek = PatchEncoder(
             patch_size=self.patch_size, embed_dim=self.embed_dim
         )
         self.ev = PatchEncoder(
             patch_size=self.patch_size, embed_dim=self.embed_dim
         )
-        self.pe = PositionEncoder(
-            patch_size=self.patch_size,
-            embed_dim=self.embed_dim,
-            learned_pos_encoding=self.learned_pos_encoding,
-            min_period_spatial=self.min_period_spatial,
-            max_period_spatial=self.max_period_spatial,
-            min_period_temporal=self.min_period_temporal,
-            max_period_temporal=self.max_period_temporal,
-        )
-        self.tl = TransformerLayer(
-            key_dim=self.key_dim,
-            num_heads=self.num_heads,
-            embed_dim=self.embed_dim,
-            bias_scale=self.bias_scale,
+        self.attn = self._make_attn()
+
+    def _make_attn(self):
+        """Create a single raw attention layer (no norm/MLP)."""
+        if self.linear_attention:
+            return LinearMultiHeadAttention(
+                num_heads=self.num_heads,
+                key_dim=self.key_dim,
+                dropout=self.dropout,
+            )
+        return WindowedMultiHeadAttention(
             window_size=self.window_size,
             radius=self.radius,
             window_shift=self.window_shift,
+            num_heads=self.num_heads,
+            key_dim=self.key_dim,
+            bias_scale=self.bias_scale,
             dropout=self.dropout,
-            linear_attention=self.linear_attention,
         )
-        self.decoder = None
 
     def _validate_build_shapes(self, x_shape, exo_data_shape):
         """Validate query and exogenous tensor shapes for build()."""
@@ -2100,9 +2087,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Tensor to pad.  Returned unchanged when ``None`` or when
             ``patch_size == 1``.
         mode : str
-            Padding mode forwarded to ``tf.pad``.  Use ``'CONSTANT'`` for
-            scalar fill values and ``'SYMMETRIC'`` for edge-replication
-            (suitable for coordinate grids).
+            Padding mode forwarded to ``tf.pad``.
         constant_values : float
             Fill value used only when ``mode='CONSTANT'``.
         """
@@ -2121,39 +2106,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             return tf.pad(tensor, paddings, constant_values=constant_values)
         return tf.pad(tensor, paddings, mode=mode)
 
-    def _prepare_attention_inputs(self, x, hi_res_feature, lat, lon, time):
-        """Prepare encoded Q/K/V inputs for attention."""
-        hr_clean, nan_mask, attn_lat, attn_lon = self.ek.prepare_sparse_tensor(
-            hi_res_feature, lat=lat, lon=lon
-        )
-
-        q = self.eq(x)
-        k = self.ek(hr_clean)
-        v = self.ev(hr_clean)
-
-        if self.linear_attention or not self.use_pos_bias:
-            pos_enc = self.pe(lat=lat, lon=lon, time=time)
-            q = q + pos_enc  # noqa: PLR6104
-            k = k + pos_enc  # noqa: PLR6104
-
-        attn_time = None
-        if time is not None:
-            attn_time = (
-                self.ek.avg_pool(time)
-                if self.ek.avg_pool is not None
-                else time
-            )
-
-        return (
-            q,
-            k,
-            v,
-            nan_mask,
-            attn_lat,
-            attn_lon,
-            attn_time,
-        )
-
     def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
         """Build the layer based on an input shape.
 
@@ -2167,18 +2119,33 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Shape tuple of the exogenous data tensor.
         """
         self._validate_build_shapes(x_shape, exo_data_shape)
-        value_shape = hi_res_feature_shape or x_shape
+        hr_shape = (
+            hi_res_feature_shape
+            if hi_res_feature_shape is not None
+            else x_shape
+        )
         embed_shape = (None,) * (self.rank - 1) + (self.embed_dim,)
-        decoder_shape = embed_shape
+
+        # shared layers
+        self.eq.build(x_shape)
+        self.pe.build(x_shape)
+        self.lo.build((None, None, self.embed_dim))
+        self.mlp = tf.keras.Sequential([
+            tf.keras.layers.Dense(4 * self.embed_dim),
+            SwiGLU(),
+            tf.keras.layers.Dense(self.embed_dim),
+        ])
+        self.mlp.build((None, None, self.embed_dim))
         self.decoder = PatchDecoder(
             patch_size=self.patch_size, output_dim=x_shape[-1]
         )
-        self.eq.build(x_shape)
-        self.ek.build(value_shape)
-        self.ev.build(value_shape)
-        self.pe.build(x_shape)
-        self.tl.build(embed_shape, embed_shape, embed_shape)
-        self.decoder.build(decoder_shape)
+        self.decoder.build(embed_shape)
+
+        # single K/V encoder and attention (joint across all features)
+        self.ek.build(hr_shape)
+        self.ev.build(hr_shape)
+        self.attn.build(embed_shape, embed_shape, embed_shape)
+
         super().build(x_shape)
 
     def get_config(self):
@@ -2191,7 +2158,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'num_heads': self.num_heads,
             'key_dim': self.key_dim,
             'embed_dim': self.embed_dim,
-            'learned_pos_encoding': self.learned_pos_encoding,
             'min_period_spatial': self.min_period_spatial,
             'max_period_spatial': self.max_period_spatial,
             'min_period_temporal': self.min_period_temporal,
@@ -2207,7 +2173,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
     @tf.function
     def call(self, x, hi_res_feature=None, exo_data=None):
-        """Call transformer layer on the full batch.
+        """Call the transformer layer.
 
         Parameters
         ----------
@@ -2215,11 +2181,12 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             4D or 5D input tensor (latent space being updated).
         hi_res_feature : tf.Tensor, optional
             4D or 5D high-resolution feature tensor used as key/value
-            input.  May contain NaNs for sparse observations.
+            input.  All channels are processed jointly.
+            May contain NaNs for sparse observations.
         exo_data : tf.Tensor
-            Exogenous data with latitude (channel 0), longitude (channel 1),
-            and optionally time (channel 2). This input is required whenever
-            hi_res_feature is provided.
+            Exogenous data with latitude (channel 0), longitude
+            (channel 1), and optionally time (channel 2).  Required
+            whenever *hi_res_feature* is provided.
 
         Returns
         -------
@@ -2237,197 +2204,141 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             logger.error(msg)
             raise ValueError(msg)
 
+        x_in = x
         original_shape = tf.shape(x)
-        # Pad with reflected values so that edge tokens' query vectors
-        # reflect real boundary features rather than zeros.
+
         x = self._pad_to_patch_multiple(x, mode='REFLECT')
-        # Pad with NaN so that edge tokens are correctly treated as missing
-        # by prepare_sparse_tensor(), which uses is_nan() for validity.
         hi_res_feature = self._pad_to_patch_multiple(
             hi_res_feature, constant_values=float('nan')
         )
-        # Pad with reflected coordinates so that pooled lat/lon/time at edge
-        # tokens reflects real boundary values rather than zeros.
         exo_data = self._pad_to_patch_multiple(exo_data, mode='REFLECT')
 
         lat, lon, time = self._split_exo_inputs(exo_data)
-        (
-            q,
-            k,
-            v,
-            nan_mask,
-            attn_lat,
-            attn_lon,
-            attn_time,
-        ) = self._prepare_attention_inputs(x, hi_res_feature, lat, lon, time)
 
-        out = self.tl(
-            query=q,
-            key=k,
-            value=v,
-            kv_nan_mask=nan_mask,
-            lat=attn_lat,
-            lon=attn_lon,
-            time=attn_time,
+        # shared query encoding
+        q = self.eq(x)
+        pos_enc = None
+        if self.linear_attention or not self.use_pos_bias:
+            pos_enc = self.pe(lat=lat, lon=lon, time=time)
+            q = q + pos_enc  # noqa: PLR6104
+
+        # Pool coordinates to token resolution once
+        pool = self.eq.avg_pool
+        if pool is not None:
+            lat, lon = pool(lat), pool(lon)
+            time = pool(time) if time is not None else None
+
+        # joint K/V encoding across all features
+        hr_clean, nan_mask, _, _ = self.ek.prepare_sparse_tensor(
+            hi_res_feature
         )
+        k = self.ek(hr_clean)
+        v = self.ev(hr_clean)
 
-        out = self.decoder(out)
+        if self.linear_attention or not self.use_pos_bias:
+            k = k + pos_enc  # noqa: PLR6104
 
-        return tf.slice(
-            out, tf.zeros(self.rank, dtype=tf.int32), original_shape
+        if self.linear_attention:
+            projected = self.attn(
+                query=q, key=k, value=v, kv_nan_mask=nan_mask,
+            )
+        else:
+            projected = self.attn(
+                query=q, key=k, value=v, kv_nan_mask=nan_mask,
+                lat=lat, lon=lon, time=time,
+            )
+
+        # shared post-attention: residual -> norm -> MLP -> residual
+        attn_res = q + projected
+        out = self.lo(attn_res)
+        out_shape = tf.shape(out)
+        out = tf.reshape(out, [out_shape[0], -1, self.embed_dim])
+        out = attn_res + tf.reshape(self.mlp(out), out_shape)
+
+        decoded = self.decoder(out)
+        decoded = tf.slice(
+            decoded, tf.zeros(self.rank, dtype=tf.int32), original_shape
         )
+        return x_in + decoded
 
 
 class Sup3rTransformerBlock(tf.keras.layers.Layer):
-    """Custom layer to implement a block of Sup3rTransformerLayer layers."""
+    """Stack of ``Sup3rTransformerLayer`` instances with optional
+    window shifting on odd layers in the stack.
+
+    When ``window_shift`` is non-zero, even-indexed layers (0, 2, ...)
+    use no shift and odd-indexed layers (1, 3, ...) use the given shift.
+    """
 
     def __init__(
         self,
         name=None,
         features=None,
         exo_features=None,
-        patch_size=1,
-        num_heads=1,
-        key_dim=64,
-        embed_dim=64,
-        learned_pos_encoding=False,
-        bias_scale=0.0,
-        window_size=None,
-        radius=None,
+        n_layers=2,
         window_shift=0,
-        dropout=0.0,
-        linear_attention=False,
-        **kwargs,
+        **layer_kwargs,
     ):
         """
         Parameters
         ----------
-        name : str | None
-            Name of layer.
         features : list[str] | None
-            List of hi-resolution feature names. The length of this list
-            determines the number of Sup3rTransformerLayer layers in the
-            block.
+            List of hi-resolution feature names used for exogenous-data
+            dispatch by the calling framework.
         exo_features : list[str] | None
             List of exogenous feature names (latitude, longitude, time).
-        patch_size : int
-            Height, width, and optional depth of attention patches.
-        num_heads : int
-            Number of attention heads for each transformer layer.
-        key_dim : int
-            Size of each attention head.
-        embed_dim : int
-            Dimension of the tokenized inputs.
-        learned_pos_encoding : bool
-            If True, apply a learned projection to the positional encoding
-            before adding it to queries and keys.
-        bias_scale : float
-            Positive values enable ALiBi and set its distance scaling
-            factor. Non-positive values disable ALiBi.
-        window_size : int | None
-            Side length of the non-overlapping query execution block.
-            ``None`` uses full attention.
-        radius : int | None
-            Symmetric halo radius, in token units, added around each query
-            window when reading key/value tokens.
+        n_layers : int
+            Number of ``Sup3rTransformerLayer`` instances in the stack.
         window_shift : int
-            Shift of the query-window start on the token grid. This is only
-            active when the current call uses multiple windows; otherwise it
-            is ignored because the layer routes to full attention.
-        dropout : float
-            Dropout rate for attention weights.
-        linear_attention : bool
-            If True, use the linear-attention implementation in each
-            transformer layer.
-        **kwargs
-            Additional keyword arguments for the block.
+            Shift applied to odd-indexed layers in the stack.
+            Even-indexed layers always use zero shift.
+            Zero disables shifting entirely.
+        name : str | None
+            Name for this block.
+        **layer_kwargs
+            Forwarded to every ``Sup3rTransformerLayer`` constructor
+            (e.g. ``embed_dim``, ``window_size``, ``patch_size``, etc.).
+            ``window_shift`` in *layer_kwargs* is silently replaced by
+            the per-layer value computed here.
         """
-        super().__init__(**kwargs)
-        self.features = features or []
-        self.exo_features = exo_features or []
-        self.bias_scale = float(bias_scale)
-        self.patch_size = patch_size
-        self.num_heads = num_heads
-        self.key_dim = key_dim
-        self.embed_dim = embed_dim
-        self.learned_pos_encoding = learned_pos_encoding
-        self.window_size = window_size
-        self.radius = radius
+        super().__init__(name=name)
+        self.features = features
+        self.exo_features = exo_features
+        self.n_layers = n_layers
         self.window_shift = window_shift
-        self.dropout = dropout
-        self.linear_attention = linear_attention
-        self.layers = [
-            Sup3rTransformerLayer(
-                features=[feat],
-                patch_size=self.patch_size,
-                num_heads=self.num_heads,
-                key_dim=self.key_dim,
-                embed_dim=self.embed_dim,
-                learned_pos_encoding=self.learned_pos_encoding,
-                bias_scale=self.bias_scale,
-                window_size=self.window_size,
-                radius=self.radius,
-                window_shift=self.window_shift,
-                dropout=self.dropout,
-                linear_attention=self.linear_attention,
+        self._layer_kwargs = {
+            k: v for k, v in layer_kwargs.items() if k != 'window_shift'
+        }
+        self.transformer_layers = []
+        for i in range(n_layers):
+            shift = window_shift if i % 2 == 1 else 0
+            self.transformer_layers.append(
+                Sup3rTransformerLayer(
+                    features=features,
+                    exo_features=exo_features,
+                    window_shift=shift,
+                    **self._layer_kwargs,
+                )
             )
-            for feat in self.features
-        ]
 
-    @tf.function
-    def call(self, x, hi_res_features=None, exo_data=None):
-        """Call the stack of transformer layers.
-
-        Parameters
-        ----------
-        x : tf.Tensor
-            4D or 5D input tensor (latent space).
-        hi_res_features : tf.Tensor, optional
-            4D or 5D high-resolution feature tensor stack.
-        exo_data : tf.Tensor
-            Exogenous data (latitude, longitude, optional time). This input
-            is required whenever hi_res_features is provided.
-
-        Returns
-        -------
-        tf.Tensor
-            Output tensor after all layers plus skip connection.
-        """
-        if hi_res_features is None or len(self.layers) == 0:
-            return x
-
-        x_in = x
-        for i, layer in enumerate(self.layers):
-            x = layer(
-                x,
-                hi_res_feature=hi_res_features[..., i : i + 1],
-                exo_data=exo_data,
-            )
-        return x_in + x
-
-    def build(
-        self,
-        x_shape,
-        hi_res_features_shape=None,
-        exo_data_shape=None,
-    ):
-        """Build the block based on an input shape.
+    def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
+        """Build every child transformer layer.
 
         Parameters
         ----------
         x_shape : tuple
             Shape tuple of the query tensor.
-        hi_res_features_shape : tuple | None
-            Shape tuple of the high resolution feature tensor stack.
+        hi_res_feature_shape : tuple | None
+            Shape tuple of the high resolution feature tensor.
         exo_data_shape : tuple | None
             Shape tuple of the exogenous data tensor.
         """
-        layer_hi_res_shape = None
-        if hi_res_features_shape is not None:
-            layer_hi_res_shape = (*hi_res_features_shape[:-1], 1)
-
-        for layer in self.layers:
-            layer.build(x_shape, layer_hi_res_shape, exo_data_shape)
+        for layer in self.transformer_layers:
+            layer.build(
+                x_shape,
+                hi_res_feature_shape=hi_res_feature_shape,
+                exo_data_shape=exo_data_shape,
+            )
         super().build(x_shape)
 
     def get_config(self):
@@ -2436,19 +2347,32 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         config.update({
             'features': self.features,
             'exo_features': self.exo_features,
-            'patch_size': self.patch_size,
-            'num_heads': self.num_heads,
-            'key_dim': self.key_dim,
-            'embed_dim': self.embed_dim,
-            'learned_pos_encoding': self.learned_pos_encoding,
-            'bias_scale': self.bias_scale,
-            'window_size': self.window_size,
-            'radius': self.radius,
+            'n_layers': self.n_layers,
             'window_shift': self.window_shift,
-            'dropout': self.dropout,
-            'linear_attention': self.linear_attention,
+            **self._layer_kwargs,
         })
         return config
+
+    def call(self, x, hi_res_feature=None, exo_data=None):
+        """Run *x* through each transformer layer in sequence.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D latent tensor.
+        hi_res_feature : tf.Tensor | None
+            High-resolution features (passed to every layer).
+        exo_data : tf.Tensor | None
+            Exogenous lat/lon(/time) data (passed to every layer).
+
+        Returns
+        -------
+        tf.Tensor
+            Same shape as *x*.
+        """
+        for layer in self.transformer_layers:
+            x = layer(x, hi_res_feature=hi_res_feature, exo_data=exo_data)
+        return x
 
 
 class ExpandDims(tf.keras.layers.Layer):
