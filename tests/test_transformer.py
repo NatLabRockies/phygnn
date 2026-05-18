@@ -214,12 +214,12 @@ def test_wmha_shifted_window_alibi():
     query = tf.random.normal((1, 4, 4, 8))
     lat = np.linspace(30, 40, 4).reshape(1, 4, 1, 1) * np.ones((1, 1, 4, 1))
     lon = np.linspace(-100, -90, 4).reshape(1, 1, 4, 1) * np.ones((1, 4, 1, 1))
+    lat_lon = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
     output = layer(
         query,
         query,
-        lat=tf.constant(lat, dtype=tf.float32),
-        lon=tf.constant(lon, dtype=tf.float32),
+        lat_lon=tf.constant(lat_lon, dtype=tf.float32),
     )
 
     assert output.shape == (1, 4, 4, 8)
@@ -512,7 +512,7 @@ def test_sup3r_transformer_layer_partial_patch_kept():
     exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
     layer.build(x.shape, hr.shape, exo_data.shape)
-    hr_clean, nan_mask, _, _ = layer.ek.prepare_sparse_tensor(hr)
+    hr_clean, nan_mask, _ = layer.ek.prepare_sparse_tensor(hr)
     k = layer.ek(hr_clean)
 
     assert k.shape == (1, 2, 2, 8)
@@ -546,7 +546,7 @@ def test_multichannel_partial_nan_kept():
     exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
     layer.build(x.shape, hr.shape, exo_data.shape)
-    hr_clean, nan_mask, _, _ = layer.ek.prepare_sparse_tensor(hr)
+    hr_clean, nan_mask, _ = layer.ek.prepare_sparse_tensor(hr)
 
     # (0,0): one channel valid → should be unmasked (False)
     # (3,3): both channels NaN → should be masked (True)

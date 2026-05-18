@@ -682,8 +682,9 @@ def test_pos_encoding_patch_size_gt1_2d():
     lon = lon * np.ones((1, n_rows, 1, 1))
     lat = tf.constant(lat, dtype=tf.float32)
     lon = tf.constant(lon, dtype=tf.float32)
+    lat_lon = tf.concat([lat, lon], axis=-1)
 
-    enc = pos_enc(lat=lat, lon=lon)
+    enc = pos_enc(lat_lon=lat_lon)
     assert enc.shape == (
         1,
         n_rows // patch_size,
@@ -719,8 +720,9 @@ def test_pos_encoding_patch_size_gt1_3d():
     lon = lon * np.ones((1, n_rows, 1, n_times, 1))
     lat = tf.constant(lat, dtype=tf.float32)
     lon = tf.constant(lon, dtype=tf.float32)
+    lat_lon = tf.concat([lat, lon], axis=-1)
 
-    enc = pos_enc(lat=lat, lon=lon)
+    enc = pos_enc(lat_lon=lat_lon)
     assert enc.shape == (
         1,
         n_rows // patch_size,
@@ -749,8 +751,9 @@ def test_tokenize_encode_lat_lon_encoding_values():
 
     min_period = pos_enc.min_period_spatial
     max_period = pos_enc.max_period_spatial
+    lat_lon = tf.concat([lat, lon], axis=-1)
 
-    enc = pos_enc.encode_lat_lon(lat, lon, min_period, max_period)
+    enc = pos_enc.encode_lat_lon(lat_lon, min_period, max_period)
     lat_enc = PositionEncoder._freq_encode(
         lat, d=embed_dim // 2, min_period=min_period, max_period=max_period
     )
@@ -761,7 +764,7 @@ def test_tokenize_encode_lat_lon_encoding_values():
     expected = tf.reshape(stacked, (1, 2, 2, embed_dim))
     np.testing.assert_allclose(enc.numpy(), expected.numpy(), atol=1e-6)
 
-    x_enc = pos_enc(lat=lat, lon=lon)
+    x_enc = pos_enc(lat_lon=lat_lon)
     np.testing.assert_allclose(x_enc.numpy(), enc.numpy(), atol=1e-6)
 
 
@@ -771,6 +774,7 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     x = tf.zeros((1, 2, 2, 2, 1), dtype=tf.float32)
     lat = tf.ones_like(x)
     lon = 2.0 * tf.ones_like(x)
+    lat_lon = tf.concat([lat, lon], axis=-1)
     time = 3.0 * tf.ones_like(x)
 
     pos_enc = PositionEncoder(patch_size=1, embed_dim=embed_dim)
@@ -793,7 +797,7 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     monkeypatch.setattr(pos_enc, 'encode_lat_lon', _fake_lat_lon)
     monkeypatch.setattr(pos_enc, 'encode_time', _fake_time)
 
-    x_enc = pos_enc(lat=lat, lon=lon, time=time)
+    x_enc = pos_enc(lat_lon=lat_lon, time=time)
     expected = lat_lon_out + time_out
 
     np.testing.assert_allclose(x_enc.numpy(), expected.numpy(), atol=1e-6)

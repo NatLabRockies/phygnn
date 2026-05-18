@@ -284,7 +284,7 @@ class PatchEncoder(tf.keras.layers.Layer):
         """
         return self.proj_layer(x)
 
-    def prepare_sparse_tensor(self, x, lat=None, lon=None):
+    def prepare_sparse_tensor(self, x, lat_lon=None):
         """Prepare sparse spatial inputs for patch encoding.
 
         NaNs are filled patchwise so partially observed patches remain usable.
@@ -294,10 +294,9 @@ class PatchEncoder(tf.keras.layers.Layer):
         ----------
         x : tf.Tensor
             4D or 5D sparse input tensor.
-        lat : tf.Tensor | None
-            Optional latitude grid to pool to token resolution.
-        lon : tf.Tensor | None
-            Optional longitude grid to pool to token resolution.
+        lat_lon : tf.Tensor | None
+            Optional coordinate grid with latitude and longitude in the last
+            dimension. Pooled to token resolution when patching is active.
 
         Returns
         -------
@@ -305,24 +304,21 @@ class PatchEncoder(tf.keras.layers.Layer):
             Sparse input with NaNs filled patchwise.
         nan_mask : tf.Tensor
             Boolean token mask where True marks fully invalid patches.
-        pooled_lat : tf.Tensor | None
-            Latitude pooled to token resolution when patching is active.
-        pooled_lon : tf.Tensor | None
-            Longitude pooled to token resolution when patching is active.
+        pooled_lat_lon : tf.Tensor | None
+            Coordinates pooled to token resolution when patching is active.
         """
         pixel_valid = ~tf.math.reduce_all(tf.math.is_nan(x), axis=-1)
         x_clean = self._fill_patchwise_nans(x)
         nan_mask = ~pixel_valid
 
         if self.patch_size == 1:
-            return x_clean, nan_mask, lat, lon
+            return x_clean, nan_mask, lat_lon
 
         token_valid = tf.cast(pixel_valid[..., tf.newaxis], tf.float32)
         token_valid = self.valid_pool(token_valid) > 0
         nan_mask = ~tf.squeeze(token_valid, axis=-1)
-        pooled_lat = None if lat is None else self.avg_pool(lat)
-        pooled_lon = None if lon is None else self.avg_pool(lon)
-        return x_clean, nan_mask, pooled_lat, pooled_lon
+        pooled_lat_lon = None if lat_lon is None else self.avg_pool(lat_lon)
+        return x_clean, nan_mask, pooled_lat_lon
 
     def _fill_patchwise_nans(self, x):
         """Fill NaNs with the mean of valid values inside each patch."""
@@ -496,8 +492,8 @@ class PositionEncoder(tf.keras.layers.Layer):
         min_freq = 2 * np.pi / max_period
         max_freq = 2 * np.pi / min_period
         freqs = tf.linspace(min_freq, max_freq, d // 2)
-        theta = tf.cast(freqs, k.dtype) * k
-        return tf.concat([tf.sin(theta), tf.cos(theta)], axis=-1)
+        theta = tf.cast(freqs, k.dtype)[:, tf.newaxis] * k[..., tf.newaxis, :]
+        return tf.concat([tf.sin(theta), tf.cos(theta)], axis=-2)
 
     @staticmethod
     def _compute_doy_soy(time):
@@ -524,15 +520,14 @@ class PositionEncoder(tf.keras.layers.Layer):
             (soy / np.timedelta64(1, 's')).astype(np.float32),
         )
 
-    def encode_lat_lon(self, lat, lon, min_period, max_period):
+    def encode_lat_lon(self, lat_lon, min_period, max_period):
         """Sinusoidal positional encoding for latitude and longitude.
 
         Parameters
         ----------
-        lat : tf.Tensor
-            Latitude tensor (..., 1) in degrees.
-        lon : tf.Tensor
-            Longitude tensor (..., 1) in degrees.
+        lat_lon : tf.Tensor
+            Coordinate tensor (..., 2) in degrees with latitude in channel 0
+            and longitude in channel 1.
         min_period : float
             Minimum period in degrees.
         max_period : float
@@ -549,21 +544,14 @@ class PositionEncoder(tf.keras.layers.Layer):
             'Embedding dimension must be divisible by 4 for latitude and '
             'longitude encoding.'
         )
-        lat_enc = self._freq_encode(
-            lat,
+        lat_lon_enc = self._freq_encode(
+            lat_lon,
             d=self.embed_dim // 2,
             min_period=min_period,
             max_period=max_period,
         )
-        lon_enc = self._freq_encode(
-            lon,
-            d=self.embed_dim // 2,
-            min_period=min_period,
-            max_period=max_period,
-        )
-        stacked = tf.stack([lat_enc, lon_enc], axis=-1)
         return tf.reshape(
-            stacked, tf.concat([tf.shape(stacked)[:-2], [-1]], axis=0)
+            lat_lon_enc, tf.concat([tf.shape(lat_lon_enc)[:-2], [-1]], axis=0)
         )
 
     def encode_time(self, time, min_period, max_period):
@@ -626,15 +614,14 @@ class PositionEncoder(tf.keras.layers.Layer):
         super().build(input_shape)
 
     @tf.function
-    def call(self, lat, lon, time=None):
+    def call(self, lat_lon, time=None):
         """Get positional encoding for attention blocks.
 
         Parameters
         ----------
-        lat : tf.Tensor
-            Latitude tensor (..., 1) in degrees.
-        lon : tf.Tensor
-            Longitude tensor (..., 1) in degrees.
+        lat_lon : tf.Tensor
+            Coordinate tensor (..., 2) in degrees with latitude in channel 0
+            and longitude in channel 1.
         time : tf.Tensor | None
             Optional Unix timestamp tensor in seconds since epoch with shape
             ``(..., 1)``. If ``None``, time encoding is skipped.
@@ -648,13 +635,12 @@ class PositionEncoder(tf.keras.layers.Layer):
             rather than the unpooled coordinate grid.
         """
         if self.patch_size > 1:
-            lat = self._pool_layer(lat)
-            lon = self._pool_layer(lon)
+            lat_lon = self._pool_layer(lat_lon)
             if time is not None:
                 time = self._pool_layer(time)
 
         x_enc = self.encode_lat_lon(
-            lat, lon, self.min_period_spatial, self.max_period_spatial
+            lat_lon, self.min_period_spatial, self.max_period_spatial
         )
         if self.rank == 5 and time is not None:
             x_enc += self.encode_time(
@@ -1218,22 +1204,32 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         local_mask = local_mask[None, :, :]
         return tf.logical_and(tf.cast(kv_mask, tf.bool), local_mask)
 
-    def _haversine_bias(self, lat_q, lon_q, lat_v, lon_v):
+    def _haversine_bias(self, lat_lon_q, lat_lon_v):
         """Compute scaled haversine ALiBi bias.
 
-        All inputs should be broadcastable tensors of lat/lon in
-        **degrees**. The last two dims represent (n_q, 1) and (1, n_v)
-        or equivalent shapes that broadcast to (n_q, n_v).
+        Inputs are grouped coordinate tensors in **degrees** with trailing
+        latitude/longitude channels. The method computes pairwise distances
+        between query and key/value coordinates.
+
+        Parameters
+        ----------
+        lat_lon_q : tf.Tensor
+            Query coordinates with shape ``(..., n_q, 2)``.
+        lat_lon_v : tf.Tensor
+            Key/value coordinates with shape ``(..., n_v, 2)``.
 
         Returns
         -------
         tf.Tensor
             ``(..., num_heads, n_q, n_v)`` bias tensor.
         """
-        lat_q_rad = lat_q * (np.pi / 180.0)
-        lon_q_rad = lon_q * (np.pi / 180.0)
-        lat_v_rad = lat_v * (np.pi / 180.0)
-        lon_v_rad = lon_v * (np.pi / 180.0)
+        lat_lon_q = tf.expand_dims(lat_lon_q, axis=-2)
+        lat_lon_v = tf.expand_dims(lat_lon_v, axis=-3)
+
+        lat_q_rad = lat_lon_q[..., 0] * (np.pi / 180.0)
+        lon_q_rad = lat_lon_q[..., 1] * (np.pi / 180.0)
+        lat_v_rad = lat_lon_v[..., 0] * (np.pi / 180.0)
+        lon_v_rad = lat_lon_v[..., 1] * (np.pi / 180.0)
 
         dlat = lat_q_rad - lat_v_rad
         dlon = lon_q_rad - lon_v_rad
@@ -1247,10 +1243,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         bias = tf.expand_dims(bias, axis=1)
         return bias * self.head_slopes
 
-    def _compute_window_alibi(self, lat, lon, geometry, time=None):
-        """Compute per-window ALiBi bias from lat/lon (and optionally time).
+    def _compute_window_alibi(self, lat_lon, geometry, time=None):
+        """Compute per-window ALiBi bias from coordinates.
 
-        Partitions lat/lon into Q windows, extracts KV lat/lon patches,
+        Partitions coordinates into Q windows, extracts KV coordinate patches,
         computes haversine distance, and scales by head slopes.
         When *time* is provided an additional temporal term is added:
         ``-|t_q - t_kv|^2 * bias_scale_time``, also scaled by head slopes.
@@ -1260,17 +1256,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         tf.Tensor
             ``(B * n_windows, num_heads, ws*ws[*T], tile_tokens[*T])``
         """
-        q_lat_win = self._partition_windows(lat, geometry)
-        q_lon_win = self._partition_windows(lon, geometry)
-        kv_lat_win = tf.transpose(
-            self._extract_overlap_patches(lat, geometry), [0, 2, 1]
-        )
-        kv_lon_win = tf.transpose(
-            self._extract_overlap_patches(lon, geometry), [0, 2, 1]
-        )
-        bias = self._haversine_bias(
-            q_lat_win, q_lon_win, kv_lat_win, kv_lon_win
-        )
+        q_lat_lon_win = self._partition_windows(lat_lon, geometry)
+        kv_lat_lon_win = self._extract_overlap_patches(lat_lon, geometry)
+        bias = self._haversine_bias(q_lat_lon_win, kv_lat_lon_win)
 
         if time is not None and self.bias_scale_time > 0:
             # q_time: (B*n_win, ws*ws*T, 1)
@@ -1289,21 +1277,16 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 
         return bias
 
-    def _compute_full_alibi(self, lat, lon, batch_size, time=None):
-        """Compute full-attention ALiBi bias from lat/lon (and optionally time)
+    def _compute_full_alibi(self, lat_lon, batch_size, time=None):
+        """Compute full-attention ALiBi bias from coordinates and time.
 
         Returns
         -------
         tf.Tensor
             ``(B, num_heads, n_tokens, n_tokens)``
         """
-        dims = [batch_size, -1, 1]
-        lat_q = tf.reshape(lat, dims)
-        lon_q = tf.reshape(lon, dims)
-        dims = [batch_size, 1, -1]
-        lat_v = tf.reshape(lat, dims)
-        lon_v = tf.reshape(lon, dims)
-        bias = self._haversine_bias(lat_q, lon_q, lat_v, lon_v)
+        flat_lat_lon = tf.reshape(lat_lon, [batch_size, -1, 2])
+        bias = self._haversine_bias(flat_lat_lon, flat_lat_lon)
 
         if time is not None and self.bias_scale_time > 0:
             t_q = tf.reshape(time, [batch_size, -1, 1])
@@ -1358,8 +1341,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         value,
         training,
         kv_nan_mask,
-        lat,
-        lon,
+        lat_lon,
         time=None,
         return_attention_scores=False,
         use_causal_mask=False,
@@ -1377,8 +1359,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         k_flat = tf.reshape(key, dims)
         v_flat = tf.reshape(value, dims)
 
-        if bias is None and self.use_pos_bias and lat is not None:
-            bias = self._compute_full_alibi(lat, lon, batch_size, time=time)
+        if bias is None and self.use_pos_bias and lat_lon is not None:
+            bias = self._compute_full_alibi(lat_lon, batch_size, time=time)
 
         attention_mask = None
         if kv_nan_mask is not None:
@@ -1407,8 +1389,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         value,
         training,
         kv_nan_mask,
-        lat,
-        lon,
+        lat_lon,
         window_size,
         time=None,
         return_attention_scores=False,
@@ -1420,12 +1401,12 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         Note: a caller-provided ``bias`` is not supported in the windowed
         path because decomposing a full-sequence bias tensor into per-window
         tiles requires the same geometry as the KV patch extraction and is
-        not implemented.  Use ``lat``/``lon`` for ALiBi-style additive bias.
+        not implemented.  Use ``lat_lon`` for ALiBi-style additive bias.
         """
         if bias is not None:
             logger.warning(
                 'A caller-provided bias is not supported for windowed '
-                'attention and will be ignored. Use lat/lon for ALiBi bias.'
+                'attention and will be ignored. Use lat_lon for ALiBi bias.'
             )
         time_steps = tf.shape(query)[3] if len(query.shape) == 5 else 1
         geometry = self._get_window_geometry(
@@ -1438,10 +1419,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_mask = self._build_window_mask(kv_nan_mask, query.dtype, geometry)
 
         bias_win = None
-        if self.use_pos_bias and lat is not None:
-            bias_win = self._compute_window_alibi(
-                lat, lon, geometry, time=time
-            )
+        if self.use_pos_bias and lat_lon is not None:
+            bias_win = self._compute_window_alibi(lat_lon, geometry, time=time)
 
         output = super().call(
             query=q_win,
@@ -1472,8 +1451,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         use_causal_mask=False,
         bias=None,
         kv_nan_mask=None,
-        lat=None,
-        lon=None,
+        lat_lon=None,
         time=None,
     ):
         """Run windowed attention.
@@ -1490,14 +1468,14 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             Additive pre-softmax bias ``(batch, heads, n_q, n_v)`` or None.
             When provided, overrides the internally-computed ALiBi / NaN bias
             in the full-attention path.  Not supported for the windowed path
-            (a warning is logged and the value is ignored); use ``lat``/``lon``
+            (a warning is logged and the value is ignored); use ``lat_lon``
             for ALiBi bias with windowed attention.
         kv_nan_mask : tf.Tensor | None
             Boolean ``(B, H_v, W_v)`` where True marks NaN KV positions.
             Both the full and windowed paths convert this internally to the
             appropriate attention mask format.
-        lat, lon : tf.Tensor | None
-            ``(B, H, W, 1)`` grids for per-window ALiBi bias.
+        lat_lon : tf.Tensor | None
+            ``(B, H, W, 2)`` coordinate grid for per-window ALiBi bias.
         time : tf.Tensor | None
             Time coordinate grid for temporal ALiBi bias.
         return_attention_scores : bool
@@ -1524,8 +1502,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             value=value,
             training=training,
             kv_nan_mask=kv_nan_mask,
-            lat=lat,
-            lon=lon,
+            lat_lon=lat_lon,
             time=time,
             return_attention_scores=return_attention_scores,
             use_causal_mask=use_causal_mask,
@@ -1742,8 +1719,7 @@ class TransformerLayer(tf.keras.layers.Layer):
         key,
         value,
         kv_nan_mask=None,
-        lat=None,
-        lon=None,
+        lat_lon=None,
         time=None,
     ):
         """Call transformer layer with multi-head attention output.
@@ -1758,8 +1734,8 @@ class TransformerLayer(tf.keras.layers.Layer):
             ``(B, H, W, C)`` value tensor.
         kv_nan_mask : tf.Tensor | None
             Boolean mask for NaN KV positions.
-        lat, lon : tf.Tensor | None
-            Latitude / longitude grids for ALiBi bias.
+        lat_lon : tf.Tensor | None
+            Coordinate grid for ALiBi bias.
         time : tf.Tensor | None
             Time coordinate grid for temporal ALiBi bias.
         """
@@ -1776,8 +1752,7 @@ class TransformerLayer(tf.keras.layers.Layer):
                 key=key,
                 value=value,
                 kv_nan_mask=kv_nan_mask,
-                lat=lat,
-                lon=lon,
+                lat_lon=lat_lon,
                 time=time,
             )
         attn_res = query + attn
@@ -1920,6 +1895,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             max_period_temporal=self.max_period_temporal,
         )
         self.lo = tf.keras.layers.RMSNormalization()
+        self.lq = tf.keras.layers.RMSNormalization()
+        self.lk = tf.keras.layers.RMSNormalization()
         self.mlp = None  # built in build()
         self.decoder = None  # built in build()
 
@@ -2005,15 +1982,14 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
     @staticmethod
     def _split_exo_inputs(exo_data):
-        """Split exogenous inputs into lat, lon, and optional time."""
-        lat = None if exo_data is None else exo_data[..., 0:1]
-        lon = None if exo_data is None else exo_data[..., 1:2]
+        """Split exogenous inputs into coordinates and optional time."""
+        lat_lon = None if exo_data is None else exo_data[..., :2]
         time = (
             None
             if exo_data is None or exo_data.shape[-1] < 3
             else exo_data[..., 2:3]
         )
-        return lat, lon, time
+        return lat_lon, time
 
     def _pad_to_patch_multiple(
         self, tensor, mode='CONSTANT', constant_values=0
@@ -2069,6 +2045,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.eq.build(x_shape)
         self.pe.build(x_shape)
         self.lo.build((None, None, self.embed_dim))
+        self.lq.build((None, None, self.embed_dim))
+        self.lk.build((None, None, self.embed_dim))
         self.mlp = tf.keras.Sequential([
             tf.keras.layers.Dense(4 * self.embed_dim),
             SwiGLU(),
@@ -2123,8 +2101,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             input.  All channels are processed jointly.
             May contain NaNs for sparse observations.
         exo_data : tf.Tensor
-            Exogenous data with latitude (channel 0), longitude
-            (channel 1), and optionally time (channel 2).  Required
+            Exogenous data with latitude/longitude in channels 0:2 and
+            optionally time in channel 2. Required
             whenever *hi_res_feature* is provided.
 
         Returns
@@ -2152,34 +2130,34 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         )
         exo_data = self._pad_to_patch_multiple(exo_data, mode='REFLECT')
 
-        lat, lon, time = self._split_exo_inputs(exo_data)
+        lat_lon, time = self._split_exo_inputs(exo_data)
 
         # shared query encoding
         q = self.eq(x)
         pos_enc = None
         if self.linear_attention or not self.use_pos_bias:
-            pos_enc = self.pe(lat=lat, lon=lon, time=time)
+            pos_enc = self.pe(lat_lon=lat_lon, time=time)
             q = q + pos_enc  # noqa: PLR6104
 
         # Pool coordinates to token resolution once
         pool = self.eq.avg_pool
         if pool is not None:
-            lat, lon = pool(lat), pool(lon)
+            lat_lon = pool(lat_lon)
             time = pool(time) if time is not None else None
 
         # joint K/V encoding across all features
-        hr_clean, nan_mask, _, _ = self.ek.prepare_sparse_tensor(
-            hi_res_feature
-        )
+        hr_clean, nan_mask, _ = self.ek.prepare_sparse_tensor(hi_res_feature)
         k = self.ek(hr_clean)
         v = self.ev(hr_clean)
 
         if self.linear_attention or not self.use_pos_bias:
             k = k + pos_enc  # noqa: PLR6104
 
-        attn_kwargs = dict(query=q, key=k, value=v, kv_nan_mask=nan_mask)
+        attn_kwargs = dict(
+            query=self.lq(q), key=self.lk(k), value=v, kv_nan_mask=nan_mask
+        )
         if not self.linear_attention:
-            attn_kwargs.update(lat=lat, lon=lon, time=time)
+            attn_kwargs.update(lat_lon=lat_lon, time=time)
         projected = self.attn(**attn_kwargs)
 
         # shared post-attention: residual -> norm -> MLP -> residual
