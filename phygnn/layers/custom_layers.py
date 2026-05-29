@@ -951,16 +951,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         )
         kv_height, kv_width, kv_dynamic = self._get_spatial_shape(key)
 
-        tile_size = self.window_size + 2 * self.radius
-
         if query_dynamic or kv_dynamic:
-            covers_q = tf.logical_and(
-                tile_size >= query_height, tile_size >= query_width
-            )
-            covers_kv = tf.logical_and(
-                tile_size >= kv_height, tile_size >= kv_width
-            )
-            return self.window_size, tf.logical_and(covers_q, covers_kv)
+            return self.window_size, False
 
         window_size = min(
             self.window_size,
@@ -969,13 +961,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             int(kv_height),
             int(kv_width),
         )
-        use_full_attention = (
-            tile_size >= query_height
-            and tile_size >= query_width
-            and tile_size >= kv_height
-            and tile_size >= kv_width
-        )
-        return window_size, use_full_attention
+        return window_size, False
 
     def _get_window_geometry(self, query, key, window_size, time_steps=1):
         """Get the full geometry for one windowed-attention call.
@@ -2178,9 +2164,8 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
     """Stack of ``Sup3rTransformerLayer`` instances with optional
     window shifting on odd layers in the stack.
 
-    When ``window_shift`` is non-zero, even-indexed layers (0, 2, ...)
-    use no shift and odd-indexed layers (1, 3, ...) use the given shift.
-    """
+    When ``window_shift`` is non-zero, the window_shift for the i-th layer
+    is computed as ``i * window_shift % window_size``."""
 
     def __init__(
         self,
@@ -2218,12 +2203,13 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         self.exo_features = exo_features
         self.n_layers = n_layers
         self.window_shift = window_shift
+        self.window_size = layer_kwargs.get('window_size', 1)
         self._layer_kwargs = {
             k: v for k, v in layer_kwargs.items() if k != 'window_shift'
         }
         self.transformer_layers = []
         for i in range(n_layers):
-            shift = window_shift if i % 2 == 1 else 0
+            shift = i * window_shift % self.window_size
             self.transformer_layers.append(
                 Sup3rTransformerLayer(
                     features=features,
