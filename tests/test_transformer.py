@@ -52,8 +52,8 @@ def test_wmha_full_window_matches_standard_mha():
     win_layer = WindowedMultiHeadAttention(
         num_heads=num_heads,
         key_dim=key_dim,
-        window_size=10,
-        radius=2,
+        window_size=4,
+        radius=0,
     )
     full_layer.build((None, 16, 8), (None, 16, 8))
     win_layer.build((None, None, None, 8), (None, None, None, 8))

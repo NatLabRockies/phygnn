@@ -961,6 +961,12 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             int(kv_height),
             int(kv_width),
         )
+        # If the window covers the entire grid, use full attention directly.
+        if (
+            window_size >= int(query_height)
+            and window_size >= int(query_width)
+        ):
+            return window_size, True
         return window_size, False
 
     def _get_window_geometry(self, query, key, window_size, time_steps=1):
@@ -1161,34 +1167,13 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         flat = geometry.batch_size * geometry.n_windows
         kv_mask = tf.reshape(valid_patches, [flat, 1, tile_t])
 
-        # --- Spatial local-neighborhood mask ---------------------------------
-        window_rows = tf.repeat(
-            tf.range(geometry.window_size), geometry.window_size
-        )
-        window_cols = tf.tile(
-            tf.range(geometry.window_size), [geometry.window_size]
-        )
-        tile_rows = tf.repeat(tf.range(geometry.tile_size), geometry.tile_size)
-        tile_cols = tf.tile(tf.range(geometry.tile_size), [geometry.tile_size])
-
-        row_mask = tf.logical_and(
-            tile_rows[None, :] >= window_rows[:, None],
-            tile_rows[None, :] <= (window_rows[:, None] + 2 * geometry.radius),
-        )
-        col_mask = tf.logical_and(
-            tile_cols[None, :] >= window_cols[:, None],
-            tile_cols[None, :] <= (window_cols[:, None] + 2 * geometry.radius),
-        )
-        # (ws*ws, tile_tokens)
-        local_mask_4d = tf.logical_and(row_mask, col_mask)
-
-        # Expand each spatial pair to a (T × T) block.  For 4D (T=1) this is a
-        # no-op.  For 5D, all time steps cross-attend within the spatial
-        # neighborhood; causal masking can be AND-ed on top if needed.
-        # (ws*ws*T, tile_tokens*T)
-        local_mask = tf.repeat(tf.repeat(local_mask_4d, T, axis=0), T, axis=1)
-        local_mask = local_mask[None, :, :]
-        return tf.logical_and(tf.cast(kv_mask, tf.bool), local_mask)
+        # --- Spatial mask ---------------------------------------------------
+        # The tile already defines the receptive field (window + halo of
+        # `radius`).  Every Q token in the window attends to every valid KV
+        # token in the tile — no further spatial restriction needed.
+        window_t = geometry.window_size * geometry.window_size * T
+        kv_mask = tf.broadcast_to(kv_mask, [flat, window_t, tile_t])
+        return tf.cast(kv_mask, tf.bool)
 
     def _haversine_bias(self, lat_lon_q, lat_lon_v):
         """Compute scaled haversine ALiBi bias.
