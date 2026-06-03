@@ -234,35 +234,32 @@ class PatchEncoder(tf.keras.layers.Layer):
             Shape tuple of the input tensor
         """
         self.rank = len(input_shape)
-        if self.patch_size > 1:
-            kwargs = {
-                'kernel_size': [self.patch_size] * (self.rank - 2),
-                'strides': [self.patch_size] * (self.rank - 2),
-                'filters': self.embed_dim,
-                'padding': 'valid',
-            }
-            pool_kwargs = {
-                'pool_size': self.patch_size,
-                'strides': self.patch_size,
-                'padding': 'valid',
-            }
-            self.proj_layer = (
-                tf.keras.layers.Conv2D(**kwargs)
-                if self.rank == 4
-                else tf.keras.layers.Conv3D(**kwargs)
-            )
-            self.avg_pool = (
-                tf.keras.layers.AveragePooling2D(**pool_kwargs)
-                if self.rank == 4
-                else tf.keras.layers.AveragePooling3D(**pool_kwargs)
-            )
-            self.valid_pool = (
-                tf.keras.layers.MaxPooling2D(**pool_kwargs)
-                if self.rank == 4
-                else tf.keras.layers.MaxPooling3D(**pool_kwargs)
-            )
-        else:
-            self.proj_layer = tf.keras.layers.Dense(self.embed_dim)
+        kwargs = {
+            'kernel_size': [self.patch_size] * (self.rank - 2),
+            'strides': [self.patch_size] * (self.rank - 2),
+            'filters': self.embed_dim,
+            'padding': 'valid',
+        }
+        pool_kwargs = {
+            'pool_size': self.patch_size,
+            'strides': self.patch_size,
+            'padding': 'valid',
+        }
+        self.proj_layer = (
+            tf.keras.layers.Conv2D(**kwargs)
+            if self.rank == 4
+            else tf.keras.layers.Conv3D(**kwargs)
+        )
+        self.avg_pool = (
+            tf.keras.layers.AveragePooling2D(**pool_kwargs)
+            if self.rank == 4
+            else tf.keras.layers.AveragePooling3D(**pool_kwargs)
+        )
+        self.valid_pool = (
+            tf.keras.layers.MaxPooling2D(**pool_kwargs)
+            if self.rank == 4
+            else tf.keras.layers.MaxPooling3D(**pool_kwargs)
+        )
         self.proj_layer.build(input_shape)
         super().build(input_shape)
 
@@ -389,20 +386,17 @@ class PatchDecoder(tf.keras.layers.Layer):
     def build(self, input_shape):
         """Build the PatchDecoder layer based on an input shape."""
         self.rank = len(input_shape)
-        if self.patch_size > 1:
-            kwargs = {
-                'filters': self.output_dim,
-                'kernel_size': [self.patch_size] * (self.rank - 2),
-                'strides': [self.patch_size] * (self.rank - 2),
-                'padding': 'valid',
-            }
-            self.proj_layer = (
-                tf.keras.layers.Conv2DTranspose(**kwargs)
-                if self.rank == 4
-                else tf.keras.layers.Conv3DTranspose(**kwargs)
-            )
-        else:
-            self.proj_layer = tf.keras.layers.Dense(self.output_dim)
+        kwargs = {
+            'filters': self.output_dim,
+            'kernel_size': [self.patch_size] * (self.rank - 2),
+            'strides': [self.patch_size] * (self.rank - 2),
+            'padding': 'valid',
+        }
+        self.proj_layer = (
+            tf.keras.layers.Conv2DTranspose(**kwargs)
+            if self.rank == 4
+            else tf.keras.layers.Conv3DTranspose(**kwargs)
+        )
         self.proj_layer.build(input_shape)
         super().build(input_shape)
 
@@ -634,10 +628,8 @@ class PositionEncoder(tf.keras.layers.Layer):
             When ``patch_size > 1``, this corresponds to the pooled token grid
             rather than the unpooled coordinate grid.
         """
-        if self.patch_size > 1:
-            lat_lon = self._pool_layer(lat_lon)
-            if time is not None:
-                time = self._pool_layer(time)
+        lat_lon = self._pool_layer(lat_lon)
+        time = self._pool_layer(time) if time is not None else None
 
         x_enc = self.encode_lat_lon(
             lat_lon, self.min_period_spatial, self.max_period_spatial
