@@ -69,78 +69,6 @@ def test_wmha_full_window_matches_standard_mha():
     )
 
 
-def test_wmha_caps_window_size_to_tensor_shape(monkeypatch):
-    """Configured window sizes larger than the grid should be capped."""
-    captured = {}
-
-    def fake_call(
-        self,
-        query,
-        value,
-        key=None,
-        attention_mask=None,
-        return_attention_scores=False,
-        training=None,
-        use_causal_mask=False,
-        bias=None,
-    ):
-        captured['query_shape'] = tuple(query.shape)
-        captured['value_shape'] = tuple(value.shape)
-        return query
-
-    monkeypatch.setattr(MultiHeadAttention, 'call', fake_call)
-
-    layer = WindowedMultiHeadAttention(
-        num_heads=2, key_dim=4, window_size=10, radius=0
-    )
-    query = tf.random.normal((1, 4, 4, 8))
-    value = tf.random.normal((1, 4, 4, 8))
-
-    output = layer(query, value)
-
-    assert output.shape == (1, 4, 4, 8)
-    assert captured['query_shape'] == (1, 16, 8)
-    assert captured['value_shape'] == (1, 16, 8)
-
-
-def test_wmha_ignores_shift_when_window_covers_grid(monkeypatch):
-    """Single-window calls should route to full attention and ignore shift."""
-    captured = {}
-
-    def fake_call(
-        self,
-        query,
-        value,
-        key=None,
-        attention_mask=None,
-        return_attention_scores=False,
-        training=None,
-        use_causal_mask=False,
-        bias=None,
-    ):
-        captured['query_shape'] = tuple(query.shape)
-        captured['value_shape'] = tuple(value.shape)
-        return query
-
-    monkeypatch.setattr(MultiHeadAttention, 'call', fake_call)
-
-    layer = WindowedMultiHeadAttention(
-        num_heads=2,
-        key_dim=4,
-        window_size=10,
-        radius=1,
-        window_shift=3,
-    )
-    query = tf.random.normal((1, 4, 4, 8))
-    value = tf.random.normal((1, 4, 4, 8))
-
-    output = layer(query, value)
-
-    assert output.shape == (1, 4, 4, 8)
-    assert captured['query_shape'] == (1, 16, 8)
-    assert captured['value_shape'] == (1, 16, 8)
-
-
 def test_wmha_get_config():
     """Config should include window size, radius, and num_heads."""
     layer = WindowedMultiHeadAttention(
@@ -240,7 +168,7 @@ def test_wmha_masks_padded_kv_positions():
     # 4 windows, each Q has 4 tokens, each KV tile has 16 tokens
     assert attention_mask.shape == (4, 4, 16)
     # Top-left window's halo extends beyond the boundary on top and left.
-    # Row 0 and col 0 of the tile are padding → should be masked False.
+    # Row 0 and col 0 of the tile are padding -> should be masked False.
     top_left_mask = attention_mask[0]
     pad_row_indices = [0, 1, 2, 3]  # tile row 0, all cols
     pad_col_indices = [0, 4, 8, 12]  # tile col 0, all rows
@@ -548,8 +476,8 @@ def test_multichannel_partial_nan_kept():
     layer.build(x.shape, hr.shape, exo_data.shape)
     hr_clean, nan_mask, _ = layer.ek.prepare_sparse_tensor(hr)
 
-    # (0,0): one channel valid → should be unmasked (False)
-    # (3,3): both channels NaN → should be masked (True)
+    # (0,0): one channel valid -> should be unmasked (False)
+    # (3,3): both channels NaN -> should be masked (True)
     assert not nan_mask[0, 0, 0].numpy(), 'partially-valid pixel was masked'
     assert nan_mask[0, 3, 3].numpy(), 'fully-NaN pixel was not masked'
     # cleaned tensor should have no NaNs

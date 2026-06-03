@@ -49,8 +49,6 @@ class WindowGeometry:
     window_shift: Union[int, tf.Tensor]
     tile_size: Union[int, tf.Tensor]
     radius: Union[int, tf.Tensor]
-    query_top_padding: Union[int, tf.Tensor]
-    query_left_padding: Union[int, tf.Tensor]
     query_height_padding: Union[int, tf.Tensor]
     query_width_padding: Union[int, tf.Tensor]
     padded_query_height: Union[int, tf.Tensor]
@@ -922,45 +920,6 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                 initializer=tf.keras.initializers.Constant(slopes),
             )
 
-    @staticmethod
-    def _get_spatial_shape(tensor):
-        """Get spatial height and width from static or dynamic shape."""
-        height = tensor.shape[1]
-        width = tensor.shape[2]
-
-        if None in {height, width}:
-            return tf.shape(tensor)[1], tf.shape(tensor)[2], True
-
-        return int(height), int(width), False
-
-    def _resolve_windowing(self, query, key):
-        """Resolve the active window size and routing for this call."""
-        if self.window_size is None:
-            return None, True
-
-        query_height, query_width, query_dynamic = self._get_spatial_shape(
-            query
-        )
-        kv_height, kv_width, kv_dynamic = self._get_spatial_shape(key)
-
-        if query_dynamic or kv_dynamic:
-            return self.window_size, False
-
-        window_size = min(
-            self.window_size,
-            int(query_height),
-            int(query_width),
-            int(kv_height),
-            int(kv_width),
-        )
-        # If the window covers the entire grid, use full attention directly.
-        if (
-            window_size >= int(query_height)
-            and window_size >= int(query_width)
-        ):
-            return window_size, True
-        return window_size, False
-
     def _get_window_geometry(self, query, key, window_size, time_steps=1):
         """Get the full geometry for one windowed-attention call.
 
@@ -969,35 +928,26 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         """
 
         batch_size = tf.shape(query)[0]
-        query_height, query_width, q_dyn = self._get_spatial_shape(query)
-        kv_height, kv_width, kv_dyn = self._get_spatial_shape(key)
+        query_height = tf.shape(query)[1]
+        query_width = tf.shape(query)[2]
+        kv_height = tf.shape(key)[1]
+        kv_width = tf.shape(key)[2]
 
         window_shift = min(self.window_shift, window_size - 1)
-        # This method is only called from the windowed path, meaning the tile
-        # fits within the spatial extent by construction.  Keep radius and
-        # tile_size as static Python ints so that tf.image.extract_patches
-        # (which requires static sizes) works with dynamic spatial shapes.
-        if q_dyn or kv_dyn:
-            radius = self.radius
-            tile_size = window_size + 2 * radius
-        else:
-            max_tile = min(query_height, query_width, kv_height, kv_width)
-            radius = max(min(self.radius, (max_tile - window_size) // 2), 0)
-            tile_size = window_size + 2 * radius
+        radius = self.radius
+        tile_size = window_size + 2 * radius
 
-        query_top_padding = window_shift
-        query_left_padding = window_shift
         query_height_padding = (
-            window_size - (query_height + query_top_padding) % window_size
+            window_size - (query_height + window_shift) % window_size
         ) % window_size
         query_width_padding = (
-            window_size - (query_width + query_left_padding) % window_size
+            window_size - (query_width + window_shift) % window_size
         ) % window_size
         padded_query_height = (
-            query_height + query_top_padding + query_height_padding
+            query_height + window_shift + query_height_padding
         )
         padded_query_width = (
-            query_width + query_left_padding + query_width_padding
+            query_width + window_shift + query_width_padding
         )
         n_window_rows = padded_query_height // window_size
         n_window_cols = padded_query_width // window_size
@@ -1007,8 +957,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 
         total_height = window_size * (n_window_rows - 1) + tile_size
         total_width = window_size * (n_window_cols - 1) + tile_size
-        kv_top_padding = radius + query_top_padding
-        kv_left_padding = radius + query_left_padding
+        kv_top_padding = radius + window_shift
+        kv_left_padding = radius + window_shift
         extra_height = tf.maximum(
             0, total_height - (kv_height + kv_top_padding)
         )
@@ -1030,8 +980,6 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             window_shift=window_shift,
             tile_size=tile_size,
             radius=radius,
-            query_top_padding=query_top_padding,
-            query_left_padding=query_left_padding,
             query_height_padding=query_height_padding,
             query_width_padding=query_width_padding,
             padded_query_height=padded_query_height,
@@ -1060,8 +1008,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         ws = geometry.window_size
         padding = [
             [0, 0],
-            [geometry.query_top_padding, geometry.query_height_padding],
-            [geometry.query_left_padding, geometry.query_width_padding],
+            [geometry.window_shift, geometry.query_height_padding],
+            [geometry.window_shift, geometry.query_width_padding],
             [0, 0],
             [0, 0],
         ]
@@ -1130,7 +1078,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         # --- NaN / padding validity -----------------------------------------
         if kv_nan_mask is not None:
             kv_valid = tf.cast(~kv_nan_mask, dtype)
-            if len(kv_valid.shape) == 3:  # 4D: (B, H, W) → add channel dim
+            if len(kv_valid.shape) == 3:  # 4D: (B, H, W) -> add channel dim
                 kv_valid = kv_valid[..., tf.newaxis]
         else:
             kv_valid = tf.ones(
@@ -1292,9 +1240,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             feat_out,
         ]
         output = tf.reshape(output, pad_shape)
-        tpad, lpad = geometry.query_top_padding, geometry.query_left_padding
+        ws = geometry.window_shift
         h, w = geometry.query_height, geometry.query_width
-        output = output[:, tpad : tpad + h, lpad : lpad + w, :, :]
+        output = output[:, ws : ws + h, ws : ws + w, :, :]
         return tf.reshape(output, tf.shape(query))
 
     def _full_attention_call(
@@ -1458,7 +1406,6 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         if key is None:
             key = value
 
-        window_size, use_full_attention = self._resolve_windowing(query, key)
         kwargs = dict(
             query=query,
             key=key,
@@ -1471,10 +1418,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             use_causal_mask=use_causal_mask,
             bias=bias,
         )
-        return (
-            self._full_attention_call(**kwargs)
-            if use_full_attention
-            else self._window_attention_call(**kwargs, window_size=window_size)
+        if self.window_size is None:
+            return self._full_attention_call(**kwargs)
+        return self._window_attention_call(
+            **kwargs, window_size=self.window_size
         )
 
     def get_config(self):
