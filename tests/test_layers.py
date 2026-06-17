@@ -1133,9 +1133,9 @@ def test_5d_single_time_step_matches_4d():
     the shared Keras MHA projection, so the outputs must be identical.
     """
     tf.random.set_seed(42)
-    # window_size=2, radius=0: small, deterministic geometry
+    # window_size=2: small, deterministic geometry
     layer = WindowedMultiHeadAttention(
-        window_size=2, radius=0, num_heads=1, key_dim=4
+        window_size=2, num_heads=1, key_dim=4
     )
 
     B, H, W, C = 1, 4, 4, 8
