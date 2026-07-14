@@ -18,13 +18,16 @@ from phygnn.layers.custom_layers import (
     GaussianNoiseAxis,
     LogTransform,
     MaskedSqueezeAndExcitation,
+    PositionEncoder,
     SigLin,
     SkipConnection,
     SpatioTemporalExpansion,
     Sup3rConcatObs,
     Sup3rObsModel,
+    Sup3rTransformerLayer,
     TileLayer,
     UnitConversion,
+    WindowedMultiHeadAttention,
 )
 from phygnn.layers.handlers import HiddenLayers, Layers
 
@@ -259,18 +262,18 @@ def test_double_skip():
     x_input = None
 
     for i, layer in enumerate(layers):
-        if i in (3, 11):  # skip start
+        if i in {3, 11}:  # skip start
             cache = tf.identity(x)
             assert id(cache) != id(x)
-        elif i in (7, 15):  # skip end
+        elif i in {7, 15}:  # skip end
             x_input = tf.identity(x)
             assert id(x_input) != id(x)
 
         x = layer(x)
 
-        if i in (3, 11):  # skip start
+        if i in {3, 11}:  # skip start
             assert layer._cache is not None
-        elif i in (7, 15):  # skip end
+        elif i in {7, 15}:  # skip end
             assert layer._cache is None
             tf.assert_equal(x, tf.add(x_input, cache))
 
@@ -579,6 +582,247 @@ def test_cbam_3d():
             tf.assert_equal(x_in, x)
 
 
+def test_transformer_layer_2d():
+    """Test the transformer layer with 2D data (4D tensor input)"""
+    hidden_layers = [
+        {
+            'class': 'Sup3rTransformerLayer',
+            'embed_dim': 8,
+            'key_dim': 8,
+        }
+    ]
+    layers = HiddenLayers(hidden_layers)
+    assert len(layers.layers) == 1
+
+    x = np.random.normal(0, 1, size=(4, 4, 4, 3))
+    y = np.random.uniform(0, 1, size=(4, 4, 4, 1))
+    mask = np.random.choice([False, True], (1, 4, 4), p=[0.1, 0.9])
+    mask = np.repeat(mask, 4, axis=0)  # shape (4, 4, 4)
+    y[mask] = np.nan
+
+    lat = np.linspace(30, 40, 4).reshape(1, 4, 1, 1) * np.ones((4, 1, 4, 1))
+    lon = np.linspace(-100, -90, 4).reshape(1, 1, 4, 1) * np.ones((4, 4, 1, 1))
+    exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
+
+    for layer in layers:
+        x_in = x
+        x = layer(
+            x.astype(np.float32),
+            y.astype(np.float32),
+            exo_data=exo_data,
+        )
+        assert x.shape == x_in.shape
+        with pytest.raises(tf.errors.InvalidArgumentError):
+            tf.assert_equal(x_in, x)
+    assert not any(np.isnan(x.numpy().flatten()))
+
+
+def test_transformer_layer_3d():
+    """Test the transformer layer with 3D data (5D tensor input)"""
+    hidden_layers = [
+        {
+            'class': 'Sup3rTransformerLayer',
+            'features': ['a', 'b', 'c'],
+            'exo_features': ['d', 'e', 'f'],
+            'embed_dim': 8,
+            'key_dim': 8,
+        }
+    ]
+    layers = HiddenLayers(hidden_layers)
+    assert len(layers.layers) == 1
+
+    x = np.random.normal(0, 1, size=(1, 10, 10, 6, 3)).astype(np.float32)
+    y = np.random.uniform(0, 1, size=(1, 10, 10, 6, 3)).astype(np.float32)
+    mask = np.random.choice([False, True], (1, 10, 10, 6), p=[0.1, 0.9])
+    y[mask] = np.nan
+
+    lat = np.linspace(30, 40, 10).reshape(1, 10, 1, 1, 1) * np.ones((
+        1,
+        1,
+        10,
+        6,
+        1,
+    ))
+    lon = np.linspace(-100, -90, 10).reshape(1, 1, 10, 1, 1) * np.ones((
+        1,
+        10,
+        1,
+        6,
+        1,
+    ))
+    exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
+
+    for layer in layers:
+        x_in = x
+        x = layer(x, y, exo_data=exo_data)
+        assert x.shape == x_in.shape
+        with pytest.raises(tf.errors.InvalidArgumentError):
+            tf.assert_equal(x_in, x)
+    assert not any(np.isnan(x.numpy().flatten()))
+
+
+def test_pos_encoding_patch_size_gt1_2d():
+    """Test 2D positional encoding with patch_size > 1.
+
+    Verify:
+    1. Encoding output has the correct token shape
+    2. Different spatial positions get distinct encodings
+    """
+    embed_dim = 8
+    patch_size = 2
+    n_rows, n_cols = 4, 4
+    x = tf.zeros((1, n_rows, n_cols, 1), dtype=tf.float32)
+
+    pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
+
+    lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1)
+    lat = lat * np.ones((1, 1, n_cols, 1))
+    lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1)
+    lon = lon * np.ones((1, n_rows, 1, 1))
+    lat = tf.constant(lat, dtype=tf.float32)
+    lon = tf.constant(lon, dtype=tf.float32)
+    lat_lon = tf.concat([lat, lon], axis=-1)
+
+    enc = pos_enc(lat_lon=lat_lon)
+    assert enc.shape == (
+        1,
+        n_rows // patch_size,
+        n_cols // patch_size,
+        embed_dim,
+    )
+
+    # Different rows must produce different encodings
+    enc_spatial = enc
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            enc_spatial[0, 0, 0].numpy(),
+            enc_spatial[0, 1, 0].numpy(),
+        )
+
+
+def test_pos_encoding_patch_size_gt1_3d():
+    """Test 3D positional encoding with patch_size > 1.
+
+    Same logic as the 2D case but for a 5D tensor.
+    """
+    embed_dim = 8
+    patch_size = 2
+    n_rows, n_cols, n_times = 4, 4, 4
+    x = tf.zeros((1, n_rows, n_cols, n_times, 1), dtype=tf.float32)
+
+    pos_enc = PositionEncoder(patch_size=patch_size, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
+
+    lat = np.linspace(30, 40, n_rows).reshape(1, n_rows, 1, 1, 1)
+    lat = lat * np.ones((1, 1, n_cols, n_times, 1))
+    lon = np.linspace(-100, -90, n_cols).reshape(1, 1, n_cols, 1, 1)
+    lon = lon * np.ones((1, n_rows, 1, n_times, 1))
+    lat = tf.constant(lat, dtype=tf.float32)
+    lon = tf.constant(lon, dtype=tf.float32)
+    lat_lon = tf.concat([lat, lon], axis=-1)
+
+    enc = pos_enc(lat_lon=lat_lon)
+    assert enc.shape == (
+        1,
+        n_rows // patch_size,
+        n_cols // patch_size,
+        n_times // patch_size,
+        embed_dim,
+    )
+
+    # Different spatial positions must produce different encodings
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            enc[0, 0, 0, 0].numpy(),
+            enc[0, 1, 0, 0].numpy(),
+        )
+
+
+def test_tokenize_encode_lat_lon_encoding_values():
+    """Test PositionEncoder lat/lon encoding matches freq encoding."""
+    embed_dim = 8
+    x = tf.zeros((1, 2, 2, 1), dtype=tf.float32)
+    lat = tf.constant([[[[0.0], [1.0]], [[2.0], [3.0]]]], dtype=tf.float32)
+    lon = tf.constant([[[[10.0], [10.0]], [[20.0], [20.0]]]], dtype=tf.float32)
+
+    pos_enc = PositionEncoder(patch_size=1, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
+
+    min_period = pos_enc.min_period_spatial
+    max_period = pos_enc.max_period_spatial
+    lat_lon = tf.concat([lat, lon], axis=-1)
+
+    enc = pos_enc.encode_lat_lon(lat_lon, min_period, max_period)
+    lat_enc = PositionEncoder._freq_encode(
+        lat, d=embed_dim // 2, min_period=min_period, max_period=max_period
+    )
+    lon_enc = PositionEncoder._freq_encode(
+        lon, d=embed_dim // 2, min_period=min_period, max_period=max_period
+    )
+    stacked = tf.stack([lat_enc, lon_enc], axis=-1)
+    expected = tf.reshape(stacked, (1, 2, 2, embed_dim))
+    np.testing.assert_allclose(enc.numpy(), expected.numpy(), atol=1e-6)
+
+    x_enc = pos_enc(lat_lon=lat_lon)
+    np.testing.assert_allclose(x_enc.numpy(), enc.numpy(), atol=1e-6)
+
+
+def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
+    """Test 5D call() adds time encoding when lat/lon/time are provided."""
+    embed_dim = 8
+    x = tf.zeros((1, 2, 2, 2, 1), dtype=tf.float32)
+    lat = tf.ones_like(x)
+    lon = 2.0 * tf.ones_like(x)
+    lat_lon = tf.concat([lat, lon], axis=-1)
+    time = 3.0 * tf.ones_like(x)
+
+    pos_enc = PositionEncoder(patch_size=1, embed_dim=embed_dim)
+    pos_enc.build(x.shape)
+
+    spatial_shape = (1, 2, 2, 2, embed_dim)
+    lat_lon_out = tf.ones(spatial_shape, dtype=tf.float32)
+    time_out = 2.0 * tf.ones(spatial_shape, dtype=tf.float32)
+
+    calls = {'lat_lon': 0, 'time': 0}
+
+    def _fake_lat_lon(*args, **kwargs):  # noqa: ARG001
+        calls['lat_lon'] += 1
+        return lat_lon_out
+
+    def _fake_time(*args, **kwargs):  # noqa: ARG001
+        calls['time'] += 1
+        return time_out
+
+    monkeypatch.setattr(pos_enc, 'encode_lat_lon', _fake_lat_lon)
+    monkeypatch.setattr(pos_enc, 'encode_time', _fake_time)
+
+    x_enc = pos_enc(lat_lon=lat_lon, time=time)
+    expected = lat_lon_out + time_out
+
+    np.testing.assert_allclose(x_enc.numpy(), expected.numpy(), atol=1e-6)
+    assert calls['lat_lon'] == 1
+    assert calls['time'] == 1
+
+
+def test_transformer_exo_data_time_forwarding():
+    """Test Sup3rTransformerLayer forwards lat/lon/time from exo_data."""
+    layer = Sup3rTransformerLayer()
+
+    x = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
+    y = tf.random.normal((1, 3, 4, 1), dtype=tf.float32)
+
+    # With 3 exo channels (lat, lon, time) - should not error
+    exo_data = tf.random.normal((1, 3, 4, 3), dtype=tf.float32)
+    out = layer(x, y, exo_data=exo_data)
+    assert out.shape == x.shape
+
+    # With 2 exo channels (lat, lon only) - should not error
+    exo_data = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
+    out = layer(x, y, exo_data=exo_data)
+    assert out.shape == x.shape
+
+
 def test_functional_layer():
     """Test the generic functional layer"""
 
@@ -880,3 +1124,32 @@ def test_recursive_hidden_layers_init():
 
     assert tf.reduce_any(tf.math.is_nan(y))
     assert not tf.reduce_any(tf.math.is_nan(out))
+
+
+def test_5d_single_time_step_matches_4d():
+    """5D windowed attention with T=1 should numerically match 4D.
+
+    Both paths produce the same (B*n_win, ws*ws, C) inner tokens fed to
+    the shared Keras MHA projection, so the outputs must be identical.
+    """
+    tf.random.set_seed(42)
+    # window_size=2, radius=0: small, deterministic geometry
+    layer = WindowedMultiHeadAttention(
+        window_size=2, radius=0, num_heads=1, key_dim=4
+    )
+
+    B, H, W, C = 1, 4, 4, 8
+    q4 = tf.random.normal((B, H, W, C), seed=42)
+    kv4 = tf.random.normal((B, H, W, C), seed=0)
+
+    # 4D call — builds the layer
+    out4 = layer(q4, kv4)  # (B, H, W, C_out)
+
+    # 5D T=1 equivalents use the same weights (no rebuild, same inner shape)
+    q5 = q4[:, :, :, tf.newaxis, :]   # (B, H, W, 1, C)
+    kv5 = kv4[:, :, :, tf.newaxis, :]  # (B, H, W, 1, C)
+    out5 = layer(q5, kv5)  # (B, H, W, 1, C_out)
+
+    np.testing.assert_allclose(
+        out4.numpy(), out5.numpy()[:, :, :, 0, :], atol=1e-5
+    )
