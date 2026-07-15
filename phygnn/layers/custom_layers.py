@@ -1375,9 +1375,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
     feature channels are processed jointly by a single K/V encoder and
     attention head.
 
-    When ``bias_scale > 0``, a distance-based bias replaces explicit
-    positional encodings (ALiBi).  Otherwise, sinusoidal positional
-    encodings are added to Q and K.
+    When ``bias_scale > 0``, a distance-based bias replaces explicit spatial
+    positional encodings (ALiBi).  Temporal sinusoidal encodings are still
+    added to Q and K for 5D inputs with time data.  Otherwise, sinusoidal
+    spatial and temporal positional encodings are added to Q and K.
     """
 
     def __init__(
@@ -1719,6 +1720,15 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             lat_lon = pool(lat_lon)
             time = pool(time) if time is not None else None
 
+        time_enc = None
+        if self.use_pos_bias and self.rank == 5 and time is not None:
+            time_enc = self.pe.encode_time(
+                time,
+                self.min_period_temporal,
+                self.max_period_temporal,
+            )
+            q = q + time_enc  # noqa: PLR6104
+
         # joint K/V encoding across all features
         hr_clean, nan_mask, _ = self.ek.prepare_sparse_tensor(hi_res_feature)
         k = self.ek(hr_clean)
@@ -1726,6 +1736,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         if not self.use_pos_bias:
             k = k + pos_enc  # noqa: PLR6104
+        elif time_enc is not None:
+            k = k + time_enc  # noqa: PLR6104
 
         projected = self.attn(
             query=self.lq(q),

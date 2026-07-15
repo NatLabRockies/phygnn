@@ -823,6 +823,50 @@ def test_transformer_exo_data_time_forwarding():
     assert out.shape == x.shape
 
 
+def test_transformer_alibi_keeps_time_encoding(monkeypatch):
+    """ALiBi should replace spatial encoding but keep time encoding."""
+    layer = Sup3rTransformerLayer(
+        features=['obs'],
+        bias_scale=1.0,
+        embed_dim=8,
+        key_dim=8,
+        num_heads=2,
+        window_size=2,
+    )
+
+    x = tf.random.normal((1, 4, 4, 2, 3), dtype=tf.float32)
+    y = tf.random.normal((1, 4, 4, 2, 1), dtype=tf.float32)
+    lat = tf.ones((1, 4, 4, 2, 1), dtype=tf.float32)
+    lon = 2.0 * tf.ones((1, 4, 4, 2, 1), dtype=tf.float32)
+    time = 3.0 * tf.ones((1, 4, 4, 2, 1), dtype=tf.float32)
+    exo_data = tf.concat([lat, lon, time], axis=-1)
+
+    calls = {'time': 0, 'lat_lon': 0}
+
+    def _fake_time(time, *args, **kwargs):  # noqa: ARG001
+        calls['time'] += 1
+        shape = tf.concat([tf.shape(time)[:-1], [layer.embed_dim]], axis=0)
+        return tf.zeros(shape, dtype=time.dtype)
+
+    def _fake_lat_lon(*args, **kwargs):  # noqa: ARG001
+        calls['lat_lon'] += 1
+        pytest.fail('ALiBi should replace spatial sinusoidal encoding')
+
+    monkeypatch.setattr(layer.pe, 'encode_time', _fake_time)
+    monkeypatch.setattr(layer.pe, 'encode_lat_lon', _fake_lat_lon)
+
+    run_eagerly = tf.config.functions_run_eagerly()
+    tf.config.run_functions_eagerly(True)
+    try:
+        out = layer(x, y, exo_data=exo_data)
+    finally:
+        tf.config.run_functions_eagerly(run_eagerly)
+
+    assert out.shape == x.shape
+    assert calls['time'] == 1
+    assert calls['lat_lon'] == 0
+
+
 def test_functional_layer():
     """Test the generic functional layer"""
 
