@@ -12,6 +12,8 @@ from phygnn.utilities.tf_utilities import idw_fill, mean_fill
 
 logger = logging.getLogger(__name__)
 
+EARTH_RADIUS_M = 6_371_000.0
+
 
 def get_custom_layer_objects():
     """Get local custom layer classes for Keras deserialization."""
@@ -43,12 +45,8 @@ class WindowGeometry:
     batch_size: tf.Tensor
     query_height: Union[int, tf.Tensor]
     query_width: Union[int, tf.Tensor]
-    kv_height: Union[int, tf.Tensor]
-    kv_width: Union[int, tf.Tensor]
     window_size: Union[int, tf.Tensor]
     window_shift: Union[int, tf.Tensor]
-    tile_size: Union[int, tf.Tensor]
-    radius: Union[int, tf.Tensor]
     query_height_padding: Union[int, tf.Tensor]
     query_width_padding: Union[int, tf.Tensor]
     padded_query_height: Union[int, tf.Tensor]
@@ -56,8 +54,6 @@ class WindowGeometry:
     n_window_rows: Union[int, tf.Tensor]
     n_window_cols: Union[int, tf.Tensor]
     n_windows: Union[int, tf.Tensor]
-    tile_tokens: Union[int, tf.Tensor]
-    pad_spec: tf.Tensor
     time_steps: Union[int, tf.Tensor] = 1
 
 
@@ -661,11 +657,6 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
     scaled QK^T logits before softmax and must broadcast onto
     ``(B, num_heads, T, S)``.
 
-    Flash attention is used through ``tf.keras.ops.dot_product_attention()``
-    when dropout is inactive for the current call and attention scores are not
-    requested. The bias is forwarded to the fused op so ALiBi and other
-    additive pre-softmax bias terms keep the same behavior.
-
     Example::
         layer = MultiHeadAttention(num_heads=8, key_dim=64)
         output = layer(query, value, bias=my_bias)
@@ -678,7 +669,6 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         value,
         key=None,
         attention_mask=None,
-        return_attention_scores=False,
         training=None,
         use_causal_mask=False,
         bias=None,
@@ -732,14 +722,13 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         key = self._key_dense(key)
         value = self._value_dense(value)
 
-        attention_output, attention_scores = self._compute_attention(
+        attention_output = self._compute_attention(
             query,
             key,
             value,
             attention_mask=attention_mask,
             training=training,
             bias=bias,
-            return_attention_scores=return_attention_scores,
         )
         attention_output = self._output_dense(attention_output)
 
@@ -751,8 +740,6 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         if query_mask is not None:
             _set_keras_mask(attention_output, query_mask)
 
-        if return_attention_scores:
-            return attention_output, attention_scores
         return attention_output
 
     def _compute_attention(
@@ -763,31 +750,7 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         attention_mask=None,
         training=None,
         bias=None,
-        return_attention_scores=False,
     ):
-        use_fused_attention = not return_attention_scores and (
-            self._dropout == 0.0 or training is False
-        )
-
-        if use_fused_attention:
-            if attention_mask is not None:
-                mask_expansion_axis = -len(self._attention_axes) * 2 - 1
-                target_rank = len(query.shape)
-                for _ in range(target_rank - len(attention_mask.shape)):
-                    attention_mask = tf.expand_dims(
-                        attention_mask, axis=mask_expansion_axis
-                    )
-
-            attention_output = tf.keras.ops.dot_product_attention(
-                query=query,
-                key=key,
-                value=value,
-                bias=None if bias is None else tf.cast(bias, query.dtype),
-                mask=attention_mask,
-                flash_attention=None,
-            )
-            return attention_output, None
-
         query = tf.multiply(query, 1.0 / tf.math.sqrt(float(self._key_dim)))
 
         attention_scores = tf.einsum(self._dot_product_equation, key, query)
@@ -806,44 +769,39 @@ class MultiHeadAttention(tf.keras.layers.MultiHeadAttention):
         attention_output = tf.einsum(
             self._combine_equation, attention_scores_dropout, value
         )
-        return attention_output, attention_scores
+        return attention_output
 
 
 class WindowedMultiHeadAttention(MultiHeadAttention):
     """MultiHeadAttention with overlapping spatial windowing.
 
-    Partitions query tokens into non-overlapping spatial windows, expands
-    each execution block into a larger key/value tile, runs attention per
-    block, and reassembles the output.
+    Partitions query tokens into non-overlapping spatial windows, runs
+    attention per window, and reassembles the output.
 
     This reduces peak memory from O(n_q * n_v) to
-    O(n_q * (window_size + 2 * radius)^2) while preserving locality
-    information from ALiBi bias (or any additive pre-softmax bias).
+    O(n_q * window_size^2) while preserving locality information from
+    ALiBi bias (or any additive pre-softmax bias).
 
     Parameters
     ----------
     window_size : int
-        Side length of the non-overlapping query execution block in token
-        units.
+        Side length of the non-overlapping execution block in token units.
         When patch encoding is active upstream, each token represents a
         ``patch_size x patch_size`` spatial region.
-        ``window_size=1`` is supported but operationally discouraged because
-        it creates one halo tile per query token, which is typically poor for
-        runtime and memory efficiency.
-    radius : int
-        Symmetric halo radius, in token units, added on each side of the
-        query window when reading the key/value tile. The effective tile side
-        length is ``window_size + 2 * radius``.
     num_heads : int
         Number of attention heads.
     key_dim : int
         Dimension of each attention head.
+    distance_scale : float
+        Length scale (in meters) over which the ALiBi distance bias
+        decays. Larger values produce a gentler decay, allowing
+        attention to reach farther spatially.
     **kwargs
         Additional keyword arguments forwarded to ``MultiHeadAttention``.
 
     Example::
         layer = WindowedMultiHeadAttention(
-            window_size=8, radius=20, num_heads=4, key_dim=64
+            window_size=8, num_heads=4, key_dim=64
         )
         output = layer(
             query, value,
@@ -856,42 +814,30 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
     def __init__(
         self,
         window_size=None,
-        radius=None,
         window_shift=0,
         num_heads=1,
         key_dim=64,
         bias_scale=0.0,
-        bias_scale_time=0.0,
+        distance_scale=10000.0,
         **kwargs,
     ):
         super().__init__(num_heads=num_heads, key_dim=key_dim, **kwargs)
         self.window_size = window_size
-        self.radius = radius
         self.window_shift = int(window_shift)
         self.bias_scale = float(bias_scale)
-        self.bias_scale_time = float(bias_scale_time)
+        self.distance_scale = float(distance_scale)
         self.use_pos_bias = self.bias_scale > 0
         self.head_slopes = None
 
-        if self.radius is not None and self.radius < 0:
-            msg = 'radius must be >= 0.'
-            logger.error(msg)
-            raise ValueError(msg)
         if self.window_shift < 0:
             msg = 'window_shift must be >= 0.'
             logger.error(msg)
             raise ValueError(msg)
-        if self.window_size is not None:
-            if self.radius is None:
-                msg = 'radius is required when window_size is set.'
-                logger.error(msg)
-                raise ValueError(msg)
-            if self.window_shift >= self.window_size:
-                msg = 'window_shift must be < window_size.'
-                logger.error(msg)
-                raise ValueError(msg)
-        elif self.radius is not None:
-            msg = 'radius must be None when window_size is None.'
+        if (
+            self.window_size is not None
+            and self.window_shift >= self.window_size
+        ):
+            msg = 'window_shift must be < window_size.'
             logger.error(msg)
             raise ValueError(msg)
 
@@ -920,7 +866,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                 initializer=tf.keras.initializers.Constant(slopes),
             )
 
-    def _get_window_geometry(self, query, key, window_size, time_steps=1):
+    def _get_window_geometry(self, query, window_size, time_steps=1):
         """Get the full geometry for one windowed-attention call.
 
         This applies shifted padded-window geometry for the multi-window
@@ -930,12 +876,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         batch_size = tf.shape(query)[0]
         query_height = tf.shape(query)[1]
         query_width = tf.shape(query)[2]
-        kv_height = tf.shape(key)[1]
-        kv_width = tf.shape(key)[2]
 
         window_shift = min(self.window_shift, window_size - 1)
-        radius = self.radius
-        tile_size = window_size + 2 * radius
 
         query_height_padding = (
             window_size - (query_height + window_shift) % window_size
@@ -946,40 +888,17 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         padded_query_height = (
             query_height + window_shift + query_height_padding
         )
-        padded_query_width = (
-            query_width + window_shift + query_width_padding
-        )
+        padded_query_width = query_width + window_shift + query_width_padding
         n_window_rows = padded_query_height // window_size
         n_window_cols = padded_query_width // window_size
         n_windows = n_window_rows * n_window_cols
-
-        tile_tokens = tile_size * tile_size
-
-        total_height = window_size * (n_window_rows - 1) + tile_size
-        total_width = window_size * (n_window_cols - 1) + tile_size
-        kv_top_padding = radius + window_shift
-        kv_left_padding = radius + window_shift
-        extra_height = tf.maximum(
-            0, total_height - (kv_height + kv_top_padding)
-        )
-        extra_width = tf.maximum(0, total_width - (kv_width + kv_left_padding))
-        pad_spec = tf.stack([
-            tf.stack([0, 0]),
-            tf.stack([kv_top_padding, extra_height]),
-            tf.stack([kv_left_padding, extra_width]),
-            tf.stack([0, 0]),
-        ])
 
         return WindowGeometry(
             batch_size=batch_size,
             query_height=query_height,
             query_width=query_width,
-            kv_height=kv_height,
-            kv_width=kv_width,
             window_size=window_size,
             window_shift=window_shift,
-            tile_size=tile_size,
-            radius=radius,
             query_height_padding=query_height_padding,
             query_width_padding=query_width_padding,
             padded_query_height=padded_query_height,
@@ -987,8 +906,6 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             n_window_rows=n_window_rows,
             n_window_cols=n_window_cols,
             n_windows=n_windows,
-            tile_tokens=tile_tokens,
-            pad_spec=pad_spec,
             time_steps=time_steps,
         )
 
@@ -1027,53 +944,25 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         flat = geometry.batch_size * geometry.n_windows
         return tf.reshape(t, [flat, ws * ws * t_steps, c])
 
-    @staticmethod
-    def _extract_overlap_patches(tensor, geometry):
-        """Pad and extract overlapping patches.
-
-        Handles 4D ``(B, H, W, C)`` and 5D ``(B, H, W, T, C)`` inputs.
-
-        Returns
-        -------
-        tf.Tensor
-            4D: ``(B * n_windows, tile_tokens, C)``.
-            5D: ``(B * n_windows, tile_tokens * T, C)`` with spatial outer.
-        """
-        b, h, w = tf.shape(tensor)[0], tf.shape(tensor)[1], tf.shape(tensor)[2]
-        t_steps = tf.shape(tensor)[3] if len(tensor.shape) == 5 else 1
-        c = tf.shape(tensor)[-1]
-        # Fold T into channel dim so extract_patches (4D only) can run, then
-        # reshape the last dim back out.  For 4D inputs t_steps=1 is a no-op.
-        tensor_4d = tf.reshape(tensor, [b, h, w, t_steps * c])
-        padded = tf.pad(tensor_4d, geometry.pad_spec)
-        patches = tf.image.extract_patches(
-            padded,
-            sizes=[1, geometry.tile_size, geometry.tile_size, 1],
-            strides=[1, geometry.window_size, geometry.window_size, 1],
-            rates=[1, 1, 1, 1],
-            padding='VALID',
-        )
-        flat = geometry.batch_size * geometry.n_windows
-        return tf.reshape(patches, [flat, geometry.tile_tokens * t_steps, c])
-
-    @staticmethod
-    def _build_window_mask(kv_nan_mask, dtype, geometry):
+    @classmethod
+    def _build_window_mask(cls, kv_nan_mask, dtype, geometry):
         """Build the full per-window boolean attention mask.
 
-        Combines padding validity, optional NaN positions from
-        *kv_nan_mask*, and the exact local neighborhood inside each K/V tile.
+        Combines padding validity and optional NaN positions from
+        *kv_nan_mask*.
 
-        For 4D Q/KV, *kv_nan_mask* is ``(B, H_kv, W_kv)`` and the returned
-        mask has shape ``(B*n_windows, ws*ws, tile_tokens)``.
-        For 5D Q/KV, *kv_nan_mask* is ``(B, H_kv, W_kv, T)`` and the
-        returned mask has shape ``(B*n_windows, ws*ws*T, tile_tokens*T)``.
+        For 4D Q/KV, *kv_nan_mask* is ``(B, H, W)`` and the returned
+        mask has shape ``(B*n_windows, ws*ws, ws*ws)``.
+        For 5D Q/KV, *kv_nan_mask* is ``(B, H, W, T)`` and the
+        returned mask has shape ``(B*n_windows, ws*ws*T, ws*ws*T)``.
 
         Returns
         -------
         tf.Tensor
             Bool attention mask.
         """
-        T = geometry.time_steps  # Python int for 4D, tf.Tensor for 5D
+        T = geometry.time_steps
+        ws = geometry.window_size
 
         # --- NaN / padding validity -----------------------------------------
         if kv_nan_mask is not None:
@@ -1082,37 +971,26 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                 kv_valid = kv_valid[..., tf.newaxis]
         else:
             kv_valid = tf.ones(
-                tf.stack([1, geometry.kv_height, geometry.kv_width, T]),
+                tf.stack([
+                    geometry.batch_size,
+                    geometry.query_height,
+                    geometry.query_width,
+                    T,
+                ]),
                 dtype=dtype,
             )
 
-        kv_valid_padded = tf.pad(kv_valid, geometry.pad_spec)
-        valid_patches = tf.image.extract_patches(
-            kv_valid_padded,
-            sizes=[1, geometry.tile_size, geometry.tile_size, 1],
-            strides=[1, geometry.window_size, geometry.window_size, 1],
-            rates=[1, 1, 1, 1],
-            padding='VALID',
-        )
-        tile_t = geometry.tile_tokens * T
-        if kv_nan_mask is None:
-            bcast_shape = [
-                geometry.batch_size,
-                geometry.n_window_rows,
-                geometry.n_window_cols,
-                tile_t,
-            ]
-            valid_patches = tf.broadcast_to(valid_patches, bcast_shape)
+        # _partition_windows zero-pads, so padded positions become 0.0
+        # Output shape: (B*n_windows, ws*ws*T, 1)
+        valid_win = cls._partition_windows(kv_valid, geometry)
 
+        # Broadcast to full mask: each Q token attends to all valid KV tokens
+        # valid_win shape: (flat, ws*ws*T, 1) -> (flat, 1, ws*ws*T) for KV dim
         flat = geometry.batch_size * geometry.n_windows
-        kv_mask = tf.reshape(valid_patches, [flat, 1, tile_t])
-
-        # --- Spatial mask ---------------------------------------------------
-        # The tile already defines the receptive field (window + halo of
-        # `radius`).  Every Q token in the window attends to every valid KV
-        # token in the tile — no further spatial restriction needed.
-        window_t = geometry.window_size * geometry.window_size * T
-        kv_mask = tf.broadcast_to(kv_mask, [flat, window_t, tile_t])
+        window_t = ws * ws * T
+        kv_mask = tf.reshape(valid_win, [flat, window_t, 1])
+        kv_mask = tf.transpose(kv_mask, [0, 2, 1])  # (flat, 1, window_t)
+        kv_mask = tf.broadcast_to(kv_mask, [flat, window_t, window_t])
         return tf.cast(kv_mask, tf.bool)
 
     def _haversine_bias(self, lat_lon_q, lat_lon_v):
@@ -1137,10 +1015,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         lat_lon_q = tf.expand_dims(lat_lon_q, axis=-2)
         lat_lon_v = tf.expand_dims(lat_lon_v, axis=-3)
 
-        lat_q_rad = lat_lon_q[..., 0] * (np.pi / 180.0)
-        lon_q_rad = lat_lon_q[..., 1] * (np.pi / 180.0)
-        lat_v_rad = lat_lon_v[..., 0] * (np.pi / 180.0)
-        lon_v_rad = lat_lon_v[..., 1] * (np.pi / 180.0)
+        lat_q_rad, lon_q_rad = tf.unstack(lat_lon_q * (np.pi / 180.0), axis=-1)
+        lat_v_rad, lon_v_rad = tf.unstack(lat_lon_v * (np.pi / 180.0), axis=-1)
 
         dlat = lat_q_rad - lat_v_rad
         dlon = lon_q_rad - lon_v_rad
@@ -1149,65 +1025,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             + tf.cos(lat_q_rad) * tf.cos(lat_v_rad) * tf.sin(dlon / 2) ** 2
         )
         a = tf.clip_by_value(a, 0.0, 1.0)
-        distance = 2 * tf.asin(tf.sqrt(a))  # distance on unit sphere
-        bias = -(distance**2) * self.bias_scale
+        distance = 2 * EARTH_RADIUS_M * tf.asin(tf.sqrt(a))
+        bias = self.bias_scale * tf.math.tanh(-distance / self.distance_scale)
         bias = tf.expand_dims(bias, axis=1)
         return bias * self.head_slopes
-
-    def _compute_window_alibi(self, lat_lon, geometry, time=None):
-        """Compute per-window ALiBi bias from coordinates.
-
-        Partitions coordinates into Q windows, extracts KV coordinate patches,
-        computes haversine distance, and scales by head slopes.
-        When *time* is provided an additional temporal term is added:
-        ``-|t_q - t_kv|^2 * bias_scale_time``, also scaled by head slopes.
-
-        Returns
-        -------
-        tf.Tensor
-            ``(B * n_windows, num_heads, ws*ws[*T], tile_tokens[*T])``
-        """
-        q_lat_lon_win = self._partition_windows(lat_lon, geometry)
-        kv_lat_lon_win = self._extract_overlap_patches(lat_lon, geometry)
-        bias = self._haversine_bias(q_lat_lon_win, kv_lat_lon_win)
-
-        if time is not None and self.bias_scale_time > 0:
-            # q_time: (B*n_win, ws*ws*T, 1)
-            q_time = self._partition_windows(time, geometry)
-            # kv_time: (B*n_win, 1, tile_tokens*T)
-            kv_time = tf.transpose(
-                self._extract_overlap_patches(time, geometry), [0, 2, 1]
-            )
-            # temporal_diffs: (B*n_win, ws*ws*T, tile_tokens*T)
-            temporal_diffs = -((q_time - kv_time) ** 2) * self.bias_scale_time
-            # add head dim and scale:
-            # (B*n_win, num_heads, ws*ws*T, tile_tokens*T)
-            bias = (  # noqa: PLR6104
-                bias + self.head_slopes * temporal_diffs[:, tf.newaxis, :, :]
-            )
-
-        return bias
-
-    def _compute_full_alibi(self, lat_lon, batch_size, time=None):
-        """Compute full-attention ALiBi bias from coordinates and time.
-
-        Returns
-        -------
-        tf.Tensor
-            ``(B, num_heads, n_tokens, n_tokens)``
-        """
-        flat_lat_lon = tf.reshape(lat_lon, [batch_size, -1, 2])
-        bias = self._haversine_bias(flat_lat_lon, flat_lat_lon)
-
-        if time is not None and self.bias_scale_time > 0:
-            t_q = tf.reshape(time, [batch_size, -1, 1])
-            t_kv = tf.reshape(time, [batch_size, 1, -1])
-            temporal_diffs = -((t_q - t_kv) ** 2) * self.bias_scale_time
-            bias = (  # noqa: PLR6104
-                bias + self.head_slopes * temporal_diffs[:, tf.newaxis, :, :]
-            )
-
-        return bias
 
     @staticmethod
     def _reassemble_windows(output, query, geometry):
@@ -1253,10 +1074,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         training,
         kv_nan_mask,
         lat_lon,
-        time=None,
-        return_attention_scores=False,
         use_causal_mask=False,
-        bias=None,
     ):
         """Full attention path when the current call does not need windowing.
 
@@ -1270,8 +1088,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         k_flat = tf.reshape(key, dims)
         v_flat = tf.reshape(value, dims)
 
-        if bias is None and self.use_pos_bias and lat_lon is not None:
-            bias = self._compute_full_alibi(lat_lon, batch_size, time=time)
+        bias = None
+        if self.use_pos_bias and lat_lon is not None:
+            flat_lat_lon = tf.reshape(lat_lon, [batch_size, -1, 2])
+            bias = self._haversine_bias(flat_lat_lon, flat_lat_lon)
 
         attention_mask = None
         if kv_nan_mask is not None:
@@ -1283,14 +1103,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             value=v_flat,
             key=k_flat,
             attention_mask=attention_mask,
-            return_attention_scores=return_attention_scores,
             training=training,
             use_causal_mask=use_causal_mask,
             bias=bias,
         )
-        if return_attention_scores:
-            out_tensor, scores = output
-            return tf.reshape(out_tensor, tf.shape(query)), scores
         return tf.reshape(output, tf.shape(query))
 
     def _window_attention_call(
@@ -1302,53 +1118,34 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_nan_mask,
         lat_lon,
         window_size,
-        time=None,
-        return_attention_scores=False,
         use_causal_mask=False,
-        bias=None,
     ):
-        """Execute the full windowed attention path.
-
-        Note: a caller-provided ``bias`` is not supported in the windowed
-        path because decomposing a full-sequence bias tensor into per-window
-        tiles requires the same geometry as the KV patch extraction and is
-        not implemented.  Use ``lat_lon`` for ALiBi-style additive bias.
-        """
-        if bias is not None:
-            logger.warning(
-                'A caller-provided bias is not supported for windowed '
-                'attention and will be ignored. Use lat_lon for ALiBi bias.'
-            )
+        """Execute the full windowed attention path."""
         time_steps = tf.shape(query)[3] if len(query.shape) == 5 else 1
         geometry = self._get_window_geometry(
-            query, key, window_size, time_steps=time_steps
+            query, window_size, time_steps=time_steps
         )
 
         q_win = self._partition_windows(query, geometry)
-        k_win = self._extract_overlap_patches(key, geometry)
-        v_win = self._extract_overlap_patches(value, geometry)
+        k_win = self._partition_windows(key, geometry)
+        v_win = self._partition_windows(value, geometry)
         kv_mask = self._build_window_mask(kv_nan_mask, query.dtype, geometry)
 
         bias_win = None
         if self.use_pos_bias and lat_lon is not None:
-            bias_win = self._compute_window_alibi(lat_lon, geometry, time=time)
+            coords_win = self._partition_windows(lat_lon, geometry)
+            bias_win = self._haversine_bias(coords_win, coords_win)
 
         output = super().call(
             query=q_win,
             value=v_win,
             key=k_win,
             attention_mask=kv_mask,
-            return_attention_scores=return_attention_scores,
             training=training,
             use_causal_mask=use_causal_mask,
             bias=bias_win,
         )
 
-        if return_attention_scores:
-            out_tensor, scores = output
-            return self._reassemble_windows(
-                out_tensor, query, geometry
-            ), scores
         return self._reassemble_windows(output, query, geometry)
 
     @tf.function
@@ -1357,13 +1154,11 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         query,
         value,
         key=None,
-        return_attention_scores=False,
         training=None,
         use_causal_mask=False,
         bias=None,
         kv_nan_mask=None,
         lat_lon=None,
-        time=None,
     ):
         """Run windowed attention.
 
@@ -1387,12 +1182,6 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             appropriate attention mask format.
         lat_lon : tf.Tensor | None
             ``(B, H, W, 2)`` coordinate grid for per-window ALiBi bias.
-        time : tf.Tensor | None
-            Time coordinate grid for temporal ALiBi bias.
-        return_attention_scores : bool
-            If True the return value is ``(output, attention_scores)``.
-            For the windowed path, ``attention_scores`` contains the
-            concatenated per-window scores.
         use_causal_mask : bool
             Forwarded to the underlying ``MultiHeadAttention`` call.
         training : bool | None
@@ -1413,15 +1202,14 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             training=training,
             kv_nan_mask=kv_nan_mask,
             lat_lon=lat_lon,
-            time=time,
-            return_attention_scores=return_attention_scores,
             use_causal_mask=use_causal_mask,
-            bias=bias,
         )
-        if self.window_size is None:
-            return self._full_attention_call(**kwargs)
-        return self._window_attention_call(
-            **kwargs, window_size=self.window_size
+        return (
+            self._full_attention_call(**kwargs)
+            if self.window_size is None
+            else self._window_attention_call(
+                **kwargs, window_size=self.window_size
+            )
         )
 
     def get_config(self):
@@ -1429,104 +1217,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         config = super().get_config()
         config.update({
             'window_size': self.window_size,
-            'radius': self.radius,
             'window_shift': self.window_shift,
             'bias_scale': self.bias_scale,
-            'bias_scale_time': self.bias_scale_time,
-        })
-        return config
-
-
-class LinearMultiHeadAttention(tf.keras.layers.Layer):
-    """O(N) linear attention using the positive feature map ``elu(x) + 1``."""
-
-    def __init__(self, num_heads, key_dim, dropout=0.0, **kwargs):
-        super().__init__(**kwargs)
-        self.num_heads = num_heads
-        self.key_dim = key_dim
-        self.dropout = dropout
-
-    def build(self, query_shape, value_shape, key_shape=None):
-        """Build Q/K/V projections for linear attention."""
-        key_shape = key_shape or value_shape
-        q_feat = query_shape[-1]
-        k_feat = key_shape[-1]
-        proj_dim = self.num_heads * self.key_dim
-
-        self.q_dense = tf.keras.layers.Dense(proj_dim, use_bias=False)
-        self.k_dense = tf.keras.layers.Dense(proj_dim, use_bias=False)
-        self.v_dense = tf.keras.layers.Dense(proj_dim, use_bias=False)
-        self.out_dense = tf.keras.layers.Dense(q_feat)
-
-        self.q_dense.build((None, None, q_feat))
-        self.k_dense.build((None, None, k_feat))
-        self.v_dense.build((None, None, k_feat))
-        self.out_dense.build((None, None, proj_dim))
-
-        super().build(query_shape)
-
-    def _to_heads(self, x, dense, n_tokens):
-        """Project ``x`` with ``dense`` and reshape to ``(B, N, H, D_k)``."""
-        out = dense(x)
-        B = tf.shape(out)[0]
-        return tf.reshape(out, [B, n_tokens, self.num_heads, self.key_dim])
-
-    def call(
-        self,
-        query,
-        value,
-        key=None,
-        kv_nan_mask=None,
-    ):
-        """O(N) ELU linear attention forward pass."""
-        if key is None:
-            key = value
-
-        q_shape = tf.shape(query)
-        N_q = tf.reduce_prod(q_shape[1:-1])
-        N_k = tf.reduce_prod(tf.shape(key)[1:-1])
-
-        q_flat = tf.reshape(query, [q_shape[0], N_q, -1])
-        k_flat = tf.reshape(key, [q_shape[0], N_k, -1])
-        v_flat = tf.reshape(value, [q_shape[0], N_k, -1])
-
-        Q = self._to_heads(q_flat, self.q_dense, N_q)  # (B, N_q, H, D_k)
-        K = self._to_heads(k_flat, self.k_dense, N_k)  # (B, N_k, H, D_k)
-        V = self._to_heads(v_flat, self.v_dense, N_k)  # (B, N_k, H, D_k)
-
-        scale = tf.cast(self.key_dim, tf.float32) ** -0.5
-        Q_tilde = tf.nn.elu(Q * scale) + 1.0
-        K_tilde = tf.nn.elu(K * scale) + 1.0
-
-        # Zero out invalid (NaN) KV positions; kv_nan_mask True = invalid
-        if kv_nan_mask is not None:
-            mask = tf.cast(
-                ~tf.reshape(kv_nan_mask, [q_shape[0], N_k]), tf.float32
-            )
-            K_tilde = K_tilde * mask[:, :, None, None]  # noqa: PLR6104
-            V = V * mask[:, :, None, None]  # noqa: PLR6104
-
-        # O(N) accumulation: aggregate KV then contract with Q
-        kv = tf.einsum('bnhf,bnhv->bhfv', K_tilde, V)  # (B, H, D_f, D_k)
-        norm = tf.reduce_sum(K_tilde, axis=1)  # (B, H, D_f)
-        out_num = tf.einsum('bnhf,bhfv->bnhv', Q_tilde, kv)  # (B, N_q, H, D_k)
-        out_den = tf.einsum('bnhf,bhf->bnh', Q_tilde, norm)[..., None] + 1e-6
-        out = out_num / out_den  # (B, N_q, H, D_k)
-
-        # Merge heads and project back to input feature dim
-        out = tf.reshape(out, [q_shape[0], N_q, self.num_heads * self.key_dim])
-        out = self.out_dense(out)  # (B, N_q, C_q)
-
-        # Restore original spatial shape
-        return tf.reshape(out, q_shape)
-
-    def get_config(self):
-        """Get config for Keras serialization."""
-        config = super().get_config()
-        config.update({
-            'num_heads': self.num_heads,
-            'key_dim': self.key_dim,
-            'dropout': self.dropout,
+            'distance_scale': self.distance_scale,
         })
         return config
 
@@ -1542,10 +1235,9 @@ class TransformerLayer(tf.keras.layers.Layer):
         bias_scale=0.0,
         embed_dim=64,
         window_size=None,
-        radius=None,
         window_shift=0,
+        distance_scale=10000.0,
         dropout=0.0,
-        linear_attention=False,
         **kwargs,
     ):
         """Initialize the transformer layer.
@@ -1565,18 +1257,16 @@ class TransformerLayer(tf.keras.layers.Layer):
             Patch encoding is applied before windowed attention, so this is
             measured on the token grid. ``None`` uses full attention over the
             entire token grid.
-        radius : int | None
-            Symmetric halo radius, in token units, added around each query
-            window when reading key/value tokens.
         window_shift : int
             Shift of the query-window start on the token grid. This is only
             active when the current call uses multiple windows; otherwise it
             is ignored because the layer routes to full attention.
+        distance_scale : float
+            Length scale (in meters) over which the ALiBi distance bias
+            decays. Larger values produce a gentler decay, allowing
+            attention to reach farther spatially.
         dropout : float
             Dropout rate for attention weights.
-        linear_attention : bool
-            If True, use the linear-attention implementation instead of the
-            windowed/full softmax attention path.
         **kwargs
             Additional keyword arguments passed to ``tf.keras.layers.Layer``.
         """
@@ -1586,27 +1276,19 @@ class TransformerLayer(tf.keras.layers.Layer):
         self.bias_scale = float(bias_scale)
         self.embed_dim = int(embed_dim)
         self.window_size = window_size
-        self.radius = radius
         self.window_shift = window_shift
+        self.distance_scale = float(distance_scale)
         self.dropout = dropout
-        self.linear_attention = linear_attention
 
-        if self.linear_attention:
-            self.attn = LinearMultiHeadAttention(
-                num_heads=self.num_heads,
-                key_dim=self.key_dim,
-                dropout=self.dropout,
-            )
-        else:
-            self.attn = WindowedMultiHeadAttention(
-                window_size=window_size,
-                radius=radius,
-                window_shift=window_shift,
-                num_heads=self.num_heads,
-                key_dim=self.key_dim,
-                bias_scale=bias_scale,
-                dropout=self.dropout,
-            )
+        self.attn = WindowedMultiHeadAttention(
+            window_size=window_size,
+            window_shift=window_shift,
+            num_heads=self.num_heads,
+            key_dim=self.key_dim,
+            bias_scale=bias_scale,
+            distance_scale=self.distance_scale,
+            dropout=self.dropout,
+        )
         self.lo = tf.keras.layers.RMSNormalization()
         self.mlp = None  # built in build() once query feature dim is known
 
@@ -1618,6 +1300,7 @@ class TransformerLayer(tf.keras.layers.Layer):
             tf.keras.layers.Dense(4 * query_shape[-1]),
             SwiGLU(),
             tf.keras.layers.Dense(query_shape[-1]),
+            tf.keras.layers.Dropout(self.dropout),
         ])
         self.mlp.build((None, None, query_shape[-1]))
         super().build(query_shape)
@@ -1630,7 +1313,7 @@ class TransformerLayer(tf.keras.layers.Layer):
         value,
         kv_nan_mask=None,
         lat_lon=None,
-        time=None,
+        training=None,
     ):
         """Call transformer layer with multi-head attention output.
 
@@ -1646,30 +1329,24 @@ class TransformerLayer(tf.keras.layers.Layer):
             Boolean mask for NaN KV positions.
         lat_lon : tf.Tensor | None
             Coordinate grid for ALiBi bias.
-        time : tf.Tensor | None
-            Time coordinate grid for temporal ALiBi bias.
+        training : bool | None
+            Training flag. Keras passes ``False`` during inference
+            (``model.predict`` / ``model(x, training=False)``), which
+            disables dropout in both the attention and MLP layers.
         """
-        if self.linear_attention:
-            attn = self.attn(
-                query=query,
-                key=key,
-                value=value,
-                kv_nan_mask=kv_nan_mask,
-            )
-        else:
-            attn = self.attn(
-                query=query,
-                key=key,
-                value=value,
-                kv_nan_mask=kv_nan_mask,
-                lat_lon=lat_lon,
-                time=time,
-            )
+        attn = self.attn(
+            query=query,
+            key=key,
+            value=value,
+            kv_nan_mask=kv_nan_mask,
+            lat_lon=lat_lon,
+            training=training,
+        )
         attn_res = query + attn
         out = self.lo(attn_res)
         out_shape = tf.shape(out)
         out_flat = tf.reshape(out, [out_shape[0], -1, out_shape[-1]])
-        mlp_out = self.mlp(out_flat)
+        mlp_out = self.mlp(out_flat, training=training)
         mlp_out = tf.reshape(mlp_out, out_shape)
         return attn_res + mlp_out
 
@@ -1682,10 +1359,9 @@ class TransformerLayer(tf.keras.layers.Layer):
             'bias_scale': self.bias_scale,
             'embed_dim': self.embed_dim,
             'window_size': self.window_size,
-            'radius': self.radius,
             'window_shift': self.window_shift,
+            'distance_scale': self.distance_scale,
             'dropout': self.dropout,
-            'linear_attention': self.linear_attention,
         })
         return config
 
@@ -1699,9 +1375,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
     feature channels are processed jointly by a single K/V encoder and
     attention head.
 
-    When ``linear_attention=False`` and ``bias_scale > 0``, a
-    distance-based bias replaces explicit positional encodings (ALiBi).
-    Otherwise, sinusoidal positional encodings are added to Q and K.
+    When ``bias_scale > 0``, a distance-based bias replaces explicit spatial
+    positional encodings (ALiBi).  Temporal sinusoidal encodings are still
+    added to Q and K for 5D inputs with time data.  Otherwise, sinusoidal
+    spatial and temporal positional encodings are added to Q and K.
     """
 
     def __init__(
@@ -1718,11 +1395,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         min_period_temporal=1,
         max_period_temporal=864000,
         bias_scale=0.0,
+        distance_scale=10000.0,
         window_size=None,
-        radius=None,
         window_shift=0,
         dropout=0.0,
-        linear_attention=False,
         **kwargs,
     ):
         """
@@ -1754,12 +1430,13 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         bias_scale : float
             Positive values enable ALiBi and set its distance scaling
             factor.  Non-positive values disable ALiBi.
+        distance_scale : float
+            Length scale (in meters) over which the ALiBi distance bias
+            decays. Larger values produce a gentler decay, allowing
+            attention to reach farther spatially.
         window_size : int | None
             Side length of the non-overlapping query execution block.
             ``None`` uses full attention.
-        radius : int | None
-            Symmetric halo radius, in token units, added around each query
-            window when reading key/value tokens.
         window_shift : int
             Shift of the query-window start on the token grid. This is
             only active when the current call uses multiple windows;
@@ -1767,8 +1444,6 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             attention.
         dropout : float
             Dropout rate for attention weights.
-        linear_attention : bool
-            If True, use the linear-attention implementation.
         **kwargs
             Additional keyword arguments for the layer.
         """
@@ -1785,12 +1460,11 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.min_period_temporal = min_period_temporal
         self.max_period_temporal = max_period_temporal
         self.window_size = window_size
-        self.radius = radius
         self.window_shift = window_shift
         self.bias_scale = float(bias_scale)
+        self.distance_scale = float(distance_scale)
         self.use_pos_bias = self.bias_scale > 0
         self.dropout = dropout
-        self.linear_attention = linear_attention
 
         # -- shared layers --
         self.eq = PatchEncoder(
@@ -1817,23 +1491,13 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.ev = PatchEncoder(
             patch_size=self.patch_size, embed_dim=self.embed_dim
         )
-        self.attn = self._make_attn()
-
-    def _make_attn(self):
-        """Create a single raw attention layer (no norm/MLP)."""
-        if self.linear_attention:
-            return LinearMultiHeadAttention(
-                num_heads=self.num_heads,
-                key_dim=self.key_dim,
-                dropout=self.dropout,
-            )
-        return WindowedMultiHeadAttention(
+        self.attn = WindowedMultiHeadAttention(
             window_size=self.window_size,
-            radius=self.radius,
             window_shift=self.window_shift,
             num_heads=self.num_heads,
             key_dim=self.key_dim,
             bias_scale=self.bias_scale,
+            distance_scale=self.distance_scale,
             dropout=self.dropout,
         )
 
@@ -1990,16 +1654,15 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'min_period_temporal': self.min_period_temporal,
             'max_period_temporal': self.max_period_temporal,
             'bias_scale': self.bias_scale,
+            'distance_scale': self.distance_scale,
             'window_size': self.window_size,
-            'radius': self.radius,
             'window_shift': self.window_shift,
             'dropout': self.dropout,
-            'linear_attention': self.linear_attention,
         })
         return config
 
     @tf.function
-    def call(self, x, hi_res_feature=None, exo_data=None):
+    def call(self, x, hi_res_feature=None, exo_data=None, training=None):
         """Call the transformer layer.
 
         Parameters
@@ -2014,6 +1677,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Exogenous data with latitude/longitude in channels 0:2 and
             optionally time in channel 2. Required
             whenever *hi_res_feature* is provided.
+        training : bool | None
+            Training flag forwarded to dropout layers.
 
         Returns
         -------
@@ -2045,7 +1710,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         # shared query encoding
         q = self.eq(x)
         pos_enc = None
-        if self.linear_attention or not self.use_pos_bias:
+        if not self.use_pos_bias:
             pos_enc = self.pe(lat_lon=lat_lon, time=time)
             q = q + pos_enc  # noqa: PLR6104
 
@@ -2055,27 +1720,42 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             lat_lon = pool(lat_lon)
             time = pool(time) if time is not None else None
 
+        time_enc = None
+        if self.use_pos_bias and self.rank == 5 and time is not None:
+            time_enc = self.pe.encode_time(
+                time,
+                self.min_period_temporal,
+                self.max_period_temporal,
+            )
+            q = q + time_enc  # noqa: PLR6104
+
         # joint K/V encoding across all features
         hr_clean, nan_mask, _ = self.ek.prepare_sparse_tensor(hi_res_feature)
         k = self.ek(hr_clean)
         v = self.ev(hr_clean)
 
-        if self.linear_attention or not self.use_pos_bias:
+        if not self.use_pos_bias:
             k = k + pos_enc  # noqa: PLR6104
+        elif time_enc is not None:
+            k = k + time_enc  # noqa: PLR6104
 
-        attn_kwargs = dict(
-            query=self.lq(q), key=self.lk(k), value=v, kv_nan_mask=nan_mask
+        projected = self.attn(
+            query=self.lq(q),
+            key=self.lk(k),
+            value=v,
+            kv_nan_mask=nan_mask,
+            lat_lon=lat_lon,
+            training=training,
         )
-        if not self.linear_attention:
-            attn_kwargs.update(lat_lon=lat_lon, time=time)
-        projected = self.attn(**attn_kwargs)
 
         # shared post-attention: residual -> norm -> MLP -> residual
         attn_res = q + projected
         out = self.lo(attn_res)
         out_shape = tf.shape(out)
         out = tf.reshape(out, [out_shape[0], -1, self.embed_dim])
-        out = attn_res + tf.reshape(self.mlp(out), out_shape)
+        out = attn_res + tf.reshape(
+            self.mlp(out, training=training), out_shape
+        )
 
         decoded = self.decoder(out)
         decoded = tf.slice(
@@ -2175,7 +1855,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         })
         return config
 
-    def call(self, x, hi_res_feature=None, exo_data=None):
+    def call(self, x, hi_res_feature=None, exo_data=None, training=None):
         """Run *x* through each transformer layer in sequence.
 
         Parameters
@@ -2186,6 +1866,8 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             High-resolution features (passed to every layer).
         exo_data : tf.Tensor | None
             Exogenous lat/lon(/time) data (passed to every layer).
+        training : bool | None
+            Training flag forwarded to dropout layers.
 
         Returns
         -------
@@ -2193,7 +1875,12 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             Same shape as *x*.
         """
         for layer in self.transformer_layers:
-            x = layer(x, hi_res_feature=hi_res_feature, exo_data=exo_data)
+            x = layer(
+                x,
+                hi_res_feature=hi_res_feature,
+                exo_data=exo_data,
+                training=training,
+            )
         return x
 
 

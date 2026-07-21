@@ -185,10 +185,12 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
 
         self._optimizer = optimizer
         if isinstance(optimizer, dict):
-            self._optimizer = optimizers.deserialize({
-                'class_name': optimizer['name'],
-                'config': optimizer,
-            })
+            if 'class_name' not in optimizer:
+                optimizer = {
+                    'class_name': optimizer['name'],
+                    'config': optimizer,
+                }
+            self._optimizer = optimizers.deserialize(optimizer)
         elif optimizer is None:
             self._optimizer = optimizers.Adam(learning_rate=learning_rate)
 
@@ -342,7 +344,7 @@ class PhysicsGuidedNeuralNetwork(CustomNetwork):
             'p_fun': self._p_fun,
             'loss_weights': self._loss_weights,
             'metric': self._metric,
-            'optimizer': self._optimizer.get_config(),
+            'optimizer': optimizers.serialize(self._optimizer),
             'learning_rate': self._learning_rate,
             'layers_obj': self.layers_obj,
             'history': self.history,
