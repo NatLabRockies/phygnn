@@ -1,0 +1,83 @@
+phygnn.layers.custom\_layers.WindowedMultiHeadAttention
+=======================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: WindowedMultiHeadAttention
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WindowedMultiHeadAttention.add_loss
+      ~WindowedMultiHeadAttention.add_metric
+      ~WindowedMultiHeadAttention.add_variable
+      ~WindowedMultiHeadAttention.add_weight
+      ~WindowedMultiHeadAttention.build
+      ~WindowedMultiHeadAttention.build_from_config
+      ~WindowedMultiHeadAttention.call
+      ~WindowedMultiHeadAttention.compute_mask
+      ~WindowedMultiHeadAttention.compute_output_shape
+      ~WindowedMultiHeadAttention.compute_output_spec
+      ~WindowedMultiHeadAttention.count_params
+      ~WindowedMultiHeadAttention.from_config
+      ~WindowedMultiHeadAttention.get_build_config
+      ~WindowedMultiHeadAttention.get_config
+      ~WindowedMultiHeadAttention.get_weights
+      ~WindowedMultiHeadAttention.load_own_variables
+      ~WindowedMultiHeadAttention.quantize
+      ~WindowedMultiHeadAttention.quantized_build
+      ~WindowedMultiHeadAttention.quantized_call
+      ~WindowedMultiHeadAttention.rematerialized_call
+      ~WindowedMultiHeadAttention.save_own_variables
+      ~WindowedMultiHeadAttention.set_weights
+      ~WindowedMultiHeadAttention.stateless_call
+      ~WindowedMultiHeadAttention.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WindowedMultiHeadAttention.attention_axes
+      ~WindowedMultiHeadAttention.compute_dtype
+      ~WindowedMultiHeadAttention.dropout
+      ~WindowedMultiHeadAttention.dtype
+      ~WindowedMultiHeadAttention.dtype_policy
+      ~WindowedMultiHeadAttention.input
+      ~WindowedMultiHeadAttention.input_dtype
+      ~WindowedMultiHeadAttention.input_spec
+      ~WindowedMultiHeadAttention.key_dense
+      ~WindowedMultiHeadAttention.key_dim
+      ~WindowedMultiHeadAttention.losses
+      ~WindowedMultiHeadAttention.metrics
+      ~WindowedMultiHeadAttention.metrics_variables
+      ~WindowedMultiHeadAttention.non_trainable_variables
+      ~WindowedMultiHeadAttention.non_trainable_weights
+      ~WindowedMultiHeadAttention.num_heads
+      ~WindowedMultiHeadAttention.output
+      ~WindowedMultiHeadAttention.output_dense
+      ~WindowedMultiHeadAttention.path
+      ~WindowedMultiHeadAttention.quantization_mode
+      ~WindowedMultiHeadAttention.query_dense
+      ~WindowedMultiHeadAttention.supports_masking
+      ~WindowedMultiHeadAttention.trainable
+      ~WindowedMultiHeadAttention.trainable_variables
+      ~WindowedMultiHeadAttention.trainable_weights
+      ~WindowedMultiHeadAttention.use_bias
+      ~WindowedMultiHeadAttention.value_dense
+      ~WindowedMultiHeadAttention.value_dim
+      ~WindowedMultiHeadAttention.variable_dtype
+      ~WindowedMultiHeadAttention.variables
+      ~WindowedMultiHeadAttention.weights
+   
+   

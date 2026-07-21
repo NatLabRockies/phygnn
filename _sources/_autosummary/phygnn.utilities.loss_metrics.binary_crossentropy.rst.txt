@@ -1,0 +1,6 @@
+phygnn.utilities.loss\_metrics.binary\_crossentropy
+===================================================
+
+.. currentmodule:: phygnn.utilities.loss_metrics
+
+.. autofunction:: binary_crossentropy

@@ -1,0 +1,6 @@
+phygnn.utilities.loss\_metrics.relative\_mae
+============================================
+
+.. currentmodule:: phygnn.utilities.loss_metrics
+
+.. autofunction:: relative_mae

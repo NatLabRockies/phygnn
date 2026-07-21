@@ -1,0 +1,33 @@
+phygnn.utilities.tf\_utilities
+==============================
+
+.. automodule:: phygnn.utilities.tf_utilities
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      idw_fill
+      mean_fill
+      tf_isin
+      tf_log10
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

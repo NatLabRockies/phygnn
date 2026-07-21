@@ -1,0 +1,6 @@
+phygnn.utilities.tf\_utilities.idw\_fill
+========================================
+
+.. currentmodule:: phygnn.utilities.tf_utilities
+
+.. autofunction:: idw_fill

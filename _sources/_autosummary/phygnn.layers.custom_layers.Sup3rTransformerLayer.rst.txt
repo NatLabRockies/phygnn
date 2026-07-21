@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.Sup3rTransformerLayer
+==================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: Sup3rTransformerLayer
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Sup3rTransformerLayer.add_loss
+      ~Sup3rTransformerLayer.add_metric
+      ~Sup3rTransformerLayer.add_variable
+      ~Sup3rTransformerLayer.add_weight
+      ~Sup3rTransformerLayer.build
+      ~Sup3rTransformerLayer.build_from_config
+      ~Sup3rTransformerLayer.call
+      ~Sup3rTransformerLayer.compute_mask
+      ~Sup3rTransformerLayer.compute_output_shape
+      ~Sup3rTransformerLayer.compute_output_spec
+      ~Sup3rTransformerLayer.count_params
+      ~Sup3rTransformerLayer.from_config
+      ~Sup3rTransformerLayer.get_build_config
+      ~Sup3rTransformerLayer.get_config
+      ~Sup3rTransformerLayer.get_weights
+      ~Sup3rTransformerLayer.load_own_variables
+      ~Sup3rTransformerLayer.quantize
+      ~Sup3rTransformerLayer.quantized_build
+      ~Sup3rTransformerLayer.quantized_call
+      ~Sup3rTransformerLayer.rematerialized_call
+      ~Sup3rTransformerLayer.save_own_variables
+      ~Sup3rTransformerLayer.set_weights
+      ~Sup3rTransformerLayer.stateless_call
+      ~Sup3rTransformerLayer.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Sup3rTransformerLayer.compute_dtype
+      ~Sup3rTransformerLayer.dtype
+      ~Sup3rTransformerLayer.dtype_policy
+      ~Sup3rTransformerLayer.input
+      ~Sup3rTransformerLayer.input_dtype
+      ~Sup3rTransformerLayer.input_spec
+      ~Sup3rTransformerLayer.losses
+      ~Sup3rTransformerLayer.metrics
+      ~Sup3rTransformerLayer.metrics_variables
+      ~Sup3rTransformerLayer.non_trainable_variables
+      ~Sup3rTransformerLayer.non_trainable_weights
+      ~Sup3rTransformerLayer.output
+      ~Sup3rTransformerLayer.path
+      ~Sup3rTransformerLayer.quantization_mode
+      ~Sup3rTransformerLayer.supports_masking
+      ~Sup3rTransformerLayer.trainable
+      ~Sup3rTransformerLayer.trainable_variables
+      ~Sup3rTransformerLayer.trainable_weights
+      ~Sup3rTransformerLayer.variable_dtype
+      ~Sup3rTransformerLayer.variables
+      ~Sup3rTransformerLayer.weights
+   
+   

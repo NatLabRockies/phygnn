@@ -1,0 +1,41 @@
+phygnn.layers.custom\_layers.WindowGeometry
+===========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: WindowGeometry
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WindowGeometry.time_steps
+      ~WindowGeometry.batch_size
+      ~WindowGeometry.query_height
+      ~WindowGeometry.query_width
+      ~WindowGeometry.window_size
+      ~WindowGeometry.window_shift
+      ~WindowGeometry.query_height_padding
+      ~WindowGeometry.query_width_padding
+      ~WindowGeometry.padded_query_height
+      ~WindowGeometry.padded_query_width
+      ~WindowGeometry.n_window_rows
+      ~WindowGeometry.n_window_cols
+      ~WindowGeometry.n_windows
+   
+   

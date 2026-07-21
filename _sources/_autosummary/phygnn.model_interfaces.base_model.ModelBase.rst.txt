@@ -1,0 +1,59 @@
+phygnn.model\_interfaces.base\_model.ModelBase
+==============================================
+
+.. currentmodule:: phygnn.model_interfaces.base_model
+
+.. autoclass:: ModelBase
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ModelBase.dict_json_convert
+      ~ModelBase.get_mean
+      ~ModelBase.get_norm_params
+      ~ModelBase.get_stdev
+      ~ModelBase.make_one_hot_feature_names
+      ~ModelBase.normalize
+      ~ModelBase.parse_features
+      ~ModelBase.parse_labels
+      ~ModelBase.predict
+      ~ModelBase.seed
+      ~ModelBase.unnormalize
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ModelBase.feature_dims
+      ~ModelBase.feature_means
+      ~ModelBase.feature_names
+      ~ModelBase.feature_stdevs
+      ~ModelBase.input_feature_names
+      ~ModelBase.label_dims
+      ~ModelBase.label_means
+      ~ModelBase.label_names
+      ~ModelBase.label_stdevs
+      ~ModelBase.means
+      ~ModelBase.model
+      ~ModelBase.model_summary
+      ~ModelBase.normalization_parameters
+      ~ModelBase.normalize_features
+      ~ModelBase.normalize_labels
+      ~ModelBase.one_hot_categories
+      ~ModelBase.one_hot_feature_names
+      ~ModelBase.one_hot_input_feature_names
+      ~ModelBase.stdevs
+      ~ModelBase.version_record
+   
+   

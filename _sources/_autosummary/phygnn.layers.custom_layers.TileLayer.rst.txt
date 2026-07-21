@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.TileLayer
+======================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: TileLayer
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TileLayer.add_loss
+      ~TileLayer.add_metric
+      ~TileLayer.add_variable
+      ~TileLayer.add_weight
+      ~TileLayer.build
+      ~TileLayer.build_from_config
+      ~TileLayer.call
+      ~TileLayer.compute_mask
+      ~TileLayer.compute_output_shape
+      ~TileLayer.compute_output_spec
+      ~TileLayer.count_params
+      ~TileLayer.from_config
+      ~TileLayer.get_build_config
+      ~TileLayer.get_config
+      ~TileLayer.get_weights
+      ~TileLayer.load_own_variables
+      ~TileLayer.quantize
+      ~TileLayer.quantized_build
+      ~TileLayer.quantized_call
+      ~TileLayer.rematerialized_call
+      ~TileLayer.save_own_variables
+      ~TileLayer.set_weights
+      ~TileLayer.stateless_call
+      ~TileLayer.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TileLayer.compute_dtype
+      ~TileLayer.dtype
+      ~TileLayer.dtype_policy
+      ~TileLayer.input
+      ~TileLayer.input_dtype
+      ~TileLayer.input_spec
+      ~TileLayer.losses
+      ~TileLayer.metrics
+      ~TileLayer.metrics_variables
+      ~TileLayer.non_trainable_variables
+      ~TileLayer.non_trainable_weights
+      ~TileLayer.output
+      ~TileLayer.path
+      ~TileLayer.quantization_mode
+      ~TileLayer.supports_masking
+      ~TileLayer.trainable
+      ~TileLayer.trainable_variables
+      ~TileLayer.trainable_weights
+      ~TileLayer.variable_dtype
+      ~TileLayer.variables
+      ~TileLayer.weights
+   
+   

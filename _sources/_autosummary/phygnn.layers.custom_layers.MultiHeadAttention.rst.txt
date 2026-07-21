@@ -1,0 +1,83 @@
+phygnn.layers.custom\_layers.MultiHeadAttention
+===============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: MultiHeadAttention
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MultiHeadAttention.add_loss
+      ~MultiHeadAttention.add_metric
+      ~MultiHeadAttention.add_variable
+      ~MultiHeadAttention.add_weight
+      ~MultiHeadAttention.build
+      ~MultiHeadAttention.build_from_config
+      ~MultiHeadAttention.call
+      ~MultiHeadAttention.compute_mask
+      ~MultiHeadAttention.compute_output_shape
+      ~MultiHeadAttention.compute_output_spec
+      ~MultiHeadAttention.count_params
+      ~MultiHeadAttention.from_config
+      ~MultiHeadAttention.get_build_config
+      ~MultiHeadAttention.get_config
+      ~MultiHeadAttention.get_weights
+      ~MultiHeadAttention.load_own_variables
+      ~MultiHeadAttention.quantize
+      ~MultiHeadAttention.quantized_build
+      ~MultiHeadAttention.quantized_call
+      ~MultiHeadAttention.rematerialized_call
+      ~MultiHeadAttention.save_own_variables
+      ~MultiHeadAttention.set_weights
+      ~MultiHeadAttention.stateless_call
+      ~MultiHeadAttention.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MultiHeadAttention.attention_axes
+      ~MultiHeadAttention.compute_dtype
+      ~MultiHeadAttention.dropout
+      ~MultiHeadAttention.dtype
+      ~MultiHeadAttention.dtype_policy
+      ~MultiHeadAttention.input
+      ~MultiHeadAttention.input_dtype
+      ~MultiHeadAttention.input_spec
+      ~MultiHeadAttention.key_dense
+      ~MultiHeadAttention.key_dim
+      ~MultiHeadAttention.losses
+      ~MultiHeadAttention.metrics
+      ~MultiHeadAttention.metrics_variables
+      ~MultiHeadAttention.non_trainable_variables
+      ~MultiHeadAttention.non_trainable_weights
+      ~MultiHeadAttention.num_heads
+      ~MultiHeadAttention.output
+      ~MultiHeadAttention.output_dense
+      ~MultiHeadAttention.path
+      ~MultiHeadAttention.quantization_mode
+      ~MultiHeadAttention.query_dense
+      ~MultiHeadAttention.supports_masking
+      ~MultiHeadAttention.trainable
+      ~MultiHeadAttention.trainable_variables
+      ~MultiHeadAttention.trainable_weights
+      ~MultiHeadAttention.use_bias
+      ~MultiHeadAttention.value_dense
+      ~MultiHeadAttention.value_dim
+      ~MultiHeadAttention.variable_dtype
+      ~MultiHeadAttention.variables
+      ~MultiHeadAttention.weights
+   
+   

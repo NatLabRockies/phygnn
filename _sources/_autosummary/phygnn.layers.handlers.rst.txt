@@ -1,0 +1,32 @@
+phygnn.layers.handlers
+======================
+
+.. automodule:: phygnn.layers.handlers
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      HiddenLayers
+      Layers
+   
+   
+
+   
+   
+   
+
+
+

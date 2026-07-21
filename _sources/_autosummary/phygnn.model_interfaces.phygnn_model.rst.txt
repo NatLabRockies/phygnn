@@ -1,0 +1,31 @@
+phygnn.model\_interfaces.phygnn\_model
+======================================
+
+.. automodule:: phygnn.model_interfaces.phygnn_model
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      PhygnnModel
+   
+   
+
+   
+   
+   
+
+
+

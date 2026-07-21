@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.FunctionalLayer
+============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: FunctionalLayer
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FunctionalLayer.add_loss
+      ~FunctionalLayer.add_metric
+      ~FunctionalLayer.add_variable
+      ~FunctionalLayer.add_weight
+      ~FunctionalLayer.build
+      ~FunctionalLayer.build_from_config
+      ~FunctionalLayer.call
+      ~FunctionalLayer.compute_mask
+      ~FunctionalLayer.compute_output_shape
+      ~FunctionalLayer.compute_output_spec
+      ~FunctionalLayer.count_params
+      ~FunctionalLayer.from_config
+      ~FunctionalLayer.get_build_config
+      ~FunctionalLayer.get_config
+      ~FunctionalLayer.get_weights
+      ~FunctionalLayer.load_own_variables
+      ~FunctionalLayer.quantize
+      ~FunctionalLayer.quantized_build
+      ~FunctionalLayer.quantized_call
+      ~FunctionalLayer.rematerialized_call
+      ~FunctionalLayer.save_own_variables
+      ~FunctionalLayer.set_weights
+      ~FunctionalLayer.stateless_call
+      ~FunctionalLayer.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FunctionalLayer.compute_dtype
+      ~FunctionalLayer.dtype
+      ~FunctionalLayer.dtype_policy
+      ~FunctionalLayer.input
+      ~FunctionalLayer.input_dtype
+      ~FunctionalLayer.input_spec
+      ~FunctionalLayer.losses
+      ~FunctionalLayer.metrics
+      ~FunctionalLayer.metrics_variables
+      ~FunctionalLayer.non_trainable_variables
+      ~FunctionalLayer.non_trainable_weights
+      ~FunctionalLayer.output
+      ~FunctionalLayer.path
+      ~FunctionalLayer.quantization_mode
+      ~FunctionalLayer.supports_masking
+      ~FunctionalLayer.trainable
+      ~FunctionalLayer.trainable_variables
+      ~FunctionalLayer.trainable_weights
+      ~FunctionalLayer.variable_dtype
+      ~FunctionalLayer.variables
+      ~FunctionalLayer.weights
+   
+   

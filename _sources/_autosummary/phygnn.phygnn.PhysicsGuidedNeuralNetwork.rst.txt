@@ -1,0 +1,53 @@
+phygnn.phygnn.PhysicsGuidedNeuralNetwork
+========================================
+
+.. currentmodule:: phygnn.phygnn
+
+.. autoclass:: PhysicsGuidedNeuralNetwork
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PhysicsGuidedNeuralNetwork.calc_loss
+      ~PhysicsGuidedNeuralNetwork.fit
+      ~PhysicsGuidedNeuralNetwork.get_val_split
+      ~PhysicsGuidedNeuralNetwork.load
+      ~PhysicsGuidedNeuralNetwork.make_batches
+      ~PhysicsGuidedNeuralNetwork.p_fun_dummy
+      ~PhysicsGuidedNeuralNetwork.predict
+      ~PhysicsGuidedNeuralNetwork.preflight_data
+      ~PhysicsGuidedNeuralNetwork.preflight_features
+      ~PhysicsGuidedNeuralNetwork.preflight_p_fun
+      ~PhysicsGuidedNeuralNetwork.reset_history
+      ~PhysicsGuidedNeuralNetwork.run_gradient_descent
+      ~PhysicsGuidedNeuralNetwork.save
+      ~PhysicsGuidedNeuralNetwork.seed
+      ~PhysicsGuidedNeuralNetwork.set_loss_weights
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PhysicsGuidedNeuralNetwork.bias_reg_term
+      ~PhysicsGuidedNeuralNetwork.bias_weights
+      ~PhysicsGuidedNeuralNetwork.history
+      ~PhysicsGuidedNeuralNetwork.kernel_reg_term
+      ~PhysicsGuidedNeuralNetwork.kernel_weights
+      ~PhysicsGuidedNeuralNetwork.layers
+      ~PhysicsGuidedNeuralNetwork.layers_obj
+      ~PhysicsGuidedNeuralNetwork.model_params
+      ~PhysicsGuidedNeuralNetwork.version_record
+      ~PhysicsGuidedNeuralNetwork.weights
+   
+   

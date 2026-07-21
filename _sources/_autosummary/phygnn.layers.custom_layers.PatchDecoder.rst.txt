@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.PatchDecoder
+=========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: PatchDecoder
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PatchDecoder.add_loss
+      ~PatchDecoder.add_metric
+      ~PatchDecoder.add_variable
+      ~PatchDecoder.add_weight
+      ~PatchDecoder.build
+      ~PatchDecoder.build_from_config
+      ~PatchDecoder.call
+      ~PatchDecoder.compute_mask
+      ~PatchDecoder.compute_output_shape
+      ~PatchDecoder.compute_output_spec
+      ~PatchDecoder.count_params
+      ~PatchDecoder.from_config
+      ~PatchDecoder.get_build_config
+      ~PatchDecoder.get_config
+      ~PatchDecoder.get_weights
+      ~PatchDecoder.load_own_variables
+      ~PatchDecoder.quantize
+      ~PatchDecoder.quantized_build
+      ~PatchDecoder.quantized_call
+      ~PatchDecoder.rematerialized_call
+      ~PatchDecoder.save_own_variables
+      ~PatchDecoder.set_weights
+      ~PatchDecoder.stateless_call
+      ~PatchDecoder.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PatchDecoder.compute_dtype
+      ~PatchDecoder.dtype
+      ~PatchDecoder.dtype_policy
+      ~PatchDecoder.input
+      ~PatchDecoder.input_dtype
+      ~PatchDecoder.input_spec
+      ~PatchDecoder.losses
+      ~PatchDecoder.metrics
+      ~PatchDecoder.metrics_variables
+      ~PatchDecoder.non_trainable_variables
+      ~PatchDecoder.non_trainable_weights
+      ~PatchDecoder.output
+      ~PatchDecoder.path
+      ~PatchDecoder.quantization_mode
+      ~PatchDecoder.supports_masking
+      ~PatchDecoder.trainable
+      ~PatchDecoder.trainable_variables
+      ~PatchDecoder.trainable_weights
+      ~PatchDecoder.variable_dtype
+      ~PatchDecoder.variables
+      ~PatchDecoder.weights
+   
+   

@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.TransformerLayer
+=============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: TransformerLayer
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TransformerLayer.add_loss
+      ~TransformerLayer.add_metric
+      ~TransformerLayer.add_variable
+      ~TransformerLayer.add_weight
+      ~TransformerLayer.build
+      ~TransformerLayer.build_from_config
+      ~TransformerLayer.call
+      ~TransformerLayer.compute_mask
+      ~TransformerLayer.compute_output_shape
+      ~TransformerLayer.compute_output_spec
+      ~TransformerLayer.count_params
+      ~TransformerLayer.from_config
+      ~TransformerLayer.get_build_config
+      ~TransformerLayer.get_config
+      ~TransformerLayer.get_weights
+      ~TransformerLayer.load_own_variables
+      ~TransformerLayer.quantize
+      ~TransformerLayer.quantized_build
+      ~TransformerLayer.quantized_call
+      ~TransformerLayer.rematerialized_call
+      ~TransformerLayer.save_own_variables
+      ~TransformerLayer.set_weights
+      ~TransformerLayer.stateless_call
+      ~TransformerLayer.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TransformerLayer.compute_dtype
+      ~TransformerLayer.dtype
+      ~TransformerLayer.dtype_policy
+      ~TransformerLayer.input
+      ~TransformerLayer.input_dtype
+      ~TransformerLayer.input_spec
+      ~TransformerLayer.losses
+      ~TransformerLayer.metrics
+      ~TransformerLayer.metrics_variables
+      ~TransformerLayer.non_trainable_variables
+      ~TransformerLayer.non_trainable_weights
+      ~TransformerLayer.output
+      ~TransformerLayer.path
+      ~TransformerLayer.quantization_mode
+      ~TransformerLayer.supports_masking
+      ~TransformerLayer.trainable
+      ~TransformerLayer.trainable_variables
+      ~TransformerLayer.trainable_weights
+      ~TransformerLayer.variable_dtype
+      ~TransformerLayer.variables
+      ~TransformerLayer.weights
+   
+   

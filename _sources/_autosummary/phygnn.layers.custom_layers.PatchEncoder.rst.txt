@@ -1,0 +1,74 @@
+phygnn.layers.custom\_layers.PatchEncoder
+=========================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: PatchEncoder
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PatchEncoder.add_loss
+      ~PatchEncoder.add_metric
+      ~PatchEncoder.add_variable
+      ~PatchEncoder.add_weight
+      ~PatchEncoder.build
+      ~PatchEncoder.build_from_config
+      ~PatchEncoder.call
+      ~PatchEncoder.compute_mask
+      ~PatchEncoder.compute_output_shape
+      ~PatchEncoder.compute_output_spec
+      ~PatchEncoder.count_params
+      ~PatchEncoder.from_config
+      ~PatchEncoder.get_build_config
+      ~PatchEncoder.get_config
+      ~PatchEncoder.get_weights
+      ~PatchEncoder.load_own_variables
+      ~PatchEncoder.prepare_sparse_tensor
+      ~PatchEncoder.quantize
+      ~PatchEncoder.quantized_build
+      ~PatchEncoder.quantized_call
+      ~PatchEncoder.rematerialized_call
+      ~PatchEncoder.save_own_variables
+      ~PatchEncoder.set_weights
+      ~PatchEncoder.stateless_call
+      ~PatchEncoder.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PatchEncoder.compute_dtype
+      ~PatchEncoder.dtype
+      ~PatchEncoder.dtype_policy
+      ~PatchEncoder.input
+      ~PatchEncoder.input_dtype
+      ~PatchEncoder.input_spec
+      ~PatchEncoder.losses
+      ~PatchEncoder.metrics
+      ~PatchEncoder.metrics_variables
+      ~PatchEncoder.non_trainable_variables
+      ~PatchEncoder.non_trainable_weights
+      ~PatchEncoder.output
+      ~PatchEncoder.path
+      ~PatchEncoder.quantization_mode
+      ~PatchEncoder.supports_masking
+      ~PatchEncoder.trainable
+      ~PatchEncoder.trainable_variables
+      ~PatchEncoder.trainable_weights
+      ~PatchEncoder.variable_dtype
+      ~PatchEncoder.variables
+      ~PatchEncoder.weights
+   
+   

@@ -1,0 +1,6 @@
+phygnn.utilities.loss\_metrics.mbe
+==================================
+
+.. currentmodule:: phygnn.utilities.loss_metrics
+
+.. autofunction:: mbe

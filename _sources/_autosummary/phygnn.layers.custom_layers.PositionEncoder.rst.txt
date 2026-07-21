@@ -1,0 +1,75 @@
+phygnn.layers.custom\_layers.PositionEncoder
+============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: PositionEncoder
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PositionEncoder.add_loss
+      ~PositionEncoder.add_metric
+      ~PositionEncoder.add_variable
+      ~PositionEncoder.add_weight
+      ~PositionEncoder.build
+      ~PositionEncoder.build_from_config
+      ~PositionEncoder.call
+      ~PositionEncoder.compute_mask
+      ~PositionEncoder.compute_output_shape
+      ~PositionEncoder.compute_output_spec
+      ~PositionEncoder.count_params
+      ~PositionEncoder.encode_lat_lon
+      ~PositionEncoder.encode_time
+      ~PositionEncoder.from_config
+      ~PositionEncoder.get_build_config
+      ~PositionEncoder.get_config
+      ~PositionEncoder.get_weights
+      ~PositionEncoder.load_own_variables
+      ~PositionEncoder.quantize
+      ~PositionEncoder.quantized_build
+      ~PositionEncoder.quantized_call
+      ~PositionEncoder.rematerialized_call
+      ~PositionEncoder.save_own_variables
+      ~PositionEncoder.set_weights
+      ~PositionEncoder.stateless_call
+      ~PositionEncoder.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PositionEncoder.compute_dtype
+      ~PositionEncoder.dtype
+      ~PositionEncoder.dtype_policy
+      ~PositionEncoder.input
+      ~PositionEncoder.input_dtype
+      ~PositionEncoder.input_spec
+      ~PositionEncoder.losses
+      ~PositionEncoder.metrics
+      ~PositionEncoder.metrics_variables
+      ~PositionEncoder.non_trainable_variables
+      ~PositionEncoder.non_trainable_weights
+      ~PositionEncoder.output
+      ~PositionEncoder.path
+      ~PositionEncoder.quantization_mode
+      ~PositionEncoder.supports_masking
+      ~PositionEncoder.trainable
+      ~PositionEncoder.trainable_variables
+      ~PositionEncoder.trainable_weights
+      ~PositionEncoder.variable_dtype
+      ~PositionEncoder.variables
+      ~PositionEncoder.weights
+   
+   

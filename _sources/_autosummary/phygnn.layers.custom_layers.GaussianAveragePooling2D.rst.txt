@@ -1,0 +1,74 @@
+phygnn.layers.custom\_layers.GaussianAveragePooling2D
+=====================================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: GaussianAveragePooling2D
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GaussianAveragePooling2D.add_loss
+      ~GaussianAveragePooling2D.add_metric
+      ~GaussianAveragePooling2D.add_variable
+      ~GaussianAveragePooling2D.add_weight
+      ~GaussianAveragePooling2D.build
+      ~GaussianAveragePooling2D.build_from_config
+      ~GaussianAveragePooling2D.call
+      ~GaussianAveragePooling2D.compute_mask
+      ~GaussianAveragePooling2D.compute_output_shape
+      ~GaussianAveragePooling2D.compute_output_spec
+      ~GaussianAveragePooling2D.count_params
+      ~GaussianAveragePooling2D.from_config
+      ~GaussianAveragePooling2D.get_build_config
+      ~GaussianAveragePooling2D.get_config
+      ~GaussianAveragePooling2D.get_weights
+      ~GaussianAveragePooling2D.load_own_variables
+      ~GaussianAveragePooling2D.make_kernel
+      ~GaussianAveragePooling2D.quantize
+      ~GaussianAveragePooling2D.quantized_build
+      ~GaussianAveragePooling2D.quantized_call
+      ~GaussianAveragePooling2D.rematerialized_call
+      ~GaussianAveragePooling2D.save_own_variables
+      ~GaussianAveragePooling2D.set_weights
+      ~GaussianAveragePooling2D.stateless_call
+      ~GaussianAveragePooling2D.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~GaussianAveragePooling2D.compute_dtype
+      ~GaussianAveragePooling2D.dtype
+      ~GaussianAveragePooling2D.dtype_policy
+      ~GaussianAveragePooling2D.input
+      ~GaussianAveragePooling2D.input_dtype
+      ~GaussianAveragePooling2D.input_spec
+      ~GaussianAveragePooling2D.losses
+      ~GaussianAveragePooling2D.metrics
+      ~GaussianAveragePooling2D.metrics_variables
+      ~GaussianAveragePooling2D.non_trainable_variables
+      ~GaussianAveragePooling2D.non_trainable_weights
+      ~GaussianAveragePooling2D.output
+      ~GaussianAveragePooling2D.path
+      ~GaussianAveragePooling2D.quantization_mode
+      ~GaussianAveragePooling2D.supports_masking
+      ~GaussianAveragePooling2D.trainable
+      ~GaussianAveragePooling2D.trainable_variables
+      ~GaussianAveragePooling2D.trainable_weights
+      ~GaussianAveragePooling2D.variable_dtype
+      ~GaussianAveragePooling2D.variables
+      ~GaussianAveragePooling2D.weights
+   
+   

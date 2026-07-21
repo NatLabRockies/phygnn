@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.FlexiblePadding
+============================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: FlexiblePadding
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FlexiblePadding.add_loss
+      ~FlexiblePadding.add_metric
+      ~FlexiblePadding.add_variable
+      ~FlexiblePadding.add_weight
+      ~FlexiblePadding.build
+      ~FlexiblePadding.build_from_config
+      ~FlexiblePadding.call
+      ~FlexiblePadding.compute_mask
+      ~FlexiblePadding.compute_output_shape
+      ~FlexiblePadding.compute_output_spec
+      ~FlexiblePadding.count_params
+      ~FlexiblePadding.from_config
+      ~FlexiblePadding.get_build_config
+      ~FlexiblePadding.get_config
+      ~FlexiblePadding.get_weights
+      ~FlexiblePadding.load_own_variables
+      ~FlexiblePadding.quantize
+      ~FlexiblePadding.quantized_build
+      ~FlexiblePadding.quantized_call
+      ~FlexiblePadding.rematerialized_call
+      ~FlexiblePadding.save_own_variables
+      ~FlexiblePadding.set_weights
+      ~FlexiblePadding.stateless_call
+      ~FlexiblePadding.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FlexiblePadding.compute_dtype
+      ~FlexiblePadding.dtype
+      ~FlexiblePadding.dtype_policy
+      ~FlexiblePadding.input
+      ~FlexiblePadding.input_dtype
+      ~FlexiblePadding.input_spec
+      ~FlexiblePadding.losses
+      ~FlexiblePadding.metrics
+      ~FlexiblePadding.metrics_variables
+      ~FlexiblePadding.non_trainable_variables
+      ~FlexiblePadding.non_trainable_weights
+      ~FlexiblePadding.output
+      ~FlexiblePadding.path
+      ~FlexiblePadding.quantization_mode
+      ~FlexiblePadding.supports_masking
+      ~FlexiblePadding.trainable
+      ~FlexiblePadding.trainable_variables
+      ~FlexiblePadding.trainable_weights
+      ~FlexiblePadding.variable_dtype
+      ~FlexiblePadding.variables
+      ~FlexiblePadding.weights
+   
+   

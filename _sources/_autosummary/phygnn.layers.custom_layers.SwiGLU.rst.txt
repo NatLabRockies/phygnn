@@ -1,0 +1,73 @@
+phygnn.layers.custom\_layers.SwiGLU
+===================================
+
+.. currentmodule:: phygnn.layers.custom_layers
+
+.. autoclass:: SwiGLU
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SwiGLU.add_loss
+      ~SwiGLU.add_metric
+      ~SwiGLU.add_variable
+      ~SwiGLU.add_weight
+      ~SwiGLU.build
+      ~SwiGLU.build_from_config
+      ~SwiGLU.call
+      ~SwiGLU.compute_mask
+      ~SwiGLU.compute_output_shape
+      ~SwiGLU.compute_output_spec
+      ~SwiGLU.count_params
+      ~SwiGLU.from_config
+      ~SwiGLU.get_build_config
+      ~SwiGLU.get_config
+      ~SwiGLU.get_weights
+      ~SwiGLU.load_own_variables
+      ~SwiGLU.quantize
+      ~SwiGLU.quantized_build
+      ~SwiGLU.quantized_call
+      ~SwiGLU.rematerialized_call
+      ~SwiGLU.save_own_variables
+      ~SwiGLU.set_weights
+      ~SwiGLU.stateless_call
+      ~SwiGLU.symbolic_call
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SwiGLU.compute_dtype
+      ~SwiGLU.dtype
+      ~SwiGLU.dtype_policy
+      ~SwiGLU.input
+      ~SwiGLU.input_dtype
+      ~SwiGLU.input_spec
+      ~SwiGLU.losses
+      ~SwiGLU.metrics
+      ~SwiGLU.metrics_variables
+      ~SwiGLU.non_trainable_variables
+      ~SwiGLU.non_trainable_weights
+      ~SwiGLU.output
+      ~SwiGLU.path
+      ~SwiGLU.quantization_mode
+      ~SwiGLU.supports_masking
+      ~SwiGLU.trainable
+      ~SwiGLU.trainable_variables
+      ~SwiGLU.trainable_weights
+      ~SwiGLU.variable_dtype
+      ~SwiGLU.variables
+      ~SwiGLU.weights
+   
+   
