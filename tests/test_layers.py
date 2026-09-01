@@ -823,11 +823,23 @@ def test_transformer_exo_data_time_forwarding():
     assert out.shape == x.shape
 
 
-def test_transformer_alibi_keeps_time_encoding(monkeypatch):
-    """ALiBi should replace spatial encoding but keep time encoding."""
+@pytest.mark.parametrize(
+    ('bias_scale', 'temporal_bias_scale', 'expected_calls'),
+    [
+        (0.0, 0.0, {'lat_lon': 1, 'time': 1}),
+        (1.0, 0.0, {'lat_lon': 0, 'time': 1}),
+        (0.0, 1.0, {'lat_lon': 1, 'time': 0}),
+        (1.0, 1.0, {'lat_lon': 0, 'time': 0}),
+    ],
+)
+def test_transformer_independent_position_modes(
+    monkeypatch, bias_scale, temporal_bias_scale, expected_calls
+):
+    """Each ALiBi mode should replace only its sinusoidal encoding."""
     layer = Sup3rTransformerLayer(
         features=['obs'],
-        bias_scale=1.0,
+        bias_scale=bias_scale,
+        temporal_bias_scale=temporal_bias_scale,
         embed_dim=8,
         key_dim=8,
         num_heads=2,
@@ -850,7 +862,8 @@ def test_transformer_alibi_keeps_time_encoding(monkeypatch):
 
     def _fake_lat_lon(*args, **kwargs):  # noqa: ARG001
         calls['lat_lon'] += 1
-        pytest.fail('ALiBi should replace spatial sinusoidal encoding')
+        shape = tf.concat([tf.shape(lat)[:-1], [layer.embed_dim]], axis=0)
+        return tf.zeros(shape, dtype=lat.dtype)
 
     monkeypatch.setattr(layer.pe, 'encode_time', _fake_time)
     monkeypatch.setattr(layer.pe, 'encode_lat_lon', _fake_lat_lon)
@@ -863,8 +876,7 @@ def test_transformer_alibi_keeps_time_encoding(monkeypatch):
         tf.config.run_functions_eagerly(run_eagerly)
 
     assert out.shape == x.shape
-    assert calls['time'] == 1
-    assert calls['lat_lon'] == 0
+    assert calls == expected_calls
 
 
 def test_functional_layer():

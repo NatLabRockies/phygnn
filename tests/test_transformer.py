@@ -72,12 +72,80 @@ def test_wmha_get_config():
         window_size=5,
         window_shift=1,
         distance_scale=20_000.0,
+        temporal_bias_scale=2.0,
+        temporal_distance_scale=3_600.0,
     )
     config = layer.get_config()
     assert config['window_size'] == 5
     assert config['window_shift'] == 1
     assert config['num_heads'] == 2
     assert config['distance_scale'] == pytest.approx(20_000.0)
+    assert config['temporal_bias_scale'] == pytest.approx(2.0)
+    assert config['temporal_distance_scale'] == pytest.approx(3_600.0)
+
+
+def test_wmha_temporal_bias():
+    """Temporal ALiBi should be symmetric and decay with time separation."""
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        temporal_bias_scale=2.0,
+        temporal_distance_scale=3_600.0,
+    )
+    layer.build((None, None, None, 8), (None, None, None, 8))
+    time = tf.constant(
+        [[[1_700_000_000], [1_700_003_600], [1_700_007_200]]],
+        dtype=tf.float32,
+    )
+
+    bias = layer._temporal_bias(time, time).numpy()
+
+    assert bias.shape == (1, 2, 3, 3)
+    np.testing.assert_allclose(np.diagonal(bias, axis1=-2, axis2=-1), 0)
+    np.testing.assert_allclose(bias, np.swapaxes(bias, -1, -2))
+    assert bias[0, 0, 0, 2] < bias[0, 0, 0, 1] < 0
+    assert abs(bias[0, 0, 0, 1]) > abs(bias[0, 1, 0, 1])
+
+
+def test_wmha_combines_spatial_and_temporal_bias():
+    """Combined positional bias should sum its enabled components."""
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        bias_scale=1.0,
+        temporal_bias_scale=2.0,
+    )
+    layer.build((None, None, None, 8), (None, None, None, 8))
+    lat_lon = tf.constant([[[30.0, -100.0], [31.0, -99.0]]])
+    time = tf.constant([[[1_700_000_000.0], [1_700_003_600.0]]])
+
+    expected = layer._haversine_bias(lat_lon, lat_lon)
+    expected += layer._temporal_bias(time, time)
+
+    np.testing.assert_allclose(
+        layer._position_bias(lat_lon, time).numpy(), expected.numpy()
+    )
+
+
+@pytest.mark.parametrize('window_size', [None, 2])
+def test_wmha_temporal_bias_5d(window_size):
+    """Temporal ALiBi should support full and windowed 5D attention."""
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        window_size=window_size,
+        temporal_bias_scale=1.0,
+    )
+    query = tf.random.normal((1, 4, 4, 2, 8))
+    hours = tf.reshape(
+        tf.range(2, dtype=tf.float32) * 3_600 + 1_700_000_000,
+        (1, 1, 1, 2, 1),
+    )
+    time = tf.broadcast_to(hours, (1, 4, 4, 2, 1))
+
+    output = layer(query, query, time=time)
+
+    assert output.shape == query.shape
 
 
 def test_wmha_non_square_grid():

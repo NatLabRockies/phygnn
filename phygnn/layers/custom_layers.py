@@ -796,6 +796,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         Length scale (in meters) over which the ALiBi distance bias
         decays. Larger values produce a gentler decay, allowing
         attention to reach farther spatially.
+    temporal_bias_scale : float
+        Positive values enable temporal ALiBi and set its scaling factor.
+    temporal_distance_scale : float
+        Length scale in seconds over which temporal ALiBi decays.
     **kwargs
         Additional keyword arguments forwarded to ``MultiHeadAttention``.
 
@@ -819,6 +823,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         key_dim=64,
         bias_scale=0.0,
         distance_scale=10000.0,
+        temporal_bias_scale=0.0,
+        temporal_distance_scale=86400.0,
         **kwargs,
     ):
         super().__init__(num_heads=num_heads, key_dim=key_dim, **kwargs)
@@ -826,7 +832,11 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         self.window_shift = int(window_shift)
         self.bias_scale = float(bias_scale)
         self.distance_scale = float(distance_scale)
-        self.use_pos_bias = self.bias_scale > 0
+        self.temporal_bias_scale = float(temporal_bias_scale)
+        self.temporal_distance_scale = float(temporal_distance_scale)
+        self.use_spatial_bias = self.bias_scale > 0
+        self.use_temporal_bias = self.temporal_bias_scale > 0
+        self.use_pos_bias = self.use_spatial_bias or self.use_temporal_bias
         self.head_slopes = None
 
         if self.window_shift < 0:
@@ -1030,6 +1040,39 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         bias = tf.expand_dims(bias, axis=1)
         return bias * self.head_slopes
 
+    def _temporal_bias(self, time_q, time_v):
+        """Compute temporal ALiBi bias from Unix timestamps.
+
+        Parameters
+        ----------
+        time_q : tf.Tensor
+            Query timestamps in seconds with shape ``(..., n_q, 1)``.
+        time_v : tf.Tensor
+            Key/value timestamps in seconds with shape ``(..., n_v, 1)``.
+
+        Returns
+        -------
+        tf.Tensor
+            ``(..., num_heads, n_q, n_v)`` bias tensor.
+        """
+        time_q = tf.expand_dims(time_q[..., 0], axis=-1)
+        time_v = tf.expand_dims(time_v[..., 0], axis=-2)
+        distance = tf.abs(time_q - time_v)
+        bias = self.temporal_bias_scale * tf.math.tanh(
+            -distance / self.temporal_distance_scale
+        )
+        return tf.expand_dims(bias, axis=1) * self.head_slopes
+
+    def _position_bias(self, lat_lon, time):
+        """Combine enabled spatial and temporal ALiBi components."""
+        bias = None
+        if self.use_spatial_bias and lat_lon is not None:
+            bias = self._haversine_bias(lat_lon, lat_lon)
+        if self.use_temporal_bias and time is not None:
+            temporal_bias = self._temporal_bias(time, time)
+            bias = temporal_bias if bias is None else bias + temporal_bias
+        return bias
+
     @staticmethod
     def _reassemble_windows(output, query, geometry):
         """Reshape windowed output back to the original spatial layout.
@@ -1074,6 +1117,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         training,
         kv_nan_mask,
         lat_lon,
+        time=None,
         use_causal_mask=False,
     ):
         """Full attention path when the current call does not need windowing.
@@ -1088,10 +1132,15 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         k_flat = tf.reshape(key, dims)
         v_flat = tf.reshape(value, dims)
 
-        bias = None
-        if self.use_pos_bias and lat_lon is not None:
-            flat_lat_lon = tf.reshape(lat_lon, [batch_size, -1, 2])
-            bias = self._haversine_bias(flat_lat_lon, flat_lat_lon)
+        flat_lat_lon = (
+            None
+            if lat_lon is None
+            else tf.reshape(lat_lon, [batch_size, -1, 2])
+        )
+        flat_time = (
+            None if time is None else tf.reshape(time, [batch_size, -1, 1])
+        )
+        bias = self._position_bias(flat_lat_lon, flat_time)
 
         attention_mask = None
         if kv_nan_mask is not None:
@@ -1118,6 +1167,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_nan_mask,
         lat_lon,
         window_size,
+        time=None,
         use_causal_mask=False,
     ):
         """Execute the full windowed attention path."""
@@ -1131,10 +1181,15 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         v_win = self._partition_windows(value, geometry)
         kv_mask = self._build_window_mask(kv_nan_mask, query.dtype, geometry)
 
-        bias_win = None
-        if self.use_pos_bias and lat_lon is not None:
-            coords_win = self._partition_windows(lat_lon, geometry)
-            bias_win = self._haversine_bias(coords_win, coords_win)
+        coords_win = (
+            None
+            if lat_lon is None
+            else self._partition_windows(lat_lon, geometry)
+        )
+        time_win = (
+            None if time is None else self._partition_windows(time, geometry)
+        )
+        bias_win = self._position_bias(coords_win, time_win)
 
         output = super().call(
             query=q_win,
@@ -1154,6 +1209,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         query,
         value,
         key=None,
+        time=None,
         training=None,
         use_causal_mask=False,
         bias=None,
@@ -1170,6 +1226,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             ``(batch, H_v, W_v, features)``
         key : tf.Tensor | None
             ``(batch, H_v, W_v, features)``. Defaults to *value*.
+        time : tf.Tensor | None
+            Unix timestamps in seconds with shape ``(B, H, W, T, 1)`` for
+            temporal ALiBi bias.
         bias : tf.Tensor | None
             Additive pre-softmax bias ``(batch, heads, n_q, n_v)`` or None.
             When provided, overrides the internally-computed ALiBi / NaN bias
@@ -1199,6 +1258,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             query=query,
             key=key,
             value=value,
+            time=time,
             training=training,
             kv_nan_mask=kv_nan_mask,
             lat_lon=lat_lon,
@@ -1220,6 +1280,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             'window_shift': self.window_shift,
             'bias_scale': self.bias_scale,
             'distance_scale': self.distance_scale,
+            'temporal_bias_scale': self.temporal_bias_scale,
+            'temporal_distance_scale': self.temporal_distance_scale,
         })
         return config
 
@@ -1375,10 +1437,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
     feature channels are processed jointly by a single K/V encoder and
     attention head.
 
-    When ``bias_scale > 0``, a distance-based bias replaces explicit spatial
-    positional encodings (ALiBi).  Temporal sinusoidal encodings are still
-    added to Q and K for 5D inputs with time data.  Otherwise, sinusoidal
-    spatial and temporal positional encodings are added to Q and K.
+    Spatial and temporal ALiBi independently replace the corresponding
+    sinusoidal positional encoding when their bias scale is positive.
     """
 
     def __init__(
@@ -1396,6 +1456,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         max_period_temporal=864000,
         bias_scale=0.0,
         distance_scale=10000.0,
+        temporal_bias_scale=0.0,
+        temporal_distance_scale=86400.0,
         window_size=None,
         window_shift=0,
         dropout=0.0,
@@ -1434,6 +1496,11 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Length scale (in meters) over which the ALiBi distance bias
             decays. Larger values produce a gentler decay, allowing
             attention to reach farther spatially.
+        temporal_bias_scale : float
+            Positive values enable temporal ALiBi and set its scaling factor.
+            Non-positive values use sinusoidal temporal encoding.
+        temporal_distance_scale : float
+            Length scale in seconds over which temporal ALiBi decays.
         window_size : int | None
             Side length of the non-overlapping query execution block.
             ``None`` uses full attention.
@@ -1463,7 +1530,11 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.window_shift = window_shift
         self.bias_scale = float(bias_scale)
         self.distance_scale = float(distance_scale)
-        self.use_pos_bias = self.bias_scale > 0
+        self.temporal_bias_scale = float(temporal_bias_scale)
+        self.temporal_distance_scale = float(temporal_distance_scale)
+        self.use_spatial_bias = self.bias_scale > 0
+        self.use_temporal_bias = self.temporal_bias_scale > 0
+        self.use_pos_bias = self.use_spatial_bias or self.use_temporal_bias
         self.dropout = dropout
 
         # -- shared layers --
@@ -1498,6 +1569,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             key_dim=self.key_dim,
             bias_scale=self.bias_scale,
             distance_scale=self.distance_scale,
+            temporal_bias_scale=self.temporal_bias_scale,
+            temporal_distance_scale=self.temporal_distance_scale,
             dropout=self.dropout,
         )
 
@@ -1655,6 +1728,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'max_period_temporal': self.max_period_temporal,
             'bias_scale': self.bias_scale,
             'distance_scale': self.distance_scale,
+            'temporal_bias_scale': self.temporal_bias_scale,
+            'temporal_distance_scale': self.temporal_distance_scale,
             'window_size': self.window_size,
             'window_shift': self.window_shift,
             'dropout': self.dropout,
@@ -1707,37 +1782,42 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         lat_lon, time = self._split_exo_inputs(exo_data)
 
-        # shared query encoding
         q = self.eq(x)
-        pos_enc = None
-        if not self.use_pos_bias:
-            pos_enc = self.pe(lat_lon=lat_lon, time=time)
-            q = q + pos_enc  # noqa: PLR6104
-
-        # Pool coordinates to token resolution once
         pool = self.eq.avg_pool
         if pool is not None:
             lat_lon = pool(lat_lon)
             time = pool(time) if time is not None else None
 
-        time_enc = None
-        if self.use_pos_bias and self.rank == 5 and time is not None:
-            time_enc = self.pe.encode_time(
+        pos_enc = None
+        if not self.use_spatial_bias:
+            pos_enc = self.pe.encode_lat_lon(
+                lat_lon,
+                self.min_period_spatial,
+                self.max_period_spatial,
+            )
+        if (
+            not self.use_temporal_bias
+            and self.rank == 5
+            and time is not None
+        ):
+            temporal_enc = self.pe.encode_time(
                 time,
                 self.min_period_temporal,
                 self.max_period_temporal,
             )
-            q = q + time_enc  # noqa: PLR6104
+            pos_enc = (
+                temporal_enc if pos_enc is None else pos_enc + temporal_enc
+            )
+        if pos_enc is not None:
+            q = q + pos_enc  # noqa: PLR6104
 
         # joint K/V encoding across all features
         hr_clean, nan_mask, _ = self.ek.prepare_sparse_tensor(hi_res_feature)
         k = self.ek(hr_clean)
         v = self.ev(hr_clean)
 
-        if not self.use_pos_bias:
+        if pos_enc is not None:
             k = k + pos_enc  # noqa: PLR6104
-        elif time_enc is not None:
-            k = k + time_enc  # noqa: PLR6104
 
         projected = self.attn(
             query=self.lq(q),
@@ -1745,6 +1825,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             value=v,
             kv_nan_mask=nan_mask,
             lat_lon=lat_lon,
+            time=time,
             training=training,
         )
 
