@@ -7,8 +7,8 @@ import tensorflow as tf
 from phygnn.layers import custom_layers as custom_layers_module
 
 MultiHeadAttention = custom_layers_module.MultiHeadAttention
+Sup3rTransformerBlock = custom_layers_module.Sup3rTransformerBlock
 Sup3rTransformerLayer = custom_layers_module.Sup3rTransformerLayer
-TransformerLayer = custom_layers_module.TransformerLayer
 WindowedMultiHeadAttention = custom_layers_module.WindowedMultiHeadAttention
 
 
@@ -21,18 +21,6 @@ def test_wmha_output_shape():
     query = tf.random.normal((2, 4, 4, 8))
     output = layer(query, query)
     assert output.shape == (2, 4, 4, 8)
-
-
-def test_wmha_with_and_without_bias():
-    """WMHA should work with explicit bias and with bias=None."""
-    layer = WindowedMultiHeadAttention(num_heads=2, key_dim=4, window_size=2)
-    query = tf.random.normal((1, 4, 4, 8))
-    kv = tf.random.normal((1, 4, 4, 8))
-
-    out_with = layer(query, kv)
-    out_without = layer(query, kv, bias=None)
-    assert out_with.shape == (1, 4, 4, 8)
-    assert out_without.shape == (1, 4, 4, 8)
 
 
 def test_wmha_full_window_matches_standard_mha():
@@ -72,12 +60,94 @@ def test_wmha_get_config():
         window_size=5,
         window_shift=1,
         distance_scale=20_000.0,
+        temporal_bias_scale=2.0,
+        temporal_distance_scale=3_600.0,
     )
     config = layer.get_config()
     assert config['window_size'] == 5
     assert config['window_shift'] == 1
     assert config['num_heads'] == 2
     assert config['distance_scale'] == pytest.approx(20_000.0)
+    assert config['temporal_bias_scale'] == pytest.approx(2.0)
+    assert config['temporal_distance_scale'] == pytest.approx(3_600.0)
+
+
+@pytest.mark.parametrize('temporal_distance_scale', [0, -1])
+def test_wmha_rejects_invalid_temporal_distance_scale(
+    temporal_distance_scale,
+):
+    """Enabled temporal ALiBi requires a positive distance scale."""
+    with pytest.raises(
+        ValueError, match='temporal_distance_scale must be > 0'
+    ):
+        WindowedMultiHeadAttention(
+            temporal_bias_scale=1.0,
+            temporal_distance_scale=temporal_distance_scale,
+        )
+
+
+def test_wmha_temporal_bias():
+    """Temporal ALiBi should be symmetric and decay with time separation."""
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        temporal_bias_scale=2.0,
+        temporal_distance_scale=3_600.0,
+    )
+    layer.build((None, None, None, 8), (None, None, None, 8))
+    time = tf.constant(
+        [[[0], [3_600], [7_200]]],
+        dtype=tf.float32,
+    )
+
+    bias = layer._temporal_bias(time, time).numpy()
+
+    assert bias.shape == (1, 2, 3, 3)
+    np.testing.assert_allclose(np.diagonal(bias, axis1=-2, axis2=-1), 0)
+    np.testing.assert_allclose(bias, np.swapaxes(bias, -1, -2))
+    assert bias[0, 0, 0, 2] < bias[0, 0, 0, 1] < 0
+    assert abs(bias[0, 0, 0, 1]) > abs(bias[0, 1, 0, 1])
+
+
+def test_wmha_combines_spatial_and_temporal_bias():
+    """Combined positional bias should sum its enabled components."""
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        bias_scale=1.0,
+        temporal_bias_scale=2.0,
+    )
+    layer.build((None, None, None, 8), (None, None, None, 8))
+    lat_lon = tf.constant([[[30.0, -100.0], [31.0, -99.0]]])
+    time = tf.constant([[[0.0], [3_600.0]]])
+
+    expected = layer._haversine_bias(lat_lon, lat_lon)
+    expected += layer._temporal_bias(time, time)
+
+    np.testing.assert_allclose(
+        layer._position_bias(lat_lon, time).numpy(), expected.numpy()
+    )
+
+
+@pytest.mark.parametrize('window_size', [None, 2])
+def test_wmha_temporal_bias_5d(window_size):
+    """Temporal ALiBi should support full and windowed 5D attention."""
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        window_size=window_size,
+        temporal_bias_scale=1.0,
+    )
+    query = tf.random.normal((1, 4, 4, 2, 8))
+    hours = tf.reshape(
+        tf.range(2, dtype=tf.float32) * 3_600,
+        (1, 1, 1, 2, 1),
+    )
+    time = tf.broadcast_to(hours, (1, 4, 4, 2, 1))
+
+    output = layer(query, query, time=time)
+
+    assert output.shape == query.shape
 
 
 def test_wmha_non_square_grid():
@@ -124,6 +194,105 @@ def test_wmha_shifted_window_path(monkeypatch):
     assert captured['value_shape'] == (16, 4, 8)
 
 
+def test_wmha_shifted_window_compacts_sparse_kv(monkeypatch):
+    """Shifted windows should compact sparse K/V before attention."""
+
+    def fake_call(
+        self,
+        query,
+        value,
+        key=None,
+        attention_mask=None,
+        training=None,
+        use_causal_mask=False,
+        bias=None,
+    ):
+        checks = [
+            tf.debugging.assert_equal(tf.shape(query), [9, 8, 8]),
+            tf.debugging.assert_equal(tf.shape(value), [9, 2, 8]),
+            tf.debugging.assert_equal(tf.shape(attention_mask), [9, 1, 2]),
+            tf.debugging.assert_equal(tf.shape(bias), [9, 2, 8, 2]),
+        ]
+        with tf.control_dependencies(checks):
+            return tf.identity(query)
+
+    monkeypatch.setattr(MultiHeadAttention, 'call', fake_call)
+
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        window_size=2,
+        window_shift=1,
+        bias_scale=1.0,
+        temporal_bias_scale=1.0,
+    )
+    query = tf.random.normal((1, 4, 4, 2, 8))
+    nan_mask = np.ones((1, 4, 4, 2), dtype=bool)
+    nan_mask[:, 1, 1, :] = False
+    nan_mask[:, 3, 3, 0] = False
+    lat_lon = tf.random.normal((1, 4, 4, 2, 2))
+    time = tf.random.normal((1, 4, 4, 2, 1))
+
+    output = layer(
+        query,
+        query,
+        kv_nan_mask=tf.constant(nan_mask),
+        lat_lon=lat_lon,
+        time=time,
+    )
+
+    assert output.shape == query.shape
+
+
+def test_wmha_full_attention_compacts_sparse_kv(monkeypatch):
+    """Full attention should use the shared sparse K/V compaction."""
+
+    def fake_call(
+        self,
+        query,
+        value,
+        key=None,
+        attention_mask=None,
+        training=None,
+        use_causal_mask=False,
+        bias=None,
+    ):
+        checks = [
+            tf.debugging.assert_equal(tf.shape(query), [2, 32, 8]),
+            tf.debugging.assert_equal(tf.shape(value), [2, 3, 8]),
+            tf.debugging.assert_equal(tf.shape(attention_mask), [2, 1, 3]),
+            tf.debugging.assert_equal(tf.shape(bias), [2, 2, 32, 3]),
+        ]
+        with tf.control_dependencies(checks):
+            return tf.identity(query)
+
+    monkeypatch.setattr(MultiHeadAttention, 'call', fake_call)
+
+    layer = WindowedMultiHeadAttention(
+        num_heads=2,
+        key_dim=4,
+        bias_scale=1.0,
+        temporal_bias_scale=1.0,
+    )
+    query = tf.random.normal((2, 4, 4, 2, 8))
+    nan_mask = np.ones((2, 4, 4, 2), dtype=bool)
+    nan_mask[0, 0, 0, :2] = False
+    nan_mask[1, 0, 0, :2] = False
+    nan_mask[1, 1, 1, 0] = False
+    lat_lon = tf.random.normal((2, 4, 4, 2, 2))
+    time = tf.random.normal((2, 4, 4, 2, 1))
+
+    output = layer(
+        query,
+        query,
+        kv_nan_mask=tf.constant(nan_mask),
+        lat_lon=lat_lon,
+        time=time,
+    )
+
+    assert output.shape == query.shape
+
+
 def test_wmha_shifted_window_alibi():
     """Shifted window attention should work with ALiBi enabled."""
     layer = WindowedMultiHeadAttention(
@@ -153,61 +322,13 @@ def test_wmha_masks_padded_kv_positions():
     # Use 4x4 spatial grid.
     query = tf.random.normal((1, 4, 4, 4))
     geometry = layer._get_window_geometry(query, window_size=2)
-    attention_mask = layer._build_window_mask(
-        None, query.dtype, geometry
-    ).numpy()
+    attention_mask = layer._build_window_mask(None, geometry).numpy()
 
-    # 4 windows, each Q has 4 tokens, each KV tile has 4 tokens
-    assert attention_mask.shape == (4, 4, 4)
+    # 4 windows with a broadcastable validity mask for 4 KV tokens
+    assert attention_mask.shape == (4, 1, 4)
     # All positions within each window should be valid (no padding needed
     # for a perfectly-divisible grid with no shift)
     assert attention_mask.all()
-
-
-# --- TransformerLayer ---
-
-
-def test_transformer_layer_windowed():
-    """TransformerLayer should use WMHA and forward window params."""
-    layer = TransformerLayer(
-        num_heads=2,
-        key_dim=8,
-        window_size=4,
-        window_shift=1,
-        distance_scale=20_000.0,
-    )
-    assert isinstance(layer.attn, WindowedMultiHeadAttention)
-    assert layer.attn.window_size == 4
-    assert layer.attn.window_shift == 1
-    assert layer.attn.distance_scale == pytest.approx(20_000.0)
-
-    config = layer.get_config()
-    assert config['window_size'] == 4
-    assert config['window_shift'] == 1
-    assert config['distance_scale'] == pytest.approx(20_000.0)
-
-
-def test_transformer_layer_default_full_attention():
-    """Default window_size=None should use full attention via WMHA."""
-    layer = TransformerLayer(num_heads=2, key_dim=8)
-    assert isinstance(layer.attn, WindowedMultiHeadAttention)
-    assert layer.attn.window_size is None
-
-
-def test_transformer_layer_dropout():
-    """TransformerLayer should forward dropout to the attention layer."""
-    layer = TransformerLayer(num_heads=2, key_dim=8, dropout=0.25)
-    assert layer.attn._dropout == pytest.approx(0.25)
-
-
-def test_transformer_layer_forward_pass():
-    """TransformerLayer should produce correct output shape."""
-    layer = TransformerLayer(num_heads=2, key_dim=8, window_size=3)
-    query = tf.random.normal((1, 4, 4, 8))
-    key = tf.random.normal((1, 4, 4, 8))
-    value = tf.random.normal((1, 4, 4, 8))
-    output = layer(query, key, value)
-    assert output.shape == (1, 4, 4, 8)
 
 
 # --- Sup3rTransformerLayer ---
@@ -252,6 +373,21 @@ def test_sup3r_transformer_layer_dropout():
     )
     assert layer.dropout == pytest.approx(0.3)
     assert layer.attn._dropout == pytest.approx(0.3)
+
+
+@pytest.mark.parametrize(
+    ('window_size', 'expected_shifts'),
+    [(5, [0, 2, 4, 1, 3]), (None, [0, 0, 0, 0, 0])],
+)
+def test_sup3r_transformer_block_shifts(window_size, expected_shifts):
+    """Transformer blocks should cycle shifts across layers."""
+    block = Sup3rTransformerBlock(
+        n_layers=5,
+        window_size=window_size,
+        window_shift=2,
+    )
+    shifts = [layer.window_shift for layer in block.transformer_layers]
+    assert shifts == expected_shifts
 
 
 # --- Sup3rTransformerLayer construction and config ---
@@ -396,7 +532,7 @@ def test_sup3r_transformer_layer_partial_patch_kept():
     exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
     layer.build(x.shape, hr.shape, exo_data.shape)
-    hr_clean, nan_mask, _ = layer.ek.prepare_sparse_tensor(hr)
+    hr_clean, nan_mask = layer.ek.prepare_sparse_tensor(hr)
     k = layer.ek(hr_clean)
 
     assert k.shape == (1, 2, 2, 8)
@@ -428,7 +564,7 @@ def test_multichannel_partial_nan_kept():
     exo_data = np.concatenate([lat, lon], axis=-1).astype(np.float32)
 
     layer.build(x.shape, hr.shape, exo_data.shape)
-    hr_clean, nan_mask, _ = layer.ek.prepare_sparse_tensor(hr)
+    hr_clean, nan_mask = layer.ek.prepare_sparse_tensor(hr)
 
     # (0,0): one channel valid -> should be unmasked (False)
     # (3,3): both channels NaN -> should be masked (True)

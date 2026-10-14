@@ -753,7 +753,7 @@ def test_tokenize_encode_lat_lon_encoding_values():
     max_period = pos_enc.max_period_spatial
     lat_lon = tf.concat([lat, lon], axis=-1)
 
-    enc = pos_enc.encode_lat_lon(lat_lon, min_period, max_period)
+    enc = pos_enc.encode_lat_lon(lat_lon)
     lat_enc = PositionEncoder._freq_encode(
         lat, d=embed_dim // 2, min_period=min_period, max_period=max_period
     )
@@ -805,29 +805,61 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
     assert calls['time'] == 1
 
 
-def test_transformer_exo_data_time_forwarding():
-    """Test Sup3rTransformerLayer forwards lat/lon/time from exo_data."""
+def test_transformer_time_forwarding(monkeypatch):
+    """Test float64 exo timestamps become relative seconds in attention."""
     layer = Sup3rTransformerLayer()
 
     x = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
     y = tf.random.normal((1, 3, 4, 1), dtype=tf.float32)
+    lat_lon = tf.random.normal((1, 3, 4, 2), dtype=tf.float64)
+    time = tf.broadcast_to(
+        tf.constant(
+            [[[[1_700_000_000], [1_700_000_060], [1_700_000_000],
+               [1_700_000_060]]]],
+            tf.float64,
+        ),
+        (1, 3, 4, 1),
+    )
+    exo_data = tf.concat([lat_lon, time], axis=-1)
+    captured = {}
 
-    # With 3 exo channels (lat, lon, time) - should not error
-    exo_data = tf.random.normal((1, 3, 4, 3), dtype=tf.float32)
-    out = layer(x, y, exo_data=exo_data)
+    def _fake_call(query, value, time=None, **kwargs):  # noqa: ARG001
+        captured['time'] = time
+        return query
+
+    monkeypatch.setattr(layer.attn, 'call', _fake_call)
+
+    run_eagerly = tf.config.functions_run_eagerly()
+    tf.config.run_functions_eagerly(True)
+    try:
+        out = layer(x, y, exo_data=exo_data)
+    finally:
+        tf.config.run_functions_eagerly(run_eagerly)
+
     assert out.shape == x.shape
+    assert captured['time'].dtype == tf.float32
+    np.testing.assert_array_equal(
+        tf.unique(tf.reshape(captured['time'], [-1])).y.numpy(), [0.0, 60.0]
+    )
 
-    # With 2 exo channels (lat, lon only) - should not error
-    exo_data = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
-    out = layer(x, y, exo_data=exo_data)
-    assert out.shape == x.shape
 
-
-def test_transformer_alibi_keeps_time_encoding(monkeypatch):
-    """ALiBi should replace spatial encoding but keep time encoding."""
+@pytest.mark.parametrize(
+    ('bias_scale', 'temporal_bias_scale', 'expected_calls'),
+    [
+        (0.0, 0.0, {'lat_lon': 1, 'time': 1}),
+        (1.0, 0.0, {'lat_lon': 0, 'time': 1}),
+        (0.0, 1.0, {'lat_lon': 1, 'time': 0}),
+        (1.0, 1.0, {'lat_lon': 0, 'time': 0}),
+    ],
+)
+def test_transformer_independent_position_modes(
+    monkeypatch, bias_scale, temporal_bias_scale, expected_calls
+):
+    """Each ALiBi mode should replace only its sinusoidal encoding."""
     layer = Sup3rTransformerLayer(
         features=['obs'],
-        bias_scale=1.0,
+        bias_scale=bias_scale,
+        temporal_bias_scale=temporal_bias_scale,
         embed_dim=8,
         key_dim=8,
         num_heads=2,
@@ -850,7 +882,8 @@ def test_transformer_alibi_keeps_time_encoding(monkeypatch):
 
     def _fake_lat_lon(*args, **kwargs):  # noqa: ARG001
         calls['lat_lon'] += 1
-        pytest.fail('ALiBi should replace spatial sinusoidal encoding')
+        shape = tf.concat([tf.shape(lat)[:-1], [layer.embed_dim]], axis=0)
+        return tf.zeros(shape, dtype=lat.dtype)
 
     monkeypatch.setattr(layer.pe, 'encode_time', _fake_time)
     monkeypatch.setattr(layer.pe, 'encode_lat_lon', _fake_lat_lon)
@@ -863,8 +896,7 @@ def test_transformer_alibi_keeps_time_encoding(monkeypatch):
         tf.config.run_functions_eagerly(run_eagerly)
 
     assert out.shape == x.shape
-    assert calls['time'] == 1
-    assert calls['lat_lon'] == 0
+    assert calls == expected_calls
 
 
 def test_functional_layer():
