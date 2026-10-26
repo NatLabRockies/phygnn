@@ -365,12 +365,52 @@ def test_sup3r_transformer_layer_without_decode():
     gradients = tape.gradient(loss, [x, *layer.trainable_variables])
 
     assert output.shape == (1, 2, 2, 2, 8)
+    assert layer.eq.built
     assert layer.decoder is None
     assert all(gradient is not None for gradient in gradients)
     restored = Sup3rTransformerLayer.from_config(layer.get_config())
     assert restored.embed_dim == 8
     assert restored.window_shift == 1
     assert not restored.decode
+
+
+@pytest.mark.parametrize(
+    ('patch_size', 'embed_dim'),
+    [(1, 8), ((2, 2, 1), 8), (1, 16)],
+)
+def test_sup3r_transformer_layer_without_query_encoding(patch_size, embed_dim):
+    """Pre-encoded latent queries should retain their identity path."""
+    layer = Sup3rTransformerLayer(
+        patch_size=patch_size,
+        embed_dim=embed_dim,
+        bias_scale=1.0,
+        temporal_bias_scale=1.0,
+        encode_query=False,
+        decode=False,
+    )
+    if patch_size != 1 or embed_dim != 8:
+        with pytest.raises(ValueError, match='encode_query=False requires'):
+            layer.build((1, 4, 4, 2, 8), exo_data_shape=(1, 4, 4, 2, 2))
+        return
+
+    x = tf.random.normal((1, 4, 4, 2, 8))
+    observations = tf.random.normal((1, 4, 4, 2, 1))
+    exo_data = tf.random.normal((1, 4, 4, 2, 3))
+    layer.build(
+        x.shape,
+        hi_res_feature_shape=observations.shape,
+        exo_data_shape=exo_data.shape,
+    )
+    variables = (
+        *layer.attn.trainable_variables,
+        *layer.mlp.trainable_variables,
+    )
+    for variable in variables:
+        variable.assign(tf.zeros_like(variable))
+    output = layer(x, hi_res_feature=observations, exo_data=exo_data)
+
+    assert not layer.eq.built
+    np.testing.assert_allclose(output, x, atol=1e-6)
 
 
 def test_hierarchical_transformer_shape_gradients_and_config():
@@ -403,6 +443,10 @@ def test_hierarchical_transformer_shape_gradients_and_config():
     assert output.shape == x.shape
     assert not tf.reduce_any(tf.math.is_nan(output))
     assert all(gradient is not None for gradient in gradients)
+    stages = (*layer.encoder_stages, *layer.decoder_stages)
+    latent_layers = [transformer for stage in stages for transformer in stage]
+    assert all(not transformer.encode_query for transformer in latent_layers)
+    assert all(not transformer.eq.built for transformer in latent_layers)
     restored = Sup3rHierarchicalTransformerBlock.from_config(
         layer.get_config()
     )

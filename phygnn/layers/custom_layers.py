@@ -1429,6 +1429,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         window_size=None,
         window_shift=0,
         dropout=0.0,
+        encode_query=True,
         decode=True,
         **kwargs,
     ):
@@ -1481,6 +1482,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             attention.
         dropout : float
             Dropout rate for attention weights.
+        encode_query : bool
+            Whether to patch encode the query before attention. Hierarchical
+            latent stages disable this because the block owns query encoding.
         decode : bool
             Whether to decode tokens back to the input grid and add the input
             residual. If False, return the encoded latent tokens.
@@ -1510,6 +1514,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.use_temporal_bias = self.temporal_bias_scale > 0
         self.use_pos_bias = self.use_spatial_bias or self.use_temporal_bias
         self.dropout = dropout
+        self.encode_query = encode_query
         self.decode = decode
 
         # -- shared layers --
@@ -1669,6 +1674,17 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Shape tuple of the exogenous data tensor.
         """
         self._validate_build_shapes(x_shape, exo_data_shape)
+        patch_shape = _parse_patch_size(self.patch_size, self.rank)
+        if not self.encode_query and (
+            any(size != 1 for size in patch_shape)
+            or x_shape[-1] != self.embed_dim
+        ):
+            raise ValueError(
+                'Sup3rTransformerLayer with encode_query=False requires '
+                'patch_size=1 and input features equal to embed_dim. '
+                f'Received patch_size={self.patch_size}, input features='
+                f'{x_shape[-1]}, and embed_dim={self.embed_dim}.'
+            )
         hr_shape = (
             hi_res_feature_shape
             if hi_res_feature_shape is not None
@@ -1677,7 +1693,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         embed_shape = (None,) * (self.rank - 1) + (self.embed_dim,)
 
         # shared layers
-        self.eq.build(x_shape)
+        if self.encode_query:
+            self.eq.build(x_shape)
         self.pe.build(x_shape)
         self.lo.build((None, None, self.embed_dim))
         self.lq.build((None, None, self.embed_dim))
@@ -1722,6 +1739,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'window_size': self.window_size,
             'window_shift': self.window_shift,
             'dropout': self.dropout,
+            'encode_query': self.encode_query,
             'decode': self.decode,
         })
         return config
@@ -1782,8 +1800,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         lat_lon, time = self._split_exo_inputs(exo_data)
 
-        q = self.eq(x)
-        pool = self.eq.avg_pool
+        q = self.eq(x) if self.encode_query else x
+        pool = self.eq.avg_pool if self.encode_query else None
         if pool is not None:
             lat_lon = pool(lat_lon)
             time = pool(time) if time is not None else None
@@ -2149,6 +2167,7 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
                 window_size=window_size,
                 window_shift=shift,
                 dropout=self.dropout[stage_index],
+                encode_query=False,
                 decode=False,
             ))
         return layers
