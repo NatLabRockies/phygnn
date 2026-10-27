@@ -1653,19 +1653,9 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         time = (
             None
             if exo_data.shape[-1] < 3
-            else Sup3rTransformerLayer._normalize_time(exo_data[..., 2:3])
+            else exo_data[..., 2:3]
         )
         return lat_lon, time
-
-    @staticmethod
-    def _normalize_time(time):
-        """Convert time coordinates to relative float32 seconds."""
-        if time is None:
-            return None
-        time = tf.cast(time, tf.float64)
-        axes = tf.range(1, tf.rank(time) - 1)
-        reference = tf.reduce_min(time, axis=axes, keepdims=True)
-        return tf.cast(time - reference, tf.float32)
 
     def _pad_to_patch_multiple(
         self, tensor, mode='CONSTANT', constant_values=0
@@ -2051,7 +2041,7 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
         name=None,
         features=None,
         exo_features=None,
-        patch_size=(1, 1, 1),
+        patch_size=1,
         stage_dims=(64, 128, 256),
         stage_depths=2,
         num_heads=4,
