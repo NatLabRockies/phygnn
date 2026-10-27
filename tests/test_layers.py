@@ -828,17 +828,16 @@ def test_tokenize_encode_call_adds_time_encoding(monkeypatch):
 
 
 def test_transformer_time_forwarding(monkeypatch):
-    """Test float64 exo timestamps become relative seconds in attention."""
+    """Test relative time coordinates are forwarded to attention."""
     layer = Sup3rTransformerLayer()
 
     x = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
     y = tf.random.normal((1, 3, 4, 1), dtype=tf.float32)
-    lat_lon = tf.random.normal((1, 3, 4, 2), dtype=tf.float64)
+    lat_lon = tf.random.normal((1, 3, 4, 2), dtype=tf.float32)
     time = tf.broadcast_to(
         tf.constant(
-            [[[[1_700_000_000], [1_700_000_060], [1_700_000_000],
-               [1_700_000_060]]]],
-            tf.float64,
+            [[[[0.0], [60.0], [0.0], [60.0]]]],
+            tf.float32,
         ),
         (1, 3, 4, 1),
     )

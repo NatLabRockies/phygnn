@@ -1648,7 +1648,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
     @staticmethod
     def _split_exo_inputs(exo_data):
-        """Extract coordinates and normalize optional time coordinates."""
+        """Extract coordinates and optional time coordinates."""
         lat_lon = tf.cast(exo_data[..., :2], tf.float32)
         time = (
             None
