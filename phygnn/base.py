@@ -3,11 +3,13 @@
 Custom Neural Network Infrastructure.
 """
 
+import errno
 import logging
 import os
 import pickle
 import pprint
 import random
+import tempfile
 from abc import ABC, abstractmethod
 from inspect import signature
 
@@ -504,8 +506,31 @@ class CustomNetwork(ABC):
 
         model_params = self._history_to_dict(self.model_params)
 
-        with open(fpath, 'wb') as f:
-            pickle.dump(model_params, f, protocol=pickle.HIGHEST_PROTOCOL)
+        for attempt in range(2):
+            tmp_path = None
+            try:
+                with tempfile.NamedTemporaryFile(
+                    mode='wb',
+                    dir=dirname or '.',
+                    prefix='.{}.'.format(os.path.basename(fpath)),
+                    suffix='.tmp',
+                    delete=False,
+                ) as f:
+                    tmp_path = f.name
+                    pickle.dump(
+                        model_params, f, protocol=pickle.HIGHEST_PROTOCOL
+                    )
+                os.replace(tmp_path, fpath)
+                break
+            except OSError as error:
+                if tmp_path is not None and os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+                if error.errno != errno.E2BIG or attempt:
+                    raise
+                logger.warning(
+                    'Checkpoint write failed with E2BIG; retrying once: %s',
+                    fpath,
+                )
 
         logger.info('Saved model to: {}'.format(fpath))
 

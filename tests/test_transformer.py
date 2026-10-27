@@ -1,5 +1,7 @@
 """Tests for transformer and windowed attention layers."""
 
+import pickle
+
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -413,6 +415,28 @@ def test_sup3r_transformer_layer_without_query_encoding(patch_size, embed_dim):
     np.testing.assert_allclose(output, x, atol=1e-6)
 
 
+def test_sup3r_transformer_layer_all_nan_is_identity():
+    """All-missing samples should bypass the standalone transformer."""
+    layer = Sup3rTransformerLayer(
+        patch_size=1,
+        embed_dim=8,
+        num_heads=2,
+        key_dim=4,
+        bias_scale=1.0,
+        encode_query=False,
+        decode=False,
+    )
+    x = tf.random.normal((2, 4, 4, 2, 8))
+    observations = np.full((2, 4, 4, 2, 1), np.nan, np.float32)
+    observations[1, 1, 2, 0, 0] = 1.0
+    exo_data = tf.random.normal((2, 4, 4, 2, 2))
+
+    output = layer(x, tf.constant(observations), exo_data)
+
+    np.testing.assert_allclose(output[0], x[0], atol=1e-6)
+    assert not np.allclose(output[1].numpy(), x[1].numpy())
+
+
 def test_hierarchical_transformer_shape_gradients_and_config():
     """Hierarchical assimilation should round-trip odd spatial shapes."""
     layer = Sup3rHierarchicalTransformerBlock(
@@ -452,6 +476,50 @@ def test_hierarchical_transformer_shape_gradients_and_config():
     )
     assert restored.stage_dims == [8, 16, 32, 64]
     assert restored.patch_size == [1, 1, 1]
+
+
+def test_hierarchical_transformer_all_nan_is_identity():
+    """An all-missing observation sample should not modify the query."""
+    layer = Sup3rHierarchicalTransformerBlock(
+        patch_size=(2, 2, 1),
+        stage_dims=(8, 16),
+        stage_depths=1,
+        num_heads=2,
+        key_dims=4,
+        bias_scales=1.0,
+    )
+    x = tf.random.normal((2, 5, 7, 2, 3))
+    observations = np.full((2, 5, 7, 2, 1), np.nan, np.float32)
+    observations[1, 2, 3, 0, 0] = 1.0
+    exo_data = tf.random.normal((2, 5, 7, 2, 2))
+
+    output = layer(x, tf.constant(observations), exo_data)
+
+    np.testing.assert_allclose(output[0], x[0], atol=1e-6)
+    assert not np.allclose(output[1].numpy(), x[1].numpy())
+
+
+def test_hierarchical_transformer_pickle_round_trip():
+    """Pickle should preserve hierarchy variables and outputs."""
+    layer = Sup3rHierarchicalTransformerBlock(
+        patch_size=1,
+        stage_dims=(8, 16),
+        stage_depths=1,
+        num_heads=2,
+    )
+    inputs = (
+        tf.random.normal((1, 8, 8, 8)),
+        tf.random.normal((1, 8, 8, 2)),
+        tf.random.normal((1, 8, 8, 2)),
+    )
+    expected = layer(*inputs, training=False)
+
+    restored = pickle.loads(pickle.dumps(layer))
+    actual = restored(*inputs, training=False)
+
+    assert len(restored.weights) == len(layer.weights)
+    assert restored.count_params() == layer.count_params()
+    np.testing.assert_array_equal(actual, expected)
 
 
 def test_sup3r_transformer_layer_windowed():
@@ -625,6 +693,26 @@ def test_sparse_patch_pool_preserves_validity_and_time():
     assert pooled[0, 1, 1, 1, 0] == pytest.approx(8.0)
 
 
+def test_sparse_patch_pool_preserves_counts_across_levels():
+    """Coarse means should retain the weights of original observations."""
+    values = np.full((1, 4, 4, 1), np.nan, dtype=np.float32)
+    values[0, 0, 0, 0] = 0.0
+    values[0, 0, 1, 0] = 0.0
+    values[0, 1, 0, 0] = 0.0
+    values[0, 0, 2, 0] = 10.0
+    first = custom_layers_module.PatchEncoder(patch_size=2, embed_dim=4)
+    first.build(values.shape)
+    pooled, weights = first.pool_sparse_tensor(
+        tf.constant(values), return_weights=True
+    )
+    second = custom_layers_module.PatchEncoder(patch_size=2, embed_dim=4)
+    second.build(pooled.shape)
+
+    pooled = second.pool_sparse_tensor(pooled, weights=weights).numpy()
+
+    assert pooled.item() == pytest.approx(np.nanmean(values))
+
+
 def test_tuple_patch_size_config_round_trip():
     """Tuple patch sizes should survive Keras config serialization."""
     layer = Sup3rTransformerLayer(patch_size=(4, 4, 1))
@@ -726,7 +814,8 @@ def test_sup3r_transformer_layer_partial_patch_kept():
 
     layer.build(x.shape, hr.shape, exo_data.shape)
     hr_clean, nan_mask = layer.ek.prepare_sparse_tensor(hr)
-    k = layer.ek(hr_clean)
+    feature_valid = tf.cast(~tf.math.is_nan(hr), hr_clean.dtype)
+    k = layer.ek(tf.concat((hr_clean, feature_valid), axis=-1))
 
     assert k.shape == (1, 2, 2, 8)
     np.testing.assert_array_equal(
@@ -767,8 +856,12 @@ def test_multichannel_partial_nan_kept():
     assert not tf.reduce_any(tf.math.is_nan(hr_clean)).numpy()
     # valid channel should be preserved
     np.testing.assert_allclose(hr_clean[0, 0, 0, 0].numpy(), 1.0)
-    # NaN channel should be filled with 0 (patch_size=1)
+    # NaN channel is neutral-filled, with validity distinguishing it from 0.
     np.testing.assert_allclose(hr_clean[0, 0, 0, 1].numpy(), 0.0)
+    missing = layer(x, hi_res_feature=hr, exo_data=exo_data)
+    observed_zero = tf.where(tf.math.is_nan(hr), 0.0, hr)
+    observed = layer(x, hi_res_feature=observed_zero, exo_data=exo_data)
+    assert not np.allclose(missing.numpy(), observed.numpy())
 
 
 def test_sup3r_transformer_layer_requires_exo_data():

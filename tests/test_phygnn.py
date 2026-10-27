@@ -3,7 +3,9 @@ Tests for basic phygnn functionality and execution.
 """
 
 # pylint: disable=W0613
+import errno
 import os
+import pickle
 import tempfile
 import types
 
@@ -290,6 +292,57 @@ def test_save_load():
     assert isinstance(model._optimizer, Adam)
     assert isinstance(loaded._optimizer, Adam)
     assert model._optimizer.get_config() == loaded._optimizer.get_config()
+
+
+def test_save_retries_transient_e2big(monkeypatch, tmp_path):
+    """Checkpoint saves should retry transient Lustre E2BIG errors."""
+    model = PhysicsGuidedNeuralNetwork(
+        p_fun=p_fun_pythag,
+        hidden_layers=HIDDEN_LAYERS,
+        loss_weights=(0.0, 1.0),
+        n_features=2,
+        n_labels=1,
+    )
+    original_dump = pickle.dump
+    calls = 0
+
+    def intermittent_dump(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise OSError(errno.E2BIG, 'Argument list too long')
+        return original_dump(*args, **kwargs)
+
+    monkeypatch.setattr('phygnn.base.pickle.dump', intermittent_dump)
+    fpath = tmp_path / 'model.pkl'
+    model.save(str(fpath))
+
+    assert calls == 2
+    assert PhysicsGuidedNeuralNetwork.load(str(fpath))
+    assert not list(tmp_path.glob('*.tmp'))
+
+
+def test_save_preserves_checkpoint_after_write_failure(monkeypatch, tmp_path):
+    """A failed save should not corrupt an existing checkpoint."""
+    model = PhysicsGuidedNeuralNetwork(
+        p_fun=p_fun_pythag,
+        hidden_layers=HIDDEN_LAYERS,
+        loss_weights=(0.0, 1.0),
+        n_features=2,
+        n_labels=1,
+    )
+    fpath = tmp_path / 'model.pkl'
+    model.save(str(fpath))
+
+    def failed_dump(*args, **kwargs):
+        raise OSError(errno.E2BIG, 'Argument list too long')
+
+    monkeypatch.setattr('phygnn.base.pickle.dump', failed_dump)
+    with pytest.raises(OSError, match='Argument list too long'):
+        model.save(str(fpath))
+
+    assert PhysicsGuidedNeuralNetwork.load(str(fpath))
+    assert not list(tmp_path.glob('*.tmp'))
 
 
 def test_save_load_skip_connections():

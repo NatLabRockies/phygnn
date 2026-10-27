@@ -338,23 +338,39 @@ class PatchEncoder(tf.keras.layers.Layer):
         nan_mask = ~tf.squeeze(token_valid, axis=-1)
         return x_clean, nan_mask
 
-    def pool_sparse_tensor(self, x):
+    def pool_sparse_tensor(self, x, weights=None, return_weights=False):
         """Pool sparse inputs while preserving fully invalid tokens.
 
         Parameters
         ----------
         x : tf.Tensor
             4D or 5D sparse input tensor.
+        weights : tf.Tensor | None
+            Valid observation weights aligned with ``x``. If None, each
+            finite value receives unit weight.
+        return_weights : bool
+            Whether to return the pooled weights with the pooled values.
 
         Returns
         -------
-        tf.Tensor
-            Patchwise means with fully invalid patches represented by NaN.
+        tf.Tensor | tuple[tf.Tensor, tf.Tensor]
+            Weighted patchwise means with fully invalid feature channels
+            represented by NaN, optionally followed by pooled weights.
         """
-        x_clean, nan_mask = self.prepare_sparse_tensor(x)
+        valid = ~tf.math.is_nan(x)
+        x_clean = tf.where(valid, x, 0.0)
+        weights = (
+            tf.cast(valid, x.dtype)
+            if weights is None
+            else tf.where(valid, tf.cast(weights, x.dtype), 0.0)
+        )
+        weighted = x_clean * weights
         if not all(size == 1 for size in self.patch_shape):
-            x_clean = self.avg_pool(x_clean)
-        return tf.where(nan_mask[..., tf.newaxis], float('nan'), x_clean)
+            weighted = self.avg_pool(weighted)
+            weights = self.avg_pool(weights)
+        pooled = tf.math.divide_no_nan(weighted, weights)
+        pooled = tf.where(weights > 0, pooled, float('nan'))
+        return (pooled, weights) if return_weights else pooled
 
     def _fill_patchwise_nans(self, x):
         """Fill NaNs with the mean of valid values inside each patch."""
@@ -1080,7 +1096,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         )
         return compact_tensors, tf.gather(valid, indices, batch_dims=1)
 
-    def _haversine_bias(self, lat_lon_q, lat_lon_v):
+    def _haversine_bias(
+        self, lat_lon_q, lat_lon_v, apply_head_slopes=True
+    ):
         """Compute scaled haversine ALiBi bias.
 
         Inputs are grouped coordinate tensors in **degrees** with trailing
@@ -1093,6 +1111,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             Query coordinates with shape ``(..., n_q, 2)``.
         lat_lon_v : tf.Tensor
             Key/value coordinates with shape ``(..., n_v, 2)``.
+        apply_head_slopes : bool
+            Whether to expand the bias across attention heads and apply the
+            per-head slopes.
 
         Returns
         -------
@@ -1114,10 +1135,13 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         a = tf.clip_by_value(a, 0.0, 1.0)
         distance = 2 * EARTH_RADIUS_M * tf.asin(tf.sqrt(a))
         bias = self.bias_scale * tf.math.tanh(-distance / self.distance_scale)
-        bias = tf.expand_dims(bias, axis=1)
-        return bias * self.head_slopes
+        return (
+            tf.expand_dims(bias, axis=1) * self.head_slopes
+            if apply_head_slopes
+            else bias
+        )
 
-    def _temporal_bias(self, time_q, time_v):
+    def _temporal_bias(self, time_q, time_v, apply_head_slopes=True):
         """Compute temporal ALiBi bias from relative time offsets.
 
         Parameters
@@ -1126,6 +1150,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             Query time offsets in seconds with shape ``(..., n_q, 1)``.
         time_v : tf.Tensor
             Key/value time offsets in seconds with shape ``(..., n_v, 1)``.
+        apply_head_slopes : bool
+            Whether to expand the bias across attention heads and apply the
+            per-head slopes.
 
         Returns
         -------
@@ -1138,7 +1165,11 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         bias = self.temporal_bias_scale * tf.math.tanh(
             -distance / self.temporal_distance_scale
         )
-        return tf.expand_dims(bias, axis=1) * self.head_slopes
+        return (
+            tf.expand_dims(bias, axis=1) * self.head_slopes
+            if apply_head_slopes
+            else bias
+        )
 
     def _position_bias(
         self, query_lat_lon, query_time, kv_lat_lon=None, kv_time=None
@@ -1160,11 +1191,19 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_time = query_time if kv_time is None else kv_time
         bias = None
         if self.use_spatial_bias and query_lat_lon is not None:
-            bias = self._haversine_bias(query_lat_lon, kv_lat_lon)
+            bias = self._haversine_bias(
+                query_lat_lon, kv_lat_lon, apply_head_slopes=False
+            )
         if self.use_temporal_bias and query_time is not None:
-            temporal_bias = self._temporal_bias(query_time, kv_time)
+            temporal_bias = self._temporal_bias(
+                query_time, kv_time, apply_head_slopes=False
+            )
             bias = temporal_bias if bias is None else bias + temporal_bias
-        return bias
+        return (
+            None
+            if bias is None
+            else tf.expand_dims(bias, axis=1) * self.head_slopes
+        )
 
     @staticmethod
     def _reassemble_windows(output, query, geometry):
@@ -1711,9 +1750,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             )
             self.decoder.build(embed_shape)
 
-        # single K/V encoder and attention (joint across all features)
-        self.ek.build(hr_shape)
-        self.ev.build(hr_shape)
+        # Include per-feature validity so missing and observed zeros differ.
+        kv_shape = (*hr_shape[:-1], 2 * hr_shape[-1])
+        self.ek.build(kv_shape)
+        self.ev.build(kv_shape)
         self.attn.build(embed_shape, embed_shape, embed_shape)
 
         super().build(x_shape)
@@ -1788,6 +1828,17 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         x = tf.cast(x, self.compute_dtype)
         hi_res_feature = tf.cast(hi_res_feature, self.compute_dtype)
+        has_observations = tf.reduce_any(
+            ~tf.math.is_nan(hi_res_feature),
+            axis=tf.range(1, tf.rank(hi_res_feature)),
+        )
+        has_observations = tf.reshape(
+            has_observations,
+            tf.concat([
+                tf.shape(has_observations),
+                tf.ones(self.rank - 1, dtype=tf.int32),
+            ], axis=0),
+        )
 
         x_in = x
         original_shape = tf.shape(x)
@@ -1800,7 +1851,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         lat_lon, time = self._split_exo_inputs(exo_data)
 
-        q = self.eq(x) if self.encode_query else x
+        encoded_query = self.eq(x) if self.encode_query else x
+        q = encoded_query
         pool = self.eq.avg_pool if self.encode_query else None
         if pool is not None:
             lat_lon = pool(lat_lon)
@@ -1823,8 +1875,12 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         # joint K/V encoding across all features
         hr_clean, nan_mask = self.ek.prepare_sparse_tensor(hi_res_feature)
-        k = self.ek(hr_clean)
-        v = self.ev(hr_clean)
+        feature_valid = tf.cast(
+            ~tf.math.is_nan(hi_res_feature), hr_clean.dtype
+        )
+        kv_input = tf.concat((hr_clean, feature_valid), axis=-1)
+        k = self.ek(kv_input)
+        v = self.ev(kv_input)
 
         if pos_enc is not None:
             k = k + pos_enc  # noqa: PLR6104
@@ -1849,13 +1905,13 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         )
 
         if not self.decode:
-            return out
+            return tf.where(has_observations, out, encoded_query)
 
         decoded = self.decoder(out)
         decoded = tf.slice(
             decoded, tf.zeros(self.rank, dtype=tf.int32), original_shape
         )
-        return x_in + decoded
+        return tf.where(has_observations, x_in + decoded, x_in)
 
 
 class Sup3rTransformerBlock(tf.keras.layers.Layer):
@@ -2148,7 +2204,7 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
                 if window_size is not None
                 else 0
             )
-            layers.append(Sup3rTransformerLayer(
+            layer = Sup3rTransformerLayer(
                 name=f'{name}_layer_{layer_index}',
                 patch_size=1,
                 num_heads=self.num_heads[stage_index],
@@ -2169,7 +2225,9 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
                 dropout=self.dropout[stage_index],
                 encode_query=False,
                 decode=False,
-            ))
+            )
+            setattr(self, layer.name, layer)
+            layers.append(layer)
         return layers
 
     def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
@@ -2192,20 +2250,52 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
                 'size 1.'
             )
         merge_patch = (2, 2) if self.rank == 4 else (2, 2, 1)
-        self.merge_encoders = [
-            PatchEncoder(patch_size=merge_patch, embed_dim=embed_dim)
-            for embed_dim in self.stage_dims[1:]
-        ]
-        self.expand_decoders = [
-            PatchDecoder(
+        self.merge_encoders = []
+        self.expand_decoders = []
+        for stage_index, embed_dim in enumerate(self.stage_dims[1:], start=1):
+            encoder = PatchEncoder(
+                name=f'merge_encoder_{stage_index}',
+                patch_size=merge_patch,
+                embed_dim=embed_dim,
+            )
+            setattr(self, encoder.name, encoder)
+            self.merge_encoders.append(encoder)
+        for stage_index in range(len(self.stage_dims) - 1):
+            decoder = PatchDecoder(
+                name=f'expand_decoder_{stage_index}',
                 patch_size=merge_patch,
                 output_dim=self.stage_dims[stage_index],
             )
-            for stage_index in range(len(self.stage_dims) - 1)
-        ]
+            setattr(self, decoder.name, decoder)
+            self.expand_decoders.append(decoder)
         self.final_decoder = PatchDecoder(
             patch_size=self.patch_size, output_dim=x_shape[-1]
         )
+
+        query_shape = tuple(x_shape[:-1]) + (self.stage_dims[0],)
+        observation_shape = tuple(hi_res_feature_shape)
+        coordinate_shape = tuple(exo_data_shape)
+        self.initial_encoder.build(x_shape)
+        for layer in self.encoder_stages[0]:
+            layer.build(query_shape, observation_shape, coordinate_shape)
+
+        query_shapes = [query_shape]
+        for stage_index, encoder in enumerate(self.merge_encoders, start=1):
+            encoder.build(query_shape)
+            query_shape = tuple(query_shape[:-1]) + (
+                self.stage_dims[stage_index],
+            )
+            query_shapes.append(query_shape)
+            for layer in self.encoder_stages[stage_index]:
+                layer.build(query_shape, observation_shape, coordinate_shape)
+
+        for stage_index in range(len(self.stage_dims) - 2, -1, -1):
+            self.expand_decoders[stage_index].build(query_shape)
+            query_shape = query_shapes[stage_index]
+            for layer in self.decoder_stages[stage_index]:
+                layer.build(query_shape, observation_shape, coordinate_shape)
+
+        self.final_decoder.build(query_shape)
         super().build(x_shape)
 
     def _pad_to_multiple(
@@ -2222,20 +2312,50 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
             return tf.pad(tensor, paddings, constant_values=constant_values)
         return tf.pad(tensor, paddings, mode=mode)
 
-    def _encode_level(self, x, observations, exo_data, encoder):
-        """Patch encode a query and pool its aligned observation inputs."""
+    def _encode_level(
+        self, x, observations, observation_weights, exo_data, encoder
+    ):
+        """Patch encode a query and pool its aligned observation inputs.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            Query tensor at the current hierarchy level.
+        observations : tf.Tensor
+            Sparse observations aligned with ``x``.
+        observation_weights : tf.Tensor | None
+            Valid counts represented by each observation value.
+        exo_data : tf.Tensor
+            Coordinates aligned with ``x``.
+        encoder : PatchEncoder
+            Encoder defining the next hierarchy resolution.
+
+        Returns
+        -------
+        tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]
+            Encoded query, pooled observations, pooled observation weights,
+            and pooled coordinates.
+        """
         x = self._pad_to_multiple(x, encoder.patch_size, mode='REFLECT')
         observations = self._pad_to_multiple(
             observations, encoder.patch_size, constant_values=float('nan')
         )
+        if observation_weights is not None:
+            observation_weights = self._pad_to_multiple(
+                observation_weights, encoder.patch_size
+            )
         exo_data = self._pad_to_multiple(
             exo_data, encoder.patch_size, mode='REFLECT'
         )
         x = encoder(x)
-        observations = encoder.pool_sparse_tensor(observations)
+        observations, observation_weights = encoder.pool_sparse_tensor(
+            observations,
+            weights=observation_weights,
+            return_weights=True,
+        )
         if not all(size == 1 for size in encoder.patch_shape):
             exo_data = encoder.avg_pool(exo_data)
-        return x, observations, exo_data
+        return x, observations, observation_weights, exo_data
 
     @staticmethod
     def _crop_like(x, reference):
@@ -2290,8 +2410,17 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
         observations = tf.cast(hi_res_feature, self.compute_dtype)
         exo_data = tf.cast(exo_data, self.compute_dtype)
         x_in = x
-        x, observations, exo_data = self._encode_level(
-            x, observations, exo_data, self.initial_encoder
+        has_observations = tf.reduce_any(
+            ~tf.math.is_nan(observations),
+            axis=tf.range(1, tf.rank(observations)),
+        )
+        observation_weights = None
+        x, observations, observation_weights, exo_data = self._encode_level(
+            x,
+            observations,
+            observation_weights,
+            exo_data,
+            self.initial_encoder,
         )
         x = self._run_stage(
             self.encoder_stages[0], x, observations, exo_data, training
@@ -2301,8 +2430,14 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
         exo_levels = [exo_data]
 
         for stage_index, encoder in enumerate(self.merge_encoders, start=1):
-            x, observations, exo_data = self._encode_level(
-                x, observations, exo_data, encoder
+            x, observations, observation_weights, exo_data = (
+                self._encode_level(
+                    x,
+                    observations,
+                    observation_weights,
+                    exo_data,
+                    encoder,
+                )
             )
             x = self._run_stage(
                 self.encoder_stages[stage_index],
@@ -2327,7 +2462,15 @@ class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
             )
 
         x = self.final_decoder(x)
-        return x_in + self._crop_like(x, x_in)
+        output = x_in + self._crop_like(x, x_in)
+        has_observations = tf.reshape(
+            has_observations,
+            tf.concat([
+                tf.shape(has_observations),
+                tf.ones(self.rank - 1, dtype=tf.int32),
+            ], axis=0),
+        )
+        return tf.where(has_observations, output, x_in)
 
     def get_config(self):
         """Get config for Keras serialization."""
