@@ -74,6 +74,36 @@ def _set_keras_mask(x, mask):
         x._keras_mask = mask
 
 
+def _parse_patch_size(patch_size, rank):
+    """Normalize a scalar or per-axis patch size for an input rank."""
+    n_patch_axes = rank - 2
+    if isinstance(patch_size, (int, np.integer)):
+        patch_shape = (int(patch_size),) * n_patch_axes
+    else:
+        patch_shape = tuple(int(size) for size in patch_size)
+
+    invalid_size = len(patch_shape) != n_patch_axes or any(
+        size < 1 for size in patch_shape
+    )
+    if invalid_size:
+        msg = (
+            f'patch_size must contain {n_patch_axes} positive integers for '
+            f'a rank-{rank} input, but received {patch_size}.'
+        )
+        logger.error(msg)
+        raise ValueError(msg)
+    return patch_shape
+
+
+def _serialize_patch_size(patch_size):
+    """Return a JSON-compatible patch size without changing scalar configs."""
+    return (
+        int(patch_size)
+        if isinstance(patch_size, (int, np.integer))
+        else list(patch_size)
+    )
+
+
 class SwiGLU(tf.keras.layers.Layer):
     """SwiGLU activation function."""
 
@@ -201,9 +231,10 @@ class PatchEncoder(tf.keras.layers.Layer):
         ----------
         name : str | None
             Name of layer.
-        patch_size : int
-            Height, width, and depth of tokens. Default is 1 for pixel-wise
-            tokenization.
+        patch_size : int | tuple[int, ...]
+            Patch size for each non-batch, non-feature axis. A scalar applies
+            the same size to every axis. For 5D inputs, ``(y, x, 1)`` applies
+            spatial patching while preserving each temporal step.
         embed_dim : int
             Dimension of the embedding. This determines the size of the output
             tokens after tokenization. Default is 64.
@@ -217,6 +248,7 @@ class PatchEncoder(tf.keras.layers.Layer):
         self.valid_pool = None
         self.embed_dim = embed_dim
         self.patch_size = patch_size
+        self.patch_shape = None
         self.rank = None
 
     def build(self, input_shape):
@@ -228,15 +260,16 @@ class PatchEncoder(tf.keras.layers.Layer):
             Shape tuple of the input tensor
         """
         self.rank = len(input_shape)
+        self.patch_shape = _parse_patch_size(self.patch_size, self.rank)
         kwargs = {
-            'kernel_size': [self.patch_size] * (self.rank - 2),
-            'strides': [self.patch_size] * (self.rank - 2),
+            'kernel_size': self.patch_shape,
+            'strides': self.patch_shape,
             'filters': self.embed_dim,
             'padding': 'valid',
         }
         pool_kwargs = {
-            'pool_size': self.patch_size,
-            'strides': self.patch_size,
+            'pool_size': self.patch_shape,
+            'strides': self.patch_shape,
             'padding': 'valid',
         }
         self.proj_layer = (
@@ -275,7 +308,7 @@ class PatchEncoder(tf.keras.layers.Layer):
         """
         return self.proj_layer(x)
 
-    def prepare_sparse_tensor(self, x, lat_lon=None):
+    def prepare_sparse_tensor(self, x):
         """Prepare sparse spatial inputs for patch encoding.
 
         NaNs are filled patchwise so partially observed patches remain usable.
@@ -285,9 +318,6 @@ class PatchEncoder(tf.keras.layers.Layer):
         ----------
         x : tf.Tensor
             4D or 5D sparse input tensor.
-        lat_lon : tf.Tensor | None
-            Optional coordinate grid with latitude and longitude in the last
-            dimension. Pooled to token resolution when patching is active.
 
         Returns
         -------
@@ -295,26 +325,57 @@ class PatchEncoder(tf.keras.layers.Layer):
             Sparse input with NaNs filled patchwise.
         nan_mask : tf.Tensor
             Boolean token mask where True marks fully invalid patches.
-        pooled_lat_lon : tf.Tensor | None
-            Coordinates pooled to token resolution when patching is active.
         """
         pixel_valid = ~tf.math.reduce_all(tf.math.is_nan(x), axis=-1)
         x_clean = self._fill_patchwise_nans(x)
         nan_mask = ~pixel_valid
 
-        if self.patch_size == 1:
-            return x_clean, nan_mask, lat_lon
+        if all(size == 1 for size in self.patch_shape):
+            return x_clean, nan_mask
 
         token_valid = tf.cast(pixel_valid[..., tf.newaxis], tf.float32)
         token_valid = self.valid_pool(token_valid) > 0
         nan_mask = ~tf.squeeze(token_valid, axis=-1)
-        pooled_lat_lon = None if lat_lon is None else self.avg_pool(lat_lon)
-        return x_clean, nan_mask, pooled_lat_lon
+        return x_clean, nan_mask
+
+    def pool_sparse_tensor(self, x, weights=None, return_weights=False):
+        """Pool sparse inputs while preserving fully invalid tokens.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D sparse input tensor.
+        weights : tf.Tensor | None
+            Valid observation weights aligned with ``x``. If None, each
+            finite value receives unit weight.
+        return_weights : bool
+            Whether to return the pooled weights with the pooled values.
+
+        Returns
+        -------
+        tf.Tensor | tuple[tf.Tensor, tf.Tensor]
+            Weighted patchwise means with fully invalid feature channels
+            represented by NaN, optionally followed by pooled weights.
+        """
+        valid = ~tf.math.is_nan(x)
+        x_clean = tf.where(valid, x, 0.0)
+        weights = (
+            tf.cast(valid, x.dtype)
+            if weights is None
+            else tf.where(valid, tf.cast(weights, x.dtype), 0.0)
+        )
+        weighted = x_clean * weights
+        if not all(size == 1 for size in self.patch_shape):
+            weighted = self.avg_pool(weighted)
+            weights = self.avg_pool(weights)
+        pooled = tf.math.divide_no_nan(weighted, weights)
+        pooled = tf.where(weights > 0, pooled, float('nan'))
+        return (pooled, weights) if return_weights else pooled
 
     def _fill_patchwise_nans(self, x):
         """Fill NaNs with the mean of valid values inside each patch."""
         x_zero = tf.where(tf.math.is_nan(x), 0.0, x)
-        if self.patch_size == 1:
+        if all(size == 1 for size in self.patch_shape):
             return x_zero
 
         valid = tf.cast(~tf.math.is_nan(x), x.dtype)
@@ -324,8 +385,8 @@ class PatchEncoder(tf.keras.layers.Layer):
 
         spatial_axes = range(1, self.rank - 1)
         upsampled = patch_mean
-        for axis in spatial_axes:
-            upsampled = tf.repeat(upsampled, self.patch_size, axis=axis)
+        for axis, size in zip(spatial_axes, self.patch_shape):
+            upsampled = tf.repeat(upsampled, size, axis=axis)
 
         target_shape = tf.shape(x)
         current_shape = tf.shape(upsampled)
@@ -341,7 +402,7 @@ class PatchEncoder(tf.keras.layers.Layer):
         """Get config for Keras serialization."""
         config = super().get_config()
         config.update({
-            'patch_size': self.patch_size,
+            'patch_size': _serialize_patch_size(self.patch_size),
             'embed_dim': self.embed_dim,
         })
         return config
@@ -363,8 +424,9 @@ class PatchDecoder(tf.keras.layers.Layer):
         ----------
         name : str | None
             Name of layer.
-        patch_size : int
-            Height, width, and depth of attention patches.
+        patch_size : int | tuple[int, ...]
+            Patch size for each non-batch, non-feature axis. A scalar applies
+            the same size to every axis.
         output_dim : int | None
             Number of output features after decoding.
         **kwargs : dict
@@ -373,6 +435,7 @@ class PatchDecoder(tf.keras.layers.Layer):
         """
         super().__init__(name=name, **kwargs)
         self.patch_size = patch_size
+        self.patch_shape = None
         self.output_dim = output_dim
         self.rank = None
         self.proj_layer = None
@@ -380,10 +443,11 @@ class PatchDecoder(tf.keras.layers.Layer):
     def build(self, input_shape):
         """Build the PatchDecoder layer based on an input shape."""
         self.rank = len(input_shape)
+        self.patch_shape = _parse_patch_size(self.patch_size, self.rank)
         kwargs = {
             'filters': self.output_dim,
-            'kernel_size': [self.patch_size] * (self.rank - 2),
-            'strides': [self.patch_size] * (self.rank - 2),
+            'kernel_size': self.patch_shape,
+            'strides': self.patch_shape,
             'padding': 'valid',
         }
         self.proj_layer = (
@@ -403,7 +467,7 @@ class PatchDecoder(tf.keras.layers.Layer):
         """Get config for Keras serialization."""
         config = super().get_config()
         config.update({
-            'patch_size': self.patch_size,
+            'patch_size': _serialize_patch_size(self.patch_size),
             'output_dim': self.output_dim,
         })
         return config
@@ -429,10 +493,10 @@ class PositionEncoder(tf.keras.layers.Layer):
         ----------
         name : str | None
             Name of layer.
-        patch_size : int
-            Height, width, and depth of patches. This is used to pool the
-            positional encoding into the same patch shape as tokens. Default is
-            1 for pixel-wise tokenization and encoding.
+        patch_size : int | tuple[int, ...]
+            Patch size for each non-batch, non-feature axis. A scalar applies
+            the same size to every axis. This pools positional encodings to
+            the same patch shape as tokens.
         embed_dim : int
             Dimension of the embedding. This determines the size of the output
             tokens after encoding. Default is 64.
@@ -451,6 +515,7 @@ class PositionEncoder(tf.keras.layers.Layer):
         super().__init__(name=name, **kwargs)
         self._pool_layer = None
         self.patch_size = patch_size
+        self.patch_shape = None
         self.embed_dim = embed_dim
         self.min_period_spatial = min_period_spatial
         self.max_period_spatial = max_period_spatial
@@ -508,7 +573,7 @@ class PositionEncoder(tf.keras.layers.Layer):
             (soy / np.timedelta64(1, 's')).astype(np.float32),
         )
 
-    def encode_lat_lon(self, lat_lon, min_period, max_period):
+    def encode_lat_lon(self, lat_lon):
         """Sinusoidal positional encoding for latitude and longitude.
 
         Parameters
@@ -516,10 +581,6 @@ class PositionEncoder(tf.keras.layers.Layer):
         lat_lon : tf.Tensor
             Coordinate tensor (..., 2) in degrees with latitude in channel 0
             and longitude in channel 1.
-        min_period : float
-            Minimum period in degrees.
-        max_period : float
-            Maximum period in degrees.
 
         Returns
         -------
@@ -535,14 +596,14 @@ class PositionEncoder(tf.keras.layers.Layer):
         lat_lon_enc = self._freq_encode(
             lat_lon,
             d=self.embed_dim // 2,
-            min_period=min_period,
-            max_period=max_period,
+            min_period=self.min_period_spatial,
+            max_period=self.max_period_spatial,
         )
         return tf.reshape(
             lat_lon_enc, tf.concat([tf.shape(lat_lon_enc)[:-2], [-1]], axis=0)
         )
 
-    def encode_time(self, time, min_period, max_period):
+    def encode_time(self, time):
         """Sinusoidal positional encoding for time.
 
         Parameters
@@ -550,10 +611,6 @@ class PositionEncoder(tf.keras.layers.Layer):
         time : tf.Tensor
             Tensor of Unix timestamps in seconds since epoch with shape
             ``(..., 1)``.
-        min_period : float
-            Minimum period in seconds.
-        max_period : float
-            Maximum period in seconds.
 
         Returns
         -------
@@ -570,13 +627,16 @@ class PositionEncoder(tf.keras.layers.Layer):
         )
         doy = tf.reshape(doy, tf.shape(time))
         soy = tf.reshape(soy, tf.shape(time))
-        min_period_doy = min_period / 86400  # convert seconds to days
-        max_period_doy = max_period / 86400  # convert seconds to days
+        min_period_doy = self.min_period_temporal / 86400
+        max_period_doy = self.max_period_temporal / 86400
         doy_enc = self._freq_encode(
             doy, min_period_doy, max_period_doy, d=self.embed_dim // 2
         )
         soy_enc = self._freq_encode(
-            soy, min_period, max_period, d=self.embed_dim // 2
+            soy,
+            self.min_period_temporal,
+            self.max_period_temporal,
+            d=self.embed_dim // 2,
         )
         return tf.concat([doy_enc, soy_enc], axis=-1)
 
@@ -589,9 +649,10 @@ class PositionEncoder(tf.keras.layers.Layer):
             Shape tuple of the input tensor
         """
         self.rank = len(input_shape)
+        self.patch_shape = _parse_patch_size(self.patch_size, self.rank)
         kwargs = {
-            'pool_size': self.patch_size,
-            'strides': self.patch_size,
+            'pool_size': self.patch_shape,
+            'strides': self.patch_shape,
             'padding': 'valid',
         }
         self._pool_layer = (
@@ -619,26 +680,22 @@ class PositionEncoder(tf.keras.layers.Layer):
         x_enc : tf.Tensor
             Positional encoding tensor with the same leading dimensions as the
             active spatial or token grid and final dimension ``embed_dim``.
-            When ``patch_size > 1``, this corresponds to the pooled token grid
-            rather than the unpooled coordinate grid.
+            When any patch dimension is greater than one, this corresponds to
+            the pooled token grid rather than the unpooled coordinate grid.
         """
         lat_lon = self._pool_layer(lat_lon)
         time = self._pool_layer(time) if time is not None else None
 
-        x_enc = self.encode_lat_lon(
-            lat_lon, self.min_period_spatial, self.max_period_spatial
-        )
+        x_enc = self.encode_lat_lon(lat_lon)
         if self.rank == 5 and time is not None:
-            x_enc += self.encode_time(
-                time, self.min_period_temporal, self.max_period_temporal
-            )
+            x_enc += self.encode_time(time)
         return x_enc
 
     def get_config(self):
         """Get config for Keras serialization."""
         config = super().get_config()
         config.update({
-            'patch_size': self.patch_size,
+            'patch_size': _serialize_patch_size(self.patch_size),
             'embed_dim': self.embed_dim,
             'min_period_spatial': self.min_period_spatial,
             'max_period_spatial': self.max_period_spatial,
@@ -796,6 +853,10 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         Length scale (in meters) over which the ALiBi distance bias
         decays. Larger values produce a gentler decay, allowing
         attention to reach farther spatially.
+    temporal_bias_scale : float
+        Positive values enable temporal ALiBi and set its scaling factor.
+    temporal_distance_scale : float
+        Length scale in seconds over which temporal ALiBi decays.
     **kwargs
         Additional keyword arguments forwarded to ``MultiHeadAttention``.
 
@@ -805,9 +866,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         )
         output = layer(
             query, value,
-            bias=alibi_bias,
-            query_spatial_shape=(32, 32),
-            kv_spatial_shape=(64, 64),
+            lat_lon=lat_lon,
         )
     """
 
@@ -819,6 +878,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         key_dim=64,
         bias_scale=0.0,
         distance_scale=10000.0,
+        temporal_bias_scale=0.0,
+        temporal_distance_scale=86400.0,
         **kwargs,
     ):
         super().__init__(num_heads=num_heads, key_dim=key_dim, **kwargs)
@@ -826,7 +887,11 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         self.window_shift = int(window_shift)
         self.bias_scale = float(bias_scale)
         self.distance_scale = float(distance_scale)
-        self.use_pos_bias = self.bias_scale > 0
+        self.temporal_bias_scale = float(temporal_bias_scale)
+        self.temporal_distance_scale = float(temporal_distance_scale)
+        self.use_spatial_bias = self.bias_scale > 0
+        self.use_temporal_bias = self.temporal_bias_scale > 0
+        self.use_pos_bias = self.use_spatial_bias or self.use_temporal_bias
         self.head_slopes = None
 
         if self.window_shift < 0:
@@ -838,6 +903,13 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             and self.window_shift >= self.window_size
         ):
             msg = 'window_shift must be < window_size.'
+            logger.error(msg)
+            raise ValueError(msg)
+        if self.use_temporal_bias and self.temporal_distance_scale <= 0:
+            msg = (
+                'temporal_distance_scale must be > 0 when temporal ALiBi '
+                'is enabled.'
+            )
             logger.error(msg)
             raise ValueError(msg)
 
@@ -945,16 +1017,16 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         return tf.reshape(t, [flat, ws * ws * t_steps, c])
 
     @classmethod
-    def _build_window_mask(cls, kv_nan_mask, dtype, geometry):
+    def _build_window_mask(cls, kv_nan_mask, geometry):
         """Build the full per-window boolean attention mask.
 
         Combines padding validity and optional NaN positions from
         *kv_nan_mask*.
 
         For 4D Q/KV, *kv_nan_mask* is ``(B, H, W)`` and the returned
-        mask has shape ``(B*n_windows, ws*ws, ws*ws)``.
+        mask has shape ``(B*n_windows, 1, ws*ws)``.
         For 5D Q/KV, *kv_nan_mask* is ``(B, H, W, T)`` and the
-        returned mask has shape ``(B*n_windows, ws*ws*T, ws*ws*T)``.
+        returned mask has shape ``(B*n_windows, 1, ws*ws*T)``.
 
         Returns
         -------
@@ -966,7 +1038,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
 
         # --- NaN / padding validity -----------------------------------------
         if kv_nan_mask is not None:
-            kv_valid = tf.cast(~kv_nan_mask, dtype)
+            kv_valid = ~kv_nan_mask
             if len(kv_valid.shape) == 3:  # 4D: (B, H, W) -> add channel dim
                 kv_valid = kv_valid[..., tf.newaxis]
         else:
@@ -977,23 +1049,56 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
                     geometry.query_width,
                     T,
                 ]),
-                dtype=dtype,
+                dtype=tf.bool,
             )
 
         # _partition_windows zero-pads, so padded positions become 0.0
         # Output shape: (B*n_windows, ws*ws*T, 1)
         valid_win = cls._partition_windows(kv_valid, geometry)
 
-        # Broadcast to full mask: each Q token attends to all valid KV tokens
-        # valid_win shape: (flat, ws*ws*T, 1) -> (flat, 1, ws*ws*T) for KV dim
+        # Keras broadcasts this key-validity vector over all query tokens.
         flat = geometry.batch_size * geometry.n_windows
         window_t = ws * ws * T
         kv_mask = tf.reshape(valid_win, [flat, window_t, 1])
-        kv_mask = tf.transpose(kv_mask, [0, 2, 1])  # (flat, 1, window_t)
-        kv_mask = tf.broadcast_to(kv_mask, [flat, window_t, window_t])
-        return tf.cast(kv_mask, tf.bool)
+        return tf.transpose(kv_mask, [0, 2, 1])
 
-    def _haversine_bias(self, lat_lon_q, lat_lon_v):
+    @staticmethod
+    def _compact_kv(tensors, valid):
+        """Gather valid K/V tokens and aligned metadata in each group.
+
+        Parameters
+        ----------
+        tensors : tuple[tf.Tensor | None, ...]
+            Grouped K/V tensors and metadata with token axis 1.
+        valid : tf.Tensor
+            Boolean mask with shape ``(groups, tokens)`` where True marks
+            valid K/V positions.
+
+        Returns
+        -------
+        compact_tensors : tuple[tf.Tensor | None, ...]
+            Input tensors gathered to the largest valid count per group.
+        compact_mask : tf.Tensor
+            Boolean mask for valid entries in the compact tensors.
+        """
+        max_valid = tf.maximum(
+            tf.reduce_max(tf.reduce_sum(tf.cast(valid, tf.int32), axis=1)),
+            1,
+        )
+        indices = tf.argsort(
+            tf.cast(valid, tf.int32), axis=1, direction='DESCENDING'
+        )[:, :max_valid]
+        compact_tensors = tuple(
+            None
+            if tensor is None
+            else tf.gather(tensor, indices, batch_dims=1)
+            for tensor in tensors
+        )
+        return compact_tensors, tf.gather(valid, indices, batch_dims=1)
+
+    def _haversine_bias(
+        self, lat_lon_q, lat_lon_v, apply_head_slopes=True
+    ):
         """Compute scaled haversine ALiBi bias.
 
         Inputs are grouped coordinate tensors in **degrees** with trailing
@@ -1006,6 +1111,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             Query coordinates with shape ``(..., n_q, 2)``.
         lat_lon_v : tf.Tensor
             Key/value coordinates with shape ``(..., n_v, 2)``.
+        apply_head_slopes : bool
+            Whether to expand the bias across attention heads and apply the
+            per-head slopes.
 
         Returns
         -------
@@ -1027,8 +1135,75 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         a = tf.clip_by_value(a, 0.0, 1.0)
         distance = 2 * EARTH_RADIUS_M * tf.asin(tf.sqrt(a))
         bias = self.bias_scale * tf.math.tanh(-distance / self.distance_scale)
-        bias = tf.expand_dims(bias, axis=1)
-        return bias * self.head_slopes
+        return (
+            tf.expand_dims(bias, axis=1) * self.head_slopes
+            if apply_head_slopes
+            else bias
+        )
+
+    def _temporal_bias(self, time_q, time_v, apply_head_slopes=True):
+        """Compute temporal ALiBi bias from relative time offsets.
+
+        Parameters
+        ----------
+        time_q : tf.Tensor
+            Query time offsets in seconds with shape ``(..., n_q, 1)``.
+        time_v : tf.Tensor
+            Key/value time offsets in seconds with shape ``(..., n_v, 1)``.
+        apply_head_slopes : bool
+            Whether to expand the bias across attention heads and apply the
+            per-head slopes.
+
+        Returns
+        -------
+        tf.Tensor
+            ``(..., num_heads, n_q, n_v)`` bias tensor.
+        """
+        time_q = tf.expand_dims(time_q[..., 0], axis=-1)
+        time_v = tf.expand_dims(time_v[..., 0], axis=-2)
+        distance = tf.abs(time_q - time_v)
+        bias = self.temporal_bias_scale * tf.math.tanh(
+            -distance / self.temporal_distance_scale
+        )
+        return (
+            tf.expand_dims(bias, axis=1) * self.head_slopes
+            if apply_head_slopes
+            else bias
+        )
+
+    def _position_bias(
+        self, query_lat_lon, query_time, kv_lat_lon=None, kv_time=None
+    ):
+        """Combine enabled spatial and temporal ALiBi components.
+
+        Parameters
+        ----------
+        query_lat_lon : tf.Tensor | None
+            Query latitude and longitude coordinates.
+        query_time : tf.Tensor | None
+            Query timestamps.
+        kv_lat_lon : tf.Tensor | None
+            K/V coordinates. Defaults to the query coordinates.
+        kv_time : tf.Tensor | None
+            K/V timestamps. Defaults to the query timestamps.
+        """
+        kv_lat_lon = query_lat_lon if kv_lat_lon is None else kv_lat_lon
+        kv_time = query_time if kv_time is None else kv_time
+        bias = None
+        if self.use_spatial_bias and query_lat_lon is not None:
+            bias = self._haversine_bias(
+                query_lat_lon, kv_lat_lon, apply_head_slopes=False
+            )
+        if self.use_temporal_bias and query_time is not None:
+            temporal_bias = self._temporal_bias(
+                query_time, kv_time, apply_head_slopes=False
+            )
+            bias = temporal_bias if bias is None else bias + temporal_bias
+        return (
+            None
+            if bias is None
+            else tf.expand_dims(bias, axis=1) * self.head_slopes
+        )
 
     @staticmethod
     def _reassemble_windows(output, query, geometry):
@@ -1074,6 +1249,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         training,
         kv_nan_mask,
         lat_lon,
+        time=None,
         use_causal_mask=False,
     ):
         """Full attention path when the current call does not need windowing.
@@ -1088,15 +1264,28 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         k_flat = tf.reshape(key, dims)
         v_flat = tf.reshape(value, dims)
 
-        bias = None
-        if self.use_pos_bias and lat_lon is not None:
-            flat_lat_lon = tf.reshape(lat_lon, [batch_size, -1, 2])
-            bias = self._haversine_bias(flat_lat_lon, flat_lat_lon)
+        flat_lat_lon = (
+            None
+            if lat_lon is None
+            else tf.reshape(lat_lon, [batch_size, -1, 2])
+        )
+        flat_time = (
+            None if time is None else tf.reshape(time, [batch_size, -1, 1])
+        )
 
         attention_mask = None
         if kv_nan_mask is not None:
-            nan_flat = tf.reshape(kv_nan_mask, [batch_size, 1, -1])
-            attention_mask = ~tf.cast(nan_flat, tf.bool)
+            valid = ~tf.reshape(kv_nan_mask, [batch_size, -1])
+            (k_flat, v_flat, kv_lat_lon, kv_time), valid = self._compact_kv(
+                (k_flat, v_flat, flat_lat_lon, flat_time), valid
+            )
+            attention_mask = valid[:, tf.newaxis, :]
+        else:
+            kv_lat_lon = flat_lat_lon
+            kv_time = flat_time
+        bias = self._position_bias(
+            flat_lat_lon, flat_time, kv_lat_lon, kv_time
+        )
 
         output = super().call(
             query=q_flat,
@@ -1118,6 +1307,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         kv_nan_mask,
         lat_lon,
         window_size,
+        time=None,
         use_causal_mask=False,
     ):
         """Execute the full windowed attention path."""
@@ -1129,12 +1319,33 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         q_win = self._partition_windows(query, geometry)
         k_win = self._partition_windows(key, geometry)
         v_win = self._partition_windows(value, geometry)
-        kv_mask = self._build_window_mask(kv_nan_mask, query.dtype, geometry)
 
-        bias_win = None
-        if self.use_pos_bias and lat_lon is not None:
-            coords_win = self._partition_windows(lat_lon, geometry)
-            bias_win = self._haversine_bias(coords_win, coords_win)
+        coords_win = (
+            None
+            if lat_lon is None
+            else self._partition_windows(lat_lon, geometry)
+        )
+        time_win = (
+            None if time is None else self._partition_windows(time, geometry)
+        )
+        if kv_nan_mask is None:
+            kv_mask = self._build_window_mask(None, geometry)
+            kv_coords_win = coords_win
+            kv_time_win = time_win
+        else:
+            valid = tf.cast(~kv_nan_mask, tf.bool)[..., tf.newaxis]
+            valid = tf.squeeze(
+                self._partition_windows(valid, geometry), axis=-1
+            )
+            (k_win, v_win, kv_coords_win, kv_time_win), kv_valid = (
+                self._compact_kv(
+                    (k_win, v_win, coords_win, time_win), valid
+                )
+            )
+            kv_mask = kv_valid[:, tf.newaxis, :]
+        bias_win = self._position_bias(
+            coords_win, time_win, kv_coords_win, kv_time_win
+        )
 
         output = super().call(
             query=q_win,
@@ -1154,9 +1365,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
         query,
         value,
         key=None,
+        time=None,
         training=None,
         use_causal_mask=False,
-        bias=None,
         kv_nan_mask=None,
         lat_lon=None,
     ):
@@ -1170,12 +1381,9 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             ``(batch, H_v, W_v, features)``
         key : tf.Tensor | None
             ``(batch, H_v, W_v, features)``. Defaults to *value*.
-        bias : tf.Tensor | None
-            Additive pre-softmax bias ``(batch, heads, n_q, n_v)`` or None.
-            When provided, overrides the internally-computed ALiBi / NaN bias
-            in the full-attention path.  Not supported for the windowed path
-            (a warning is logged and the value is ignored); use ``lat_lon``
-            for ALiBi bias with windowed attention.
+        time : tf.Tensor | None
+            Relative seconds with shape ``(B, H, W, T, 1)`` for
+            temporal ALiBi bias.
         kv_nan_mask : tf.Tensor | None
             Boolean ``(B, H_v, W_v)`` where True marks NaN KV positions.
             Both the full and windowed paths convert this internally to the
@@ -1199,6 +1407,7 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             query=query,
             key=key,
             value=value,
+            time=time,
             training=training,
             kv_nan_mask=kv_nan_mask,
             lat_lon=lat_lon,
@@ -1220,148 +1429,8 @@ class WindowedMultiHeadAttention(MultiHeadAttention):
             'window_shift': self.window_shift,
             'bias_scale': self.bias_scale,
             'distance_scale': self.distance_scale,
-        })
-        return config
-
-
-class TransformerLayer(tf.keras.layers.Layer):
-    """Custom transformer layer with multi-head attention layer that allows
-    for additive bias pre-softmax."""
-
-    def __init__(
-        self,
-        num_heads,
-        key_dim,
-        bias_scale=0.0,
-        embed_dim=64,
-        window_size=None,
-        window_shift=0,
-        distance_scale=10000.0,
-        dropout=0.0,
-        **kwargs,
-    ):
-        """Initialize the transformer layer.
-
-        Parameters
-        ----------
-        num_heads : int
-            Number of attention heads.
-        key_dim : int
-            Size of each attention head.
-        bias_scale : float
-            Positive values enable the sinusoidal position kernel and set its
-            sharpness. Non-positive values use content attention only.
-        window_size : int | None
-            Side length of the non-overlapping query execution block in token
-            units.
-            Patch encoding is applied before windowed attention, so this is
-            measured on the token grid. ``None`` uses full attention over the
-            entire token grid.
-        window_shift : int
-            Shift of the query-window start on the token grid. This is only
-            active when the current call uses multiple windows; otherwise it
-            is ignored because the layer routes to full attention.
-        distance_scale : float
-            Length scale (in meters) over which the ALiBi distance bias
-            decays. Larger values produce a gentler decay, allowing
-            attention to reach farther spatially.
-        dropout : float
-            Dropout rate for attention weights.
-        **kwargs
-            Additional keyword arguments passed to ``tf.keras.layers.Layer``.
-        """
-        super().__init__(**kwargs)
-        self.num_heads = num_heads
-        self.key_dim = key_dim
-        self.bias_scale = float(bias_scale)
-        self.embed_dim = int(embed_dim)
-        self.window_size = window_size
-        self.window_shift = window_shift
-        self.distance_scale = float(distance_scale)
-        self.dropout = dropout
-
-        self.attn = WindowedMultiHeadAttention(
-            window_size=window_size,
-            window_shift=window_shift,
-            num_heads=self.num_heads,
-            key_dim=self.key_dim,
-            bias_scale=bias_scale,
-            distance_scale=self.distance_scale,
-            dropout=self.dropout,
-        )
-        self.lo = tf.keras.layers.RMSNormalization()
-        self.mlp = None  # built in build() once query feature dim is known
-
-    def build(self, query_shape, key_shape, value_shape):
-        """Build all sub-layers."""
-        self.attn.build(query_shape, value_shape, key_shape)
-        self.lo.build((None, None, query_shape[-1]))
-        self.mlp = tf.keras.Sequential([
-            tf.keras.layers.Dense(4 * query_shape[-1]),
-            SwiGLU(),
-            tf.keras.layers.Dense(query_shape[-1]),
-            tf.keras.layers.Dropout(self.dropout),
-        ])
-        self.mlp.build((None, None, query_shape[-1]))
-        super().build(query_shape)
-
-    @tf.function
-    def call(
-        self,
-        query,
-        key,
-        value,
-        kv_nan_mask=None,
-        lat_lon=None,
-        training=None,
-    ):
-        """Call transformer layer with multi-head attention output.
-
-        Parameters
-        ----------
-        query : tf.Tensor
-            ``(B, H, W, C)`` query tensor.
-        key : tf.Tensor
-            ``(B, H, W, C)`` key tensor.
-        value : tf.Tensor
-            ``(B, H, W, C)`` value tensor.
-        kv_nan_mask : tf.Tensor | None
-            Boolean mask for NaN KV positions.
-        lat_lon : tf.Tensor | None
-            Coordinate grid for ALiBi bias.
-        training : bool | None
-            Training flag. Keras passes ``False`` during inference
-            (``model.predict`` / ``model(x, training=False)``), which
-            disables dropout in both the attention and MLP layers.
-        """
-        attn = self.attn(
-            query=query,
-            key=key,
-            value=value,
-            kv_nan_mask=kv_nan_mask,
-            lat_lon=lat_lon,
-            training=training,
-        )
-        attn_res = query + attn
-        out = self.lo(attn_res)
-        out_shape = tf.shape(out)
-        out_flat = tf.reshape(out, [out_shape[0], -1, out_shape[-1]])
-        mlp_out = self.mlp(out_flat, training=training)
-        mlp_out = tf.reshape(mlp_out, out_shape)
-        return attn_res + mlp_out
-
-    def get_config(self):
-        """Get config for Keras serialization."""
-        config = super().get_config()
-        config.update({
-            'num_heads': self.num_heads,
-            'key_dim': self.key_dim,
-            'bias_scale': self.bias_scale,
-            'embed_dim': self.embed_dim,
-            'window_size': self.window_size,
-            'window_shift': self.window_shift,
-            'distance_scale': self.distance_scale,
-            'dropout': self.dropout,
+            'temporal_bias_scale': self.temporal_bias_scale,
+            'temporal_distance_scale': self.temporal_distance_scale,
         })
         return config
 
@@ -1375,10 +1444,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
     feature channels are processed jointly by a single K/V encoder and
     attention head.
 
-    When ``bias_scale > 0``, a distance-based bias replaces explicit spatial
-    positional encodings (ALiBi).  Temporal sinusoidal encodings are still
-    added to Q and K for 5D inputs with time data.  Otherwise, sinusoidal
-    spatial and temporal positional encodings are added to Q and K.
+    Spatial and temporal ALiBi independently replace the corresponding
+    sinusoidal positional encoding when their bias scale is positive.
     """
 
     def __init__(
@@ -1396,9 +1463,13 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         max_period_temporal=864000,
         bias_scale=0.0,
         distance_scale=10000.0,
+        temporal_bias_scale=0.0,
+        temporal_distance_scale=86400.0,
         window_size=None,
         window_shift=0,
         dropout=0.0,
+        encode_query=True,
+        decode=True,
         **kwargs,
     ):
         """
@@ -1410,9 +1481,10 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             List of hi-resolution feature names used for exogenous-data
             dispatch by the calling framework.
         exo_features : list[str] | None
-            List of exogenous feature names (latitude, longitude, time).
-        patch_size : int
-            Height, width, and optional depth of attention patches.
+            List of exogenous feature names (latitude, longitude, and time).
+        patch_size : int | tuple[int, ...]
+            Patch size for each non-batch, non-feature axis. A scalar applies
+            the same size to every axis.
         num_heads : int
             Number of attention heads.
         key_dim : int | None
@@ -1434,6 +1506,11 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Length scale (in meters) over which the ALiBi distance bias
             decays. Larger values produce a gentler decay, allowing
             attention to reach farther spatially.
+        temporal_bias_scale : float
+            Positive values enable temporal ALiBi and set its scaling factor.
+            Non-positive values use sinusoidal temporal encoding.
+        temporal_distance_scale : float
+            Length scale in seconds over which temporal ALiBi decays.
         window_size : int | None
             Side length of the non-overlapping query execution block.
             ``None`` uses full attention.
@@ -1444,9 +1521,16 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             attention.
         dropout : float
             Dropout rate for attention weights.
+        encode_query : bool
+            Whether to patch encode the query before attention. Hierarchical
+            latent stages disable this because the block owns query encoding.
+        decode : bool
+            Whether to decode tokens back to the input grid and add the input
+            residual. If False, return the encoded latent tokens.
         **kwargs
             Additional keyword arguments for the layer.
         """
+        kwargs.setdefault('autocast', False)
         super().__init__(name=name, **kwargs)
         self.features = features or []
         self.exo_features = exo_features or []
@@ -1463,8 +1547,14 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         self.window_shift = window_shift
         self.bias_scale = float(bias_scale)
         self.distance_scale = float(distance_scale)
-        self.use_pos_bias = self.bias_scale > 0
+        self.temporal_bias_scale = float(temporal_bias_scale)
+        self.temporal_distance_scale = float(temporal_distance_scale)
+        self.use_spatial_bias = self.bias_scale > 0
+        self.use_temporal_bias = self.temporal_bias_scale > 0
+        self.use_pos_bias = self.use_spatial_bias or self.use_temporal_bias
         self.dropout = dropout
+        self.encode_query = encode_query
+        self.decode = decode
 
         # -- shared layers --
         self.eq = PatchEncoder(
@@ -1498,6 +1588,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             key_dim=self.key_dim,
             bias_scale=self.bias_scale,
             distance_scale=self.distance_scale,
+            temporal_bias_scale=self.temporal_bias_scale,
+            temporal_distance_scale=self.temporal_distance_scale,
             dropout=self.dropout,
         )
 
@@ -1556,11 +1648,11 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
     @staticmethod
     def _split_exo_inputs(exo_data):
-        """Split exogenous inputs into coordinates and optional time."""
-        lat_lon = None if exo_data is None else exo_data[..., :2]
+        """Extract coordinates and optional time coordinates."""
+        lat_lon = tf.cast(exo_data[..., :2], tf.float32)
         time = (
             None
-            if exo_data is None or exo_data.shape[-1] < 3
+            if exo_data.shape[-1] < 3
             else exo_data[..., 2:3]
         )
         return lat_lon, time
@@ -1573,22 +1665,25 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         Parameters
         ----------
         tensor : tf.Tensor | None
-            Tensor to pad.  Returned unchanged when ``None`` or when
-            ``patch_size == 1``.
+            Tensor to pad. Returned unchanged when ``None`` or when every
+            patch dimension is one.
         mode : str
             Padding mode forwarded to ``tf.pad``.
         constant_values : float
             Fill value used only when ``mode='CONSTANT'``.
         """
-        if tensor is None or self.patch_size == 1:
+        patch_shape = _parse_patch_size(self.patch_size, self.rank)
+        if tensor is None or all(size == 1 for size in patch_shape):
             return tensor
 
         paddings = [[0, 0]]
-        for axis in range(1, self.rank - 1):
+        for axis, patch_size in zip(
+            range(1, self.rank - 1), patch_shape
+        ):
             size = tf.shape(tensor)[axis]
             pad = (
-                self.patch_size - tf.math.floormod(size, self.patch_size)
-            ) % self.patch_size
+                patch_size - tf.math.floormod(size, patch_size)
+            ) % patch_size
             paddings.append([0, pad])
         paddings.append([0, 0])
         if mode == 'CONSTANT':
@@ -1608,6 +1703,17 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             Shape tuple of the exogenous data tensor.
         """
         self._validate_build_shapes(x_shape, exo_data_shape)
+        patch_shape = _parse_patch_size(self.patch_size, self.rank)
+        if not self.encode_query and (
+            any(size != 1 for size in patch_shape)
+            or x_shape[-1] != self.embed_dim
+        ):
+            raise ValueError(
+                'Sup3rTransformerLayer with encode_query=False requires '
+                'patch_size=1 and input features equal to embed_dim. '
+                f'Received patch_size={self.patch_size}, input features='
+                f'{x_shape[-1]}, and embed_dim={self.embed_dim}.'
+            )
         hr_shape = (
             hi_res_feature_shape
             if hi_res_feature_shape is not None
@@ -1616,7 +1722,8 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         embed_shape = (None,) * (self.rank - 1) + (self.embed_dim,)
 
         # shared layers
-        self.eq.build(x_shape)
+        if self.encode_query:
+            self.eq.build(x_shape)
         self.pe.build(x_shape)
         self.lo.build((None, None, self.embed_dim))
         self.lq.build((None, None, self.embed_dim))
@@ -1627,14 +1734,16 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             tf.keras.layers.Dense(self.embed_dim),
         ])
         self.mlp.build((None, None, self.embed_dim))
-        self.decoder = PatchDecoder(
-            patch_size=self.patch_size, output_dim=x_shape[-1]
-        )
-        self.decoder.build(embed_shape)
+        if self.decode:
+            self.decoder = PatchDecoder(
+                patch_size=self.patch_size, output_dim=x_shape[-1]
+            )
+            self.decoder.build(embed_shape)
 
-        # single K/V encoder and attention (joint across all features)
-        self.ek.build(hr_shape)
-        self.ev.build(hr_shape)
+        # Include per-feature validity so missing and observed zeros differ.
+        kv_shape = (*hr_shape[:-1], 2 * hr_shape[-1])
+        self.ek.build(kv_shape)
+        self.ev.build(kv_shape)
         self.attn.build(embed_shape, embed_shape, embed_shape)
 
         super().build(x_shape)
@@ -1645,7 +1754,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
         config.update({
             'features': self.features,
             'exo_features': self.exo_features,
-            'patch_size': self.patch_size,
+            'patch_size': _serialize_patch_size(self.patch_size),
             'num_heads': self.num_heads,
             'key_dim': self.key_dim,
             'embed_dim': self.embed_dim,
@@ -1655,14 +1764,24 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             'max_period_temporal': self.max_period_temporal,
             'bias_scale': self.bias_scale,
             'distance_scale': self.distance_scale,
+            'temporal_bias_scale': self.temporal_bias_scale,
+            'temporal_distance_scale': self.temporal_distance_scale,
             'window_size': self.window_size,
             'window_shift': self.window_shift,
             'dropout': self.dropout,
+            'encode_query': self.encode_query,
+            'decode': self.decode,
         })
         return config
 
     @tf.function
-    def call(self, x, hi_res_feature=None, exo_data=None, training=None):
+    def call(
+        self,
+        x,
+        hi_res_feature=None,
+        exo_data=None,
+        training=None,
+    ):
         """Call the transformer layer.
 
         Parameters
@@ -1675,15 +1794,16 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             May contain NaNs for sparse observations.
         exo_data : tf.Tensor
             Exogenous data with latitude/longitude in channels 0:2 and
-            optionally time in channel 2. Required
-            whenever *hi_res_feature* is provided.
+            optional time coordinates in seconds in channel 2. Required when
+            *hi_res_feature* is provided.
         training : bool | None
             Training flag forwarded to dropout layers.
 
         Returns
         -------
         tf.Tensor
-            Output tensor with the same shape as *x*.
+            Output tensor with the same shape as *x* when decoding, otherwise
+            encoded latent tokens with ``embed_dim`` features.
         """
         if hi_res_feature is None:
             return x
@@ -1696,6 +1816,20 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             logger.error(msg)
             raise ValueError(msg)
 
+        x = tf.cast(x, self.compute_dtype)
+        hi_res_feature = tf.cast(hi_res_feature, self.compute_dtype)
+        has_observations = tf.reduce_any(
+            ~tf.math.is_nan(hi_res_feature),
+            axis=tf.range(1, tf.rank(hi_res_feature)),
+        )
+        has_observations = tf.reshape(
+            has_observations,
+            tf.concat([
+                tf.shape(has_observations),
+                tf.ones(self.rank - 1, dtype=tf.int32),
+            ], axis=0),
+        )
+
         x_in = x
         original_shape = tf.shape(x)
 
@@ -1707,37 +1841,39 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
 
         lat_lon, time = self._split_exo_inputs(exo_data)
 
-        # shared query encoding
-        q = self.eq(x)
-        pos_enc = None
-        if not self.use_pos_bias:
-            pos_enc = self.pe(lat_lon=lat_lon, time=time)
-            q = q + pos_enc  # noqa: PLR6104
-
-        # Pool coordinates to token resolution once
-        pool = self.eq.avg_pool
+        encoded_query = self.eq(x) if self.encode_query else x
+        q = encoded_query
+        pool = self.eq.avg_pool if self.encode_query else None
         if pool is not None:
             lat_lon = pool(lat_lon)
             time = pool(time) if time is not None else None
 
-        time_enc = None
-        if self.use_pos_bias and self.rank == 5 and time is not None:
-            time_enc = self.pe.encode_time(
-                time,
-                self.min_period_temporal,
-                self.max_period_temporal,
+        pos_enc = None
+        if not self.use_spatial_bias:
+            pos_enc = self.pe.encode_lat_lon(lat_lon)
+        if (
+            not self.use_temporal_bias
+            and self.rank == 5
+            and time is not None
+        ):
+            temporal_enc = self.pe.encode_time(time)
+            pos_enc = (
+                temporal_enc if pos_enc is None else pos_enc + temporal_enc
             )
-            q = q + time_enc  # noqa: PLR6104
+        if pos_enc is not None:
+            q = q + pos_enc  # noqa: PLR6104
 
         # joint K/V encoding across all features
-        hr_clean, nan_mask, _ = self.ek.prepare_sparse_tensor(hi_res_feature)
-        k = self.ek(hr_clean)
-        v = self.ev(hr_clean)
+        hr_clean, nan_mask = self.ek.prepare_sparse_tensor(hi_res_feature)
+        feature_valid = tf.cast(
+            ~tf.math.is_nan(hi_res_feature), hr_clean.dtype
+        )
+        kv_input = tf.concat((hr_clean, feature_valid), axis=-1)
+        k = self.ek(kv_input)
+        v = self.ev(kv_input)
 
-        if not self.use_pos_bias:
+        if pos_enc is not None:
             k = k + pos_enc  # noqa: PLR6104
-        elif time_enc is not None:
-            k = k + time_enc  # noqa: PLR6104
 
         projected = self.attn(
             query=self.lq(q),
@@ -1745,6 +1881,7 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             value=v,
             kv_nan_mask=nan_mask,
             lat_lon=lat_lon,
+            time=time,
             training=training,
         )
 
@@ -1757,11 +1894,14 @@ class Sup3rTransformerLayer(tf.keras.layers.Layer):
             self.mlp(out, training=training), out_shape
         )
 
+        if not self.decode:
+            return tf.where(has_observations, out, encoded_query)
+
         decoded = self.decoder(out)
         decoded = tf.slice(
             decoded, tf.zeros(self.rank, dtype=tf.int32), original_shape
         )
-        return x_in + decoded
+        return tf.where(has_observations, x_in + decoded, x_in)
 
 
 class Sup3rTransformerBlock(tf.keras.layers.Layer):
@@ -1787,13 +1927,12 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             List of hi-resolution feature names used for exogenous-data
             dispatch by the calling framework.
         exo_features : list[str] | None
-            List of exogenous feature names (latitude, longitude, time).
+            List of exogenous feature names (latitude, longitude, and time).
         n_layers : int
             Number of ``Sup3rTransformerLayer`` instances in the stack.
         window_shift : int
-            Shift applied to odd-indexed layers in the stack.
-            Even-indexed layers always use zero shift.
-            Zero disables shifting entirely.
+            Shift increment between layers. The shift for layer ``i`` is
+            ``i * window_shift % window_size``. Zero disables shifting.
         name : str | None
             Name for this block.
         **layer_kwargs
@@ -1802,18 +1941,22 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
             ``window_shift`` in *layer_kwargs* is silently replaced by
             the per-layer value computed here.
         """
-        super().__init__(name=name)
+        super().__init__(name=name, autocast=False)
         self.features = features
         self.exo_features = exo_features
         self.n_layers = n_layers
         self.window_shift = window_shift
-        self.window_size = layer_kwargs.get('window_size', 1)
+        self.window_size = layer_kwargs.get('window_size')
         self._layer_kwargs = {
             k: v for k, v in layer_kwargs.items() if k != 'window_shift'
         }
         self.transformer_layers = []
         for i in range(n_layers):
-            shift = i * window_shift % self.window_size
+            shift = (
+                i * window_shift % self.window_size
+                if self.window_size is not None
+                else 0
+            )
             self.transformer_layers.append(
                 Sup3rTransformerLayer(
                     features=features,
@@ -1855,7 +1998,13 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         })
         return config
 
-    def call(self, x, hi_res_feature=None, exo_data=None, training=None):
+    def call(
+        self,
+        x,
+        hi_res_feature=None,
+        exo_data=None,
+        training=None,
+    ):
         """Run *x* through each transformer layer in sequence.
 
         Parameters
@@ -1865,7 +2014,7 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
         hi_res_feature : tf.Tensor | None
             High-resolution features (passed to every layer).
         exo_data : tf.Tensor | None
-            Exogenous lat/lon(/time) data (passed to every layer).
+            Exogenous latitude/longitude/time data passed to every layer.
         training : bool | None
             Training flag forwarded to dropout layers.
 
@@ -1882,6 +2031,461 @@ class Sup3rTransformerBlock(tf.keras.layers.Layer):
                 training=training,
             )
         return x
+
+
+class Sup3rHierarchicalTransformerBlock(tf.keras.layers.Layer):
+    """Hierarchical sparse-observation cross-attention with spatial skips."""
+
+    def __init__(
+        self,
+        name=None,
+        features=None,
+        exo_features=None,
+        patch_size=1,
+        stage_dims=(64, 128, 256),
+        stage_depths=2,
+        num_heads=4,
+        key_dims=None,
+        window_sizes=None,
+        window_shifts=0,
+        bias_scales=0.0,
+        distance_scales=10000.0,
+        temporal_bias_scales=0.0,
+        temporal_distance_scales=86400.0,
+        dropout=0.0,
+        min_period_spatial=1e-4,
+        max_period_spatial=2,
+        min_period_temporal=1,
+        max_period_temporal=864000,
+        **kwargs,
+    ):
+        """Initialize the hierarchical transformer block.
+
+        Parameters
+        ----------
+        name : str | None
+            Name of layer.
+        features : list[str] | None
+            High-resolution observation features used for data dispatch.
+        exo_features : list[str] | None
+            Latitude, longitude, and optional time features used for dispatch.
+        patch_size : int | tuple[int, ...]
+            Finest-level patch size. Each deeper level doubles only the two
+            spatial patch dimensions.
+        stage_dims : sequence[int]
+            Embedding width at each unique spatial scale.
+        stage_depths : int | sequence[int]
+            Number of cross-attention layers at each scale. Decoder stages
+            mirror the corresponding encoder depth.
+        num_heads : int | sequence[int]
+            Number of attention heads at each scale.
+        key_dims : int | sequence[int] | None
+            Per-head key dimension at each scale. If None, each value is the
+            stage embedding width divided by its number of heads.
+        window_sizes : int | sequence[int] | None
+            Spatial attention-window side length at each scale.
+        window_shifts : int | sequence[int]
+            Shift increment between attention layers at each scale.
+        bias_scales : float | sequence[float]
+            Spatial ALiBi scale at each scale.
+        distance_scales : float | sequence[float]
+            Spatial ALiBi distance scale in meters at each scale.
+        temporal_bias_scales : float | sequence[float]
+            Temporal ALiBi scale at each scale.
+        temporal_distance_scales : float | sequence[float]
+            Temporal ALiBi distance scale in seconds at each scale.
+        dropout : float | sequence[float]
+            Attention dropout rate at each scale.
+        min_period_spatial : float
+            Minimum period for spatial positional encoding.
+        max_period_spatial : float
+            Maximum period for spatial positional encoding.
+        min_period_temporal : float
+            Minimum period for temporal positional encoding.
+        max_period_temporal : float
+            Maximum period for temporal positional encoding.
+        **kwargs
+            Additional keyword arguments for the layer.
+        """
+        kwargs.setdefault('autocast', False)
+        super().__init__(name=name, **kwargs)
+        self.features = features or []
+        self.exo_features = exo_features or []
+        self.patch_size = patch_size
+        self.stage_dims = list(stage_dims)
+        if not self.stage_dims:
+            raise ValueError('stage_dims must contain at least one value.')
+
+        n_stages = len(self.stage_dims)
+        self.stage_depths = self._stage_values(
+            stage_depths, n_stages, 'stage_depths'
+        )
+        self.num_heads = self._stage_values(
+            num_heads, n_stages, 'num_heads'
+        )
+        self.key_dims = (
+            [dim // heads for dim, heads in zip(
+                self.stage_dims, self.num_heads
+            )]
+            if key_dims is None
+            else self._stage_values(key_dims, n_stages, 'key_dims')
+        )
+        self.window_sizes = self._stage_values(
+            window_sizes, n_stages, 'window_sizes'
+        )
+        self.window_shifts = self._stage_values(
+            window_shifts, n_stages, 'window_shifts'
+        )
+        self.bias_scales = self._stage_values(
+            bias_scales, n_stages, 'bias_scales'
+        )
+        self.distance_scales = self._stage_values(
+            distance_scales, n_stages, 'distance_scales'
+        )
+        self.temporal_bias_scales = self._stage_values(
+            temporal_bias_scales, n_stages, 'temporal_bias_scales'
+        )
+        self.temporal_distance_scales = self._stage_values(
+            temporal_distance_scales,
+            n_stages,
+            'temporal_distance_scales',
+        )
+        self.dropout = self._stage_values(dropout, n_stages, 'dropout')
+        self.min_period_spatial = min_period_spatial
+        self.max_period_spatial = max_period_spatial
+        self.min_period_temporal = min_period_temporal
+        self.max_period_temporal = max_period_temporal
+        self.rank = None
+        self.initial_encoder = PatchEncoder(
+            patch_size=patch_size, embed_dim=self.stage_dims[0]
+        )
+        self.merge_encoders = []
+        self.expand_decoders = []
+        self.final_decoder = None
+        self.encoder_stages = [
+            self._make_stage(i, f'encoder_stage_{i}')
+            for i in range(n_stages)
+        ]
+        self.decoder_stages = [
+            self._make_stage(i, f'decoder_stage_{i}')
+            for i in range(n_stages - 1)
+        ]
+
+    @staticmethod
+    def _stage_values(value, n_stages, name):
+        """Expand a scalar stage setting or validate a stage sequence."""
+        values = list(value) if isinstance(value, (list, tuple)) else [value]
+        if len(values) == 1:
+            values *= n_stages
+        if len(values) != n_stages:
+            raise ValueError(
+                f'{name} must contain one or {n_stages} values, but '
+                f'received {len(values)}.'
+            )
+        return values
+
+    def _make_stage(self, stage_index, name):
+        """Create one same-resolution latent cross-attention stage."""
+        layers = []
+        window_size = self.window_sizes[stage_index]
+        for layer_index in range(self.stage_depths[stage_index]):
+            shift = (
+                layer_index * self.window_shifts[stage_index] % window_size
+                if window_size is not None
+                else 0
+            )
+            layer = Sup3rTransformerLayer(
+                name=f'{name}_layer_{layer_index}',
+                patch_size=1,
+                num_heads=self.num_heads[stage_index],
+                embed_dim=self.stage_dims[stage_index],
+                key_dim=self.key_dims[stage_index],
+                min_period_spatial=self.min_period_spatial,
+                max_period_spatial=self.max_period_spatial,
+                min_period_temporal=self.min_period_temporal,
+                max_period_temporal=self.max_period_temporal,
+                bias_scale=self.bias_scales[stage_index],
+                distance_scale=self.distance_scales[stage_index],
+                temporal_bias_scale=self.temporal_bias_scales[stage_index],
+                temporal_distance_scale=(
+                    self.temporal_distance_scales[stage_index]
+                ),
+                window_size=window_size,
+                window_shift=shift,
+                dropout=self.dropout[stage_index],
+                encode_query=False,
+                decode=False,
+            )
+            setattr(self, layer.name, layer)
+            layers.append(layer)
+        return layers
+
+    def build(self, x_shape, hi_res_feature_shape=None, exo_data_shape=None):
+        """Build spatial transitions and the final decoder.
+
+        Parameters
+        ----------
+        x_shape : tuple
+            Shape tuple of the query tensor.
+        hi_res_feature_shape : tuple | None
+            Shape tuple of the sparse observation tensor.
+        exo_data_shape : tuple | None
+            Shape tuple of the coordinate tensor.
+        """
+        self.rank = len(x_shape)
+        patch_shape = _parse_patch_size(self.patch_size, self.rank)
+        if self.rank == 5 and patch_shape[-1] != 1:
+            raise ValueError(
+                'Sup3rHierarchicalTransformerBlock requires temporal patch '
+                'size 1.'
+            )
+        merge_patch = (2, 2) if self.rank == 4 else (2, 2, 1)
+        self.merge_encoders = []
+        self.expand_decoders = []
+        for stage_index, embed_dim in enumerate(self.stage_dims[1:], start=1):
+            encoder = PatchEncoder(
+                name=f'merge_encoder_{stage_index}',
+                patch_size=merge_patch,
+                embed_dim=embed_dim,
+            )
+            setattr(self, encoder.name, encoder)
+            self.merge_encoders.append(encoder)
+        for stage_index in range(len(self.stage_dims) - 1):
+            decoder = PatchDecoder(
+                name=f'expand_decoder_{stage_index}',
+                patch_size=merge_patch,
+                output_dim=self.stage_dims[stage_index],
+            )
+            setattr(self, decoder.name, decoder)
+            self.expand_decoders.append(decoder)
+        self.final_decoder = PatchDecoder(
+            patch_size=self.patch_size, output_dim=x_shape[-1]
+        )
+
+        query_shape = tuple(x_shape[:-1]) + (self.stage_dims[0],)
+        observation_shape = tuple(hi_res_feature_shape)
+        coordinate_shape = tuple(exo_data_shape)
+        self.initial_encoder.build(x_shape)
+        for layer in self.encoder_stages[0]:
+            layer.build(query_shape, observation_shape, coordinate_shape)
+
+        query_shapes = [query_shape]
+        for stage_index, encoder in enumerate(self.merge_encoders, start=1):
+            encoder.build(query_shape)
+            query_shape = tuple(query_shape[:-1]) + (
+                self.stage_dims[stage_index],
+            )
+            query_shapes.append(query_shape)
+            for layer in self.encoder_stages[stage_index]:
+                layer.build(query_shape, observation_shape, coordinate_shape)
+
+        for stage_index in range(len(self.stage_dims) - 2, -1, -1):
+            self.expand_decoders[stage_index].build(query_shape)
+            query_shape = query_shapes[stage_index]
+            for layer in self.decoder_stages[stage_index]:
+                layer.build(query_shape, observation_shape, coordinate_shape)
+
+        self.final_decoder.build(query_shape)
+        super().build(x_shape)
+
+    def _pad_to_multiple(
+        self, tensor, patch_size, mode='CONSTANT', constant_values=0
+    ):
+        """Pad non-feature axes to a patch multiple."""
+        patch_shape = _parse_patch_size(patch_size, self.rank)
+        paddings = [[0, 0]]
+        for axis, size in zip(range(1, self.rank - 1), patch_shape):
+            remainder = tf.math.floormod(tf.shape(tensor)[axis], size)
+            paddings.append([0, tf.math.floormod(size - remainder, size)])
+        paddings.append([0, 0])
+        if mode == 'CONSTANT':
+            return tf.pad(tensor, paddings, constant_values=constant_values)
+        return tf.pad(tensor, paddings, mode=mode)
+
+    def _encode_level(
+        self, x, observations, observation_weights, exo_data, encoder
+    ):
+        """Patch encode a query and pool its aligned observation inputs.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            Query tensor at the current hierarchy level.
+        observations : tf.Tensor
+            Sparse observations aligned with ``x``.
+        observation_weights : tf.Tensor | None
+            Valid counts represented by each observation value.
+        exo_data : tf.Tensor
+            Coordinates aligned with ``x``.
+        encoder : PatchEncoder
+            Encoder defining the next hierarchy resolution.
+
+        Returns
+        -------
+        tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]
+            Encoded query, pooled observations, pooled observation weights,
+            and pooled coordinates.
+        """
+        x = self._pad_to_multiple(x, encoder.patch_size, mode='REFLECT')
+        observations = self._pad_to_multiple(
+            observations, encoder.patch_size, constant_values=float('nan')
+        )
+        if observation_weights is not None:
+            observation_weights = self._pad_to_multiple(
+                observation_weights, encoder.patch_size
+            )
+        exo_data = self._pad_to_multiple(
+            exo_data, encoder.patch_size, mode='REFLECT'
+        )
+        x = encoder(x)
+        observations, observation_weights = encoder.pool_sparse_tensor(
+            observations,
+            weights=observation_weights,
+            return_weights=True,
+        )
+        if not all(size == 1 for size in encoder.patch_shape):
+            exo_data = encoder.avg_pool(exo_data)
+        return x, observations, observation_weights, exo_data
+
+    @staticmethod
+    def _crop_like(x, reference):
+        """Crop a decoded tensor to the non-feature shape of a reference."""
+        size = tf.concat([tf.shape(reference)[:-1], [tf.shape(x)[-1]]], axis=0)
+        return tf.slice(x, tf.zeros(tf.rank(x), dtype=tf.int32), size)
+
+    def _run_stage(self, layers, x, observations, exo_data, training):
+        """Run a latent tensor through one cross-attention stage."""
+        for layer in layers:
+            x = layer(
+                x,
+                hi_res_feature=observations,
+                exo_data=exo_data,
+                training=training,
+            )
+        return x
+
+    def call(
+        self,
+        x,
+        hi_res_feature=None,
+        exo_data=None,
+        training=None,
+    ):
+        """Run hierarchical sparse-observation assimilation.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            4D or 5D query tensor.
+        hi_res_feature : tf.Tensor | None
+            Sparse observations aligned with the query grid.
+        exo_data : tf.Tensor | None
+            Latitude, longitude, and optional time coordinates.
+        training : bool | None
+            Training flag forwarded to attention layers.
+
+        Returns
+        -------
+        tf.Tensor
+            Assimilated tensor with the same shape as ``x``.
+        """
+        if hi_res_feature is None:
+            return x
+        if exo_data is None:
+            raise ValueError(
+                'Sup3rHierarchicalTransformerBlock requires exo_data.'
+            )
+
+        x = tf.cast(x, self.compute_dtype)
+        observations = tf.cast(hi_res_feature, self.compute_dtype)
+        exo_data = tf.cast(exo_data, self.compute_dtype)
+        x_in = x
+        has_observations = tf.reduce_any(
+            ~tf.math.is_nan(observations),
+            axis=tf.range(1, tf.rank(observations)),
+        )
+        observation_weights = None
+        x, observations, observation_weights, exo_data = self._encode_level(
+            x,
+            observations,
+            observation_weights,
+            exo_data,
+            self.initial_encoder,
+        )
+        x = self._run_stage(
+            self.encoder_stages[0], x, observations, exo_data, training
+        )
+        skips = [x]
+        observation_levels = [observations]
+        exo_levels = [exo_data]
+
+        for stage_index, encoder in enumerate(self.merge_encoders, start=1):
+            x, observations, observation_weights, exo_data = (
+                self._encode_level(
+                    x,
+                    observations,
+                    observation_weights,
+                    exo_data,
+                    encoder,
+                )
+            )
+            x = self._run_stage(
+                self.encoder_stages[stage_index],
+                x,
+                observations,
+                exo_data,
+                training,
+            )
+            skips.append(x)
+            observation_levels.append(observations)
+            exo_levels.append(exo_data)
+
+        for stage_index in range(len(self.stage_dims) - 2, -1, -1):
+            x = self.expand_decoders[stage_index](x)
+            x = self._crop_like(x, skips[stage_index]) + skips[stage_index]
+            x = self._run_stage(
+                self.decoder_stages[stage_index],
+                x,
+                observation_levels[stage_index],
+                exo_levels[stage_index],
+                training,
+            )
+
+        x = self.final_decoder(x)
+        output = x_in + self._crop_like(x, x_in)
+        has_observations = tf.reshape(
+            has_observations,
+            tf.concat([
+                tf.shape(has_observations),
+                tf.ones(self.rank - 1, dtype=tf.int32),
+            ], axis=0),
+        )
+        return tf.where(has_observations, output, x_in)
+
+    def get_config(self):
+        """Get config for Keras serialization."""
+        config = super().get_config()
+        config.update({
+            'features': self.features,
+            'exo_features': self.exo_features,
+            'patch_size': _serialize_patch_size(self.patch_size),
+            'stage_dims': self.stage_dims,
+            'stage_depths': self.stage_depths,
+            'num_heads': self.num_heads,
+            'key_dims': self.key_dims,
+            'window_sizes': self.window_sizes,
+            'window_shifts': self.window_shifts,
+            'bias_scales': self.bias_scales,
+            'distance_scales': self.distance_scales,
+            'temporal_bias_scales': self.temporal_bias_scales,
+            'temporal_distance_scales': self.temporal_distance_scales,
+            'dropout': self.dropout,
+            'min_period_spatial': self.min_period_spatial,
+            'max_period_spatial': self.max_period_spatial,
+            'min_period_temporal': self.min_period_temporal,
+            'max_period_temporal': self.max_period_temporal,
+        })
+        return config
 
 
 class ExpandDims(tf.keras.layers.Layer):
